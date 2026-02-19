@@ -244,10 +244,11 @@ export default function App() {
     <div className="relative min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 overflow-hidden" style={{ fontFamily: 'Inter, sans-serif' }}>
 
       {/* Aurora Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-50">
         <Aurora
-          colorStops={['#0f172a', '#1e293b', '#0f172a']} // Subtle slate/dark theme colors
+          colorStops={['#4338ca', '#3b82f6', '#4338ca']} // Indigo-700 -> Blue-500 -> Indigo-700
           speed={0.5}
+          amplitude={1.2}
         />
       </div>
 
