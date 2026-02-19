@@ -3,11 +3,15 @@
  * Frontend API client for communicating with the ThreatVision Node.js backend.
  */
 
-// Strip trailing slash. In production (Vercel), force https to avoid 301 redirect that converts POST→GET (→405).
-let BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').replace(/\/$/, '');
+// Normalise BACKEND_URL from env — handle missing protocol, trailing slash, http→https in prod
+let _raw = import.meta.env.VITE_BACKEND_URL || '';
+if (!_raw) _raw = 'http://localhost:3001';
+if (!_raw.includes('://')) _raw = 'https://' + _raw;          // missing protocol
+let BACKEND_URL = _raw.replace(/\/$/, '');                      // strip trailing slash
 if (import.meta.env.PROD && BACKEND_URL.startsWith('http://')) {
-    BACKEND_URL = BACKEND_URL.replace('http://', 'https://');
+    BACKEND_URL = BACKEND_URL.replace('http://', 'https://');   // force https in prod
 }
+console.info('[ThreatVision] Backend URL:', BACKEND_URL);       // visible in DevTools
 
 
 /**
