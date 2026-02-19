@@ -246,7 +246,7 @@ export default function App() {
       <header className="mb-8 bg-slate-900 border-2 border-slate-800 p-6 rounded-none brutal-shadow flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-amber-400 tracking-tight uppercase" style={{ fontFamily: 'Syne, sans-serif' }}>
-            ThreatVision
+            Threat Vision
           </h1>
           <p className="text-slate-400 text-sm font-mono mt-1 tracking-wider">
             // RIFT_2026 // GRAPH_THEORY_TRACK

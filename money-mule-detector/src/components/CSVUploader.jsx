@@ -68,7 +68,7 @@ export default function CSVUploader({ onAnalysisComplete, isProcessing }) {
             {/* Background Hero Geometric Component */}
             <div className="absolute inset-0 z-0">
                 <HeroGeometric
-                    badge="ThreatVision"
+                    badge="Threat Vision"
                     title1="Detect Money Mules"
                     title2="With Graph Theory"
                 />
@@ -82,7 +82,7 @@ export default function CSVUploader({ onAnalysisComplete, isProcessing }) {
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-6">
                         <div className="w-2 h-2 rounded-full bg-rose-500/80" />
                         <span className="text-sm text-white/60 tracking-wide">
-                            ThreatVision
+                            Threat Vision
                         </span>
                     </div>
 
