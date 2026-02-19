@@ -1,6 +1,12 @@
 /**
  * shellDetector.js
  * Detects shell account chains (pass-through nodes) using BFS.
+ *
+ * FIX: The old BFS started from every node in a linear chain, producing N-2
+ * overlapping sub-chains (LN_002→LN_030, LN_003→LN_030, LN_004→LN_030...)
+ * from the same underlying structure. The fix post-processes candidates and
+ * keeps only the LONGEST chain per unique destination node, discarding all
+ * sub-chains that are proper subsets of a longer discovered chain.
  */
 import { isLegitimateAccount } from './graphBuilder.js';
 
@@ -21,7 +27,8 @@ function isShellNode(nodeId, nodeStats, graph, reverseGraph) {
 
 /**
  * Detects chains of 3+ consecutive shell nodes using BFS.
- * Minimum: 3 hops (4 nodes: source → shell1 → shell2 → shell3 → destination)
+ * Minimum: 3 hops (source → shell1 → shell2 → shell3 → destination)
+ * Deduplication: for each destination node, only the LONGEST chain is kept.
  */
 export function detectShellChains(graph, nodeStats) {
     // Build reverse graph from nodeStats keys
@@ -34,53 +41,77 @@ export function detectShellChains(graph, nodeStats) {
         }
     }
 
-    const chains = [];
-    const seenChainKeys = new Set();
+    // Collect all candidate chains (before dedup)
+    // key: "source|destination" → longest chain seen for that pair
+    const bestChainBySourceDest = new Map();
 
-    // For each node, do BFS to find chains of shell nodes
     for (const startNode of Object.keys(graph)) {
-        // Start BFS if startNode has outgoing edges to shell nodes
         if (!graph[startNode]) continue;
 
         for (const firstNeighbor of graph[startNode]) {
             if (!isShellNode(firstNeighbor, nodeStats, graph, reverseGraph)) continue;
 
-            // BFS queue entries: { chain: [startNode, shell1, ...], currentNode }
+            // BFS: grow chain through consecutive shell nodes
             const queue = [{ chain: [startNode, firstNeighbor], currentNode: firstNeighbor }];
 
             while (queue.length > 0) {
                 const { chain, currentNode } = queue.shift();
 
-                // Check outgoing edges of currentNode
                 const outgoing = graph[currentNode] || [];
                 for (const nextNode of outgoing) {
-                    if (chain.includes(nextNode)) continue; // avoid cycles
+                    if (chain.includes(nextNode)) continue; // no cycles
 
                     if (isShellNode(nextNode, nodeStats, graph, reverseGraph)) {
-                        // Continue chain
-                        const newChain = [...chain, nextNode];
-                        queue.push({ chain: newChain, currentNode: nextNode });
+                        // Continue building chain through shell
+                        queue.push({ chain: [...chain, nextNode], currentNode: nextNode });
                     } else {
-                        // nextNode is destination (not a shell)
+                        // nextNode is destination (non-shell end)
                         const fullChain = [...chain, nextNode];
-                        // Minimum: [source, shell1, shell2, shell3, destination] = 5 nodes (4 hops)
-                        // Actually: source → shell1 → shell2 → shell3 → dest = 4 hops minimum
-                        // chain.length before adding nextNode must be >= 4 (source + 3 shells)
-                        const shellCount = chain.length - 1; // exclude start node
-                        if (shellCount >= 3) {
-                            const key = fullChain.join('|');
-                            if (!seenChainKeys.has(key)) {
-                                seenChainKeys.add(key);
-                                chains.push({
-                                    members: fullChain,
-                                    pattern_type: 'shell',
-                                    detected_patterns: ['shell_chain'],
-                                });
-                            }
+                        const shellCount = chain.length - 1; // shells = chain nodes minus startNode
+                        if (shellCount < 3) continue; // need at least 3 consecutive shell hops
+
+                        // Dedup key: first node (source) + last node (destination)
+                        // For the same source→destination, keep the longest chain
+                        const source = fullChain[0];
+                        const dest = fullChain[fullChain.length - 1];
+                        const dedupKey = `${source}|${dest}`;
+
+                        const existing = bestChainBySourceDest.get(dedupKey);
+                        if (!existing || fullChain.length > existing.length) {
+                            bestChainBySourceDest.set(dedupKey, fullChain);
                         }
                     }
                 }
             }
+        }
+    }
+
+    // Step 2: among surviving chains, discard any chain whose members are a
+    // strict subset of a longer chain's members (catches overlapping chains
+    // with different sources but same shell segment and destination).
+    const candidates = [...bestChainBySourceDest.values()];
+    const memberSets = candidates.map((chain) => new Set(chain));
+
+    const chains = [];
+    for (let i = 0; i < candidates.length; i++) {
+        const setI = memberSets[i];
+        let isSubset = false;
+        for (let j = 0; j < candidates.length; j++) {
+            if (i === j) continue;
+            if (candidates[j].length <= candidates[i].length) continue;
+            // Check if all members of chain[i] appear in chain[j]
+            let allIn = true;
+            for (const m of setI) {
+                if (!memberSets[j].has(m)) { allIn = false; break; }
+            }
+            if (allIn) { isSubset = true; break; }
+        }
+        if (!isSubset) {
+            chains.push({
+                members: candidates[i],
+                pattern_type: 'shell',
+                detected_patterns: ['shell_chain'],
+            });
         }
     }
 
