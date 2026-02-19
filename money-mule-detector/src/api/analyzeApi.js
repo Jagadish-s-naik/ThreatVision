@@ -3,7 +3,12 @@
  * Frontend API client for communicating with the ThreatVision Node.js backend.
  */
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+// Strip trailing slash. In production (Vercel), force https to avoid 301 redirect that converts POST→GET (→405).
+let BACKEND_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001').replace(/\/$/, '');
+if (import.meta.env.PROD && BACKEND_URL.startsWith('http://')) {
+    BACKEND_URL = BACKEND_URL.replace('http://', 'https://');
+}
+
 
 /**
  * Sends a CSV file to the backend for analysis.
