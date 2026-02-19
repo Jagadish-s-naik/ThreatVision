@@ -14,8 +14,17 @@ dotenv.config();
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
-app.use(cors({ origin: '*' }));
-app.use(express.json());
+const corsOptions = {
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Handle preflight for all routes
+app.use(express.json({ limit: '10mb' }));
+
 
 // ─── Railway healthcheck (must always return 200) ──────────
 app.get('/api/health', (req, res) => {
