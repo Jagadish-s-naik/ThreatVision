@@ -3,7 +3,11 @@ import { parseCSV } from '../utils/csvParser.js';
 import MatrixLoader from './MatrixLoader.jsx';
 import { HeroGeometric } from './ui/shape-landing-hero.jsx';
 
-export default function CSVUploader({ onAnalysisComplete, isProcessing }) {
+// onFileSelected(file) — passes the raw File object to App.jsx for backend upload
+// onAnalysisComplete retained for backward compat (legacy frontend mode)
+export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProcessing }) {
+    // Use onFileSelected if available, fallback to legacy onAnalysisComplete
+    const handleFile = onFileSelected || onAnalysisComplete;
     const [isDragging, setIsDragging] = useState(false);
     const [error, setError] = useState('');
     const [fileName, setFileName] = useState('');
@@ -22,6 +26,7 @@ export default function CSVUploader({ onAnalysisComplete, isProcessing }) {
         setFileName(file.name);
 
         try {
+            // Quick local validation: check required columns exist
             const result = await parseCSV(file);
 
             if (result.missingColumns.length > 0) {
@@ -31,18 +36,20 @@ export default function CSVUploader({ onAnalysisComplete, isProcessing }) {
             }
 
             if (result.transactions.length === 0) {
-                setError('The CSV file is empty or has no valid rows (all rows were skipped due to missing/invalid data).');
+                setError('The CSV file is empty or has no valid rows.');
                 setFileName('');
                 return;
             }
 
             setRowCount(result.transactions.length);
-            onAnalysisComplete(result.transactions);
+
+            // Pass the raw File object — backend handles full parsing
+            handleFile(file);
         } catch (err) {
-            setError(`Failed to parse CSV: ${err.message || err}`);
+            setError(`Failed to validate CSV: ${err.message || err}`);
             setFileName('');
         }
-    }, [onAnalysisComplete]);
+    }, [handleFile]);
 
     const handleDrop = useCallback((e) => {
         e.preventDefault();

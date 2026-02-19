@@ -1,5 +1,4 @@
 import React from 'react';
-import { downloadJSON } from '../utils/jsonExporter.js';
 import SpotlightCard from './ui/SpotlightCard.jsx';
 
 // Updated StatCard to use SpotlightCard wrapper
@@ -22,37 +21,27 @@ function StatCard({ label, value, icon, accent }) {
 
 export default function SummaryPanel({ analysisResults, onDownload }) {
     if (!analysisResults) return null;
-    const { suspiciousAccounts, fraudRings, jsonOutput, cycles, smurfingRings, shellChains, nodeStats, transactions } = analysisResults;
 
-    const cycleCount = (cycles || []).length;
-    const smurfingCount = (smurfingRings || []).length;
-    const shellCount = (shellChains || []).length;
+    const {
+        suspiciousAccounts = [],
+        fraudRings = [],
+        summary = {},
+        nodeStats = {},
+    } = analysisResults;
+
+    // Derive pattern counts from fraud rings
+    const cycleCount = fraudRings.filter((r) => r.pattern_type === 'cycle').length;
+    const smurfingCount = fraudRings.filter((r) => r.pattern_type === 'smurfing').length;
+    const shellCount = fraudRings.filter((r) => r.pattern_type === 'shell').length;
 
     // Cross-ring overlap accounts — accounts belonging to 2+ rings
-    const overlapCount = Object.values(nodeStats || {}).filter(
-        (s) => s.ringMemberships && s.ringMemberships.length >= 2
-    ).length;
-
-    // Peak suspicious window from smurfing
-    let peakWindowText = 'N/A';
-    if (smurfingRings && smurfingRings.length > 0) {
-        const sorted = [...smurfingRings].sort((a, b) => {
-            const aMembers = a.members.length;
-            const bMembers = b.members.length;
-            return bMembers - aMembers;
-        });
-        const top3 = sorted.slice(0, 3);
-        peakWindowText = top3.map((ring, i) => {
-            const start = ring.windowStartTime ? new Date(ring.windowStartTime) : null;
-            const end = ring.windowEndTime ? new Date(ring.windowEndTime) : null;
-            if (!start || !end) return '';
-            const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            const hours = Math.round((end - start) / (1000 * 60 * 60));
-            return `${fmt(start)}–${fmt(end)}: ${ring.members.length} accounts in ${hours}hr window`;
-        }).filter(Boolean).join(' | ');
+    const ringMembership = {};
+    for (const ring of fraudRings) {
+        for (const acc of ring.member_accounts) {
+            ringMembership[acc] = (ringMembership[acc] || 0) + 1;
+        }
     }
-
-    const summary = jsonOutput?.summary || {};
+    const overlapCount = Object.values(ringMembership).filter((c) => c >= 2).length;
 
     return (
         <div className="bg-slate-900 border-2 border-slate-800 rounded-none p-6 mb-8 brutal-shadow relative">
@@ -107,14 +96,6 @@ export default function SummaryPanel({ analysisResults, onDownload }) {
                     <span className="font-mono text-orange-400 font-bold ml-2">{smurfingCount}</span>
                 </div>
             </div>
-
-            {/* Peak window */}
-            {peakWindowText !== 'N/A' && peakWindowText !== '' && (
-                <div className="bg-orange-950/30 border-2 border-orange-900/50 p-4 mb-5 text-sm text-orange-300 font-mono">
-                    <span className="font-bold uppercase text-xs text-orange-500 block mb-1">🔥 Top Suspicious Windows</span>
-                    {peakWindowText}
-                </div>
-            )}
 
             {/* Download button */}
             <button

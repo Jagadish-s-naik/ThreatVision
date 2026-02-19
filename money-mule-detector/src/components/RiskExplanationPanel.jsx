@@ -49,14 +49,14 @@ function generateNarrative(account, nodeStats, transactions, fraudRings) {
             );
         }
         if (pattern === 'fan_in') {
-            const senders = stats.uniqueSenders?.size || 0;
+            const senders = (typeof stats.uniqueSenders === 'number') ? stats.uniqueSenders : (stats.uniqueSenders?.size || 0);
             const windowMs = 72 * 60 * 60 * 1000;
             paragraphs.push(
                 `This account received funds from ${senders} unique senders within a 72-hour window totalling ${fmtCurrency(stats.totalReceived)} in suspicious inflows. This fan-in aggregation pattern is consistent with smurfing — breaking large sums into smaller deposits across many accounts to avoid reporting thresholds.`
             );
         }
         if (pattern === 'fan_out') {
-            const receivers = stats.uniqueReceivers?.size || 0;
+            const receivers = (typeof stats.uniqueReceivers === 'number') ? stats.uniqueReceivers : (stats.uniqueReceivers?.size || 0);
             paragraphs.push(
                 `This account rapidly dispersed funds to ${receivers} unique receivers within a 72-hour window. This fan-out dispersal pattern suggests this account acts as a distribution hub, a key role in money mule networks.`
             );
@@ -211,7 +211,7 @@ export default function RiskExplanationPanel({ account, nodeStats, transactions,
                                 { label: 'Total Transactions', value: stats?.txCount ?? '—' },
                                 { label: 'Total Sent', value: fmtCurrency(stats?.totalSent) },
                                 { label: 'Total Received', value: fmtCurrency(stats?.totalReceived) },
-                                { label: 'Unique Counterparties', value: ((stats?.uniqueSenders?.size || 0) + (stats?.uniqueReceivers?.size || 0)) },
+                                { label: 'Unique Counterparties', value: ((typeof stats?.uniqueSenders === 'number' ? stats.uniqueSenders : stats?.uniqueSenders?.size || 0) + (typeof stats?.uniqueReceivers === 'number' ? stats.uniqueReceivers : stats?.uniqueReceivers?.size || 0)) },
                                 { label: 'First Seen', value: firstSeen },
                                 { label: 'Last Seen', value: lastSeen },
                                 { label: 'Active Period', value: `${activeDays} days` },

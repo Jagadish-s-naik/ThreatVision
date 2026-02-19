@@ -1,0 +1,14 @@
+# Node
+node_modules/
+
+# Environment secrets
+.env
+*.env.local
+
+# Build output
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db

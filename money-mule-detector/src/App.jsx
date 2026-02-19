@@ -1,17 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import CSVUploader from './components/CSVUploader.jsx';
-import GraphVisualization from './components/GraphVisualization.jsx';
+import GraphView from './components/GraphView.jsx';
 import FraudRingTable from './components/FraudRingTable.jsx';
 import SummaryPanel from './components/SummaryPanel.jsx';
 import TemporalHeatmap from './components/TemporalHeatmap.jsx';
 import RiskExplanationPanel from './components/RiskExplanationPanel.jsx';
 import RingOverlapVisualization from './components/RingOverlapVisualization.jsx';
-import { buildGraph, isLegitimateAccount } from './algorithms/graphBuilder.js';
-import { detectCycles } from './algorithms/cycleDetector.js';
-import { detectSmurfing } from './algorithms/smurfingDetector.js';
-import { detectShellChains } from './algorithms/shellDetector.js';
-import { calculateSuspicionScore, calculateRingRiskScore } from './algorithms/suspicionScorer.js';
-import { generateJSON, downloadJSON, formatJSONString } from './utils/jsonExporter.js';
+import { analyzeCSV } from './api/analyzeApi.js';
+import { downloadJSON } from './utils/jsonExporter.js';
 
 const TABS = [
   { id: 'graph', label: '🕸 Graph View' },
@@ -21,214 +17,70 @@ const TABS = [
   { id: 'json', label: '📄 JSON Export' },
 ];
 
-function zeroPad(n, len = 3) {
-  return 'RING_' + String(n).padStart(len, '0');
-}
-
-function runAnalysis(transactions) {
-  // FIX B: First line of analysis function
-  const startTimeMs = Date.now();
-
-  // 1. Build graph
-  const { graph, reverseGraph, nodeStats, allNodes, edges } = buildGraph(transactions);
-
-  // 2. Run detectors
-  const cycles = detectCycles(graph, nodeStats);
-  const smurfingRings = detectSmurfing(transactions, nodeStats);
-  const shellChains = detectShellChains(graph, nodeStats);
-
-  // 3. Collect all rings
-  const allRings = [...cycles, ...smurfingRings, ...shellChains];
-
-  // 4. Deduplicate rings using canonical key
-  const canonicalMap = new Map();
-  const deduped = [];
-  for (const ring of allRings) {
-    const key = [...ring.members].sort().join('|');
-    if (!canonicalMap.has(key)) {
-      canonicalMap.set(key, deduped.length);
-      deduped.push({ ...ring });
-    }
-  }
-
-  // 5. Assign Ring IDs
-  const ringIdAssigned = deduped.map((ring, i) => ({
-    ...ring,
-    ring_id: zeroPad(i + 1),
-    member_accounts: ring.members,
-    risk_score: 0,
-  }));
-
-  // 6. Collect suspicious account IDs
-  const suspiciousAccountIds = new Set();
-  for (const ring of ringIdAssigned) {
-    for (const member of ring.member_accounts) {
-      if (!isLegitimateAccount(member, nodeStats)) suspiciousAccountIds.add(member);
-    }
-  }
-
-  // 7. Build per-account pattern set
-  const accountPatterns = {};
-  for (const ring of ringIdAssigned) {
-    for (const member of ring.member_accounts) {
-      if (!accountPatterns[member]) accountPatterns[member] = new Set();
-      for (const p of ring.detected_patterns) accountPatterns[member].add(p);
-    }
-  }
-
-  // 8. Populate ringMemberships
-  for (const ring of ringIdAssigned) {
-    for (const member of ring.member_accounts) {
-      if (!nodeStats[member]) continue;
-      if (!nodeStats[member].ringMemberships.includes(ring.ring_id)) {
-        nodeStats[member].ringMemberships.push(ring.ring_id);
-      }
-    }
-  }
-
-  // 9. Calculate suspicion scores
-  const suspiciousAccounts = [];
-  for (const accountId of suspiciousAccountIds) {
-    const patterns = accountPatterns[accountId] ? [...accountPatterns[accountId]] : [];
-    const score = calculateSuspicionScore(accountId, patterns, nodeStats, transactions);
-
-    suspiciousAccounts.push({
-      account_id: accountId,
-      suspicion_score: score,
-      detected_patterns: patterns,
-      ring_id: '',
-      ringMemberships: nodeStats[accountId]?.ringMemberships || [],
-    });
-  }
-
-  // 10. Calculate ring risk scores
-  for (const ring of ringIdAssigned) {
-    const memberScores = ring.member_accounts
-      .map((id) => suspiciousAccounts.find((a) => a.account_id === id)?.suspicion_score ?? 0);
-    ring.risk_score = calculateRingRiskScore(memberScores);
-  }
-
-  // 11. Assign ring_id with highest risk score
-  for (const acc of suspiciousAccounts) {
-    const memberships = nodeStats[acc.account_id]?.ringMemberships || [];
-    let bestRing = null;
-    let bestScore = -1;
-    for (const rid of memberships) {
-      const ring = ringIdAssigned.find((r) => r.ring_id === rid);
-      if (ring && ring.risk_score > bestScore) {
-        bestScore = ring.risk_score;
-        bestRing = rid;
-      }
-    }
-    acc.ring_id = bestRing || '';
-  }
-
-  // 12. Sort fraud rings
-  ringIdAssigned.sort((a, b) => b.risk_score - a.risk_score);
-
-  // 13. Final safety-net
-  const finalSuspicious = suspiciousAccounts.filter(
-    (acc) => !isLegitimateAccount(acc.account_id, nodeStats)
-  );
-
-  // FIX 3A: ORPHAN RING CLEANUP
-  const refRingIds = new Set(finalSuspicious.map(a => a.ring_id));
-  const flaggedIds = new Set(finalSuspicious.map(a => a.account_id));
-
-  const cleanRings = ringIdAssigned
-    .filter(r => refRingIds.has(r.ring_id))
-    .map(r => ({
-      ...r,
-      member_accounts: r.member_accounts.filter(id => flaggedIds.has(id))
-    }))
-    .filter(r => r.member_accounts.length >= 2);
-
-  // 14. Generate JSON output (Use cleanRings)
-  const jsonOutput = generateJSON(
-    finalSuspicious,
-    cleanRings,
-    allNodes.size,
-    startTimeMs
-  );
-
-  return {
-    transactions,
-    edges,
-    nodeStats,
-    allNodes,
-    suspiciousAccounts: finalSuspicious,
-    fraudRings: cleanRings,
-    cycles,
-    smurfingRings,
-    shellChains,
-    jsonOutput,
-    suspiciousAccountIds,
-  };
-}
-
 export default function App() {
-  const [csvData, setCsvData] = useState(null);
+  // ─── State ───────────────────────────────────────────────────────────────
   const [analysisResults, setAnalysisResults] = useState(null);
+  const [transactions, setTransactions] = useState([]); // raw transaction rows for graph/heatmap
+  const [rawFile, setRawFile] = useState(null);         // original File object for re-upload after refresh
   const [isProcessing, setIsProcessing] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('graph');
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
-  // Persistence Logic
+  // ─── Persistence: restore results on refresh ──────────────────────────────
   useEffect(() => {
-    const savedData = localStorage.getItem('threat_vision_data');
-    if (savedData && !csvData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Auto-load and run analysis
-          setCsvData(parsed);
-          setIsProcessing(true);
-          setTimeout(() => {
-            try {
-              const results = runAnalysis(parsed);
-              setAnalysisResults(results);
-            } catch (err) {
-              console.error('Restoration error:', err);
-              localStorage.removeItem('threat_vision_data'); // Clear bad data
-            } finally {
-              setIsProcessing(false);
-            }
-          }, 0);
-        }
-      } catch (e) {
-        console.error("Failed to load saved data", e);
-        localStorage.removeItem('threat_vision_data');
-      }
-    }
-  }, []); // Run once on mount
-
-  const handleCSVUpload = useCallback((transactions) => {
-    // Save to local storage
     try {
-      localStorage.setItem('threat_vision_data', JSON.stringify(transactions));
-    } catch (e) {
-      console.warn("Storage full or disabled", e);
-    }
-
-    setCsvData(transactions);
-    setIsProcessing(true);
-    setError('');
-
-    setTimeout(() => {
-      try {
-        const results = runAnalysis(transactions);
-        setAnalysisResults(results);
-      } catch (err) {
-        console.error('Analysis error:', err);
-        setError(`Analysis failed: ${err.message}`);
-      } finally {
-        setIsProcessing(false);
+      const saved = localStorage.getItem('threat_vision_results');
+      const savedTx = localStorage.getItem('threat_vision_transactions');
+      if (saved && savedTx) {
+        const parsedResults = JSON.parse(saved);
+        const parsedTx = JSON.parse(savedTx);
+        setAnalysisResults(parsedResults);
+        setTransactions(parsedTx);
       }
-    }, 0);
+    } catch (e) {
+      console.warn('Failed to restore session:', e);
+      localStorage.removeItem('threat_vision_results');
+      localStorage.removeItem('threat_vision_transactions');
+    }
   }, []);
 
+  // ─── Upload handler (uses backend API) ───────────────────────────────────
+  const handleFileUpload = useCallback(async (file) => {
+    setRawFile(file);
+    setIsProcessing(true);
+    setError('');
+    setLoadingMessage('Sending to Neo4j backend...');
+
+    try {
+      const result = await analyzeCSV(file, setLoadingMessage);
+
+      // Extract embedded transaction rows returned from backend
+      const txRows = result._transactions || [];
+      delete result._transactions;
+
+      setAnalysisResults(result);
+      setTransactions(txRows);
+
+      // Persist to localStorage for refresh survival
+      try {
+        localStorage.setItem('threat_vision_results', JSON.stringify(result));
+        localStorage.setItem('threat_vision_transactions', JSON.stringify(txRows));
+      } catch (e) {
+        console.warn('Storage quota exceeded, skipping persistence:', e);
+      }
+    } catch (err) {
+      console.error('Analysis error:', err);
+      setError(`Analysis failed: ${err.message}`);
+    } finally {
+      setIsProcessing(false);
+      setLoadingMessage('');
+    }
+  }, []);
+
+  // ─── Account selection ────────────────────────────────────────────────────
   const handleSelectAccount = useCallback((acc) => {
     setSelectedAccount(acc);
     setIsPanelOpen(true);
@@ -239,28 +91,69 @@ export default function App() {
     setSelectedAccount(null);
   }, []);
 
+  // ─── JSON download ────────────────────────────────────────────────────────
   const handleDownload = useCallback(() => {
-    if (analysisResults?.jsonOutput) {
-      downloadJSON(analysisResults.jsonOutput);
+    if (analysisResults) {
+      const jsonStr = JSON.stringify(analysisResults, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'threat_vision_report.json';
+      a.click();
+      URL.revokeObjectURL(url);
     }
   }, [analysisResults]);
 
+  // ─── Reset ────────────────────────────────────────────────────────────────
   const handleReset = () => {
-    localStorage.removeItem('threat_vision_data'); // Clear storage
-    setCsvData(null);
-    setAnalysisResults(null);
-    setIsProcessing(false);
-    setError('');
-    setSelectedAccount(null);
-    setIsPanelOpen(false);
-    window.location.reload(); // Force reload to ensure clean state
+    localStorage.removeItem('threat_vision_results');
+    localStorage.removeItem('threat_vision_transactions');
+    localStorage.removeItem('threat_vision_data');
+    window.location.reload();
   };
 
-  // Show uploader
-  if (!csvData || (!analysisResults && !isProcessing)) {
+  // ─── Derived data ─────────────────────────────────────────────────────────
+  const suspiciousAccounts = analysisResults?.suspicious_accounts || [];
+  const fraudRings = analysisResults?.fraud_rings || [];
+  const summary = analysisResults?.summary || {};
+
+  // suspiciousAccountIds Set for heatmap
+  const suspiciousAccountIds = new Set(suspiciousAccounts.map((a) => a.account_id));
+
+  // Build a nodeStats-compatible object for RiskExplanationPanel
+  // (maps account_id → basic stats derived from results)
+  const nodeStats = {};
+  for (const acc of suspiciousAccounts) {
+    nodeStats[acc.account_id] = {
+      suspicion_score: acc.suspicion_score,
+      detected_patterns: acc.detected_patterns,
+      ring_id: acc.ring_id,
+      ringMemberships: fraudRings
+        .filter((r) => r.member_accounts.includes(acc.account_id))
+        .map((r) => r.ring_id),
+      txCount: 0,
+      uniqueSenders: 0,
+      uniqueReceivers: 0,
+    };
+  }
+
+  // Build analysisResults-compatible shape for SummaryPanel
+  const summaryPanelResults = analysisResults
+    ? {
+      suspiciousAccounts,
+      fraudRings,
+      transactions,
+      summary,
+      nodeStats,
+    }
+    : null;
+
+  // ─── Show CSV uploader if no results ─────────────────────────────────────
+  if (!analysisResults && !isProcessing) {
     return (
       <>
-        <CSVUploader onAnalysisComplete={handleCSVUpload} isProcessing={isProcessing} />
+        <CSVUploader onFileSelected={handleFileUpload} isProcessing={false} />
         {error && (
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-900/80 border border-red-600 text-red-200 rounded-xl px-5 py-3 text-sm shadow-xl max-w-lg text-center z-50">
             {error}
@@ -270,38 +163,65 @@ export default function App() {
     );
   }
 
-  // Processing skeleton
+  // ─── Show loading state ───────────────────────────────────────────────────
   if (isProcessing) {
-    return <CSVUploader onAnalysisComplete={handleCSVUpload} isProcessing={true} />;
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-6">
+        {/* Pulsing Neo4j icon */}
+        <div className="w-20 h-20 rounded-full border-4 border-amber-500 border-t-transparent animate-spin" />
+        <div className="text-center">
+          <p className="text-amber-400 font-bold text-xl font-mono tracking-wider animate-pulse">
+            ⚡ Processing via Neo4j Graph Database...
+          </p>
+          <p className="text-slate-500 text-sm mt-2 font-mono">{loadingMessage}</p>
+        </div>
+      </div>
+    );
   }
 
-  const { edges, nodeStats, suspiciousAccounts, fraudRings, smurfingRings, jsonOutput, suspiciousAccountIds } = analysisResults;
-
+  // ─── Main Dashboard ───────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6" style={{ fontFamily: 'Inter, sans-serif' }}>
-
       <div className="relative z-10 max-w-screen-2xl mx-auto">
+
         {/* Neo-Brutal Header */}
         <header className="mb-8 bg-slate-900 border-2 border-slate-800 p-6 rounded-none brutal-shadow flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-amber-400 tracking-tight uppercase" style={{ fontFamily: 'Syne, sans-serif' }}>
+            <h1
+              className="text-3xl md:text-4xl font-extrabold text-amber-400 tracking-tight uppercase"
+              style={{ fontFamily: 'Syne, sans-serif' }}
+            >
               Threat Vision
             </h1>
             <p className="text-slate-400 text-sm font-mono mt-1 tracking-wider">
               Graph-Based Financial Crime Detection Engine
             </p>
           </div>
-          <button
-            onClick={handleReset}
-            className="neobutton bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white"
-          >
-            ↑ Upload New File
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Neo4j badge */}
+            <span className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-none border border-slate-700 bg-slate-800 text-xs font-mono text-slate-400">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              Neo4j Backend
+            </span>
+            <button
+              onClick={handleReset}
+              className="neobutton bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white"
+            >
+              ↑ Upload New File
+            </button>
+          </div>
         </header>
 
         <div className="animate-fadeIn">
           {/* Summary Panel */}
-          <SummaryPanel analysisResults={analysisResults} onDownload={handleDownload} />
+          <SummaryPanel analysisResults={summaryPanelResults} onDownload={handleDownload} />
+
+          {/* Error banner */}
+          {error && (
+            <div className="mb-4 bg-red-950/80 border-2 border-red-600 text-red-300 px-5 py-4 text-sm brutal-shadow-rose font-bold font-mono">
+              ⚠ {error}
+            </div>
+          )}
 
           {/* Neo-Tabs */}
           <div className="flex flex-wrap gap-3 mb-6">
@@ -321,18 +241,19 @@ export default function App() {
 
           {/* Tab content area */}
           <div className="bg-slate-900 border-2 border-slate-800 p-1 brutal-shadow min-h-[600px] animate-fadeIn">
+
+            {/* Graph View — dual panel */}
             {activeTab === 'graph' && (
-              <div className="h-[800px] border-2 border-slate-800 bg-slate-950">
-                <GraphVisualization
-                  edges={edges}
-                  nodeStats={nodeStats}
+              <div className="p-4">
+                <GraphView
                   suspiciousAccounts={suspiciousAccounts}
                   fraudRings={fraudRings}
-                  onSelectAccount={handleSelectAccount}
+                  allTransactions={transactions}
                 />
               </div>
             )}
 
+            {/* Fraud Rings Table */}
             {activeTab === 'table' && (
               <FraudRingTable
                 fraudRings={fraudRings}
@@ -341,15 +262,17 @@ export default function App() {
               />
             )}
 
+            {/* Timeline Heatmap */}
             {activeTab === 'heatmap' && (
               <div className="p-6">
                 <TemporalHeatmap
-                  transactions={analysisResults.transactions}
+                  transactions={transactions}
                   suspiciousAccountIds={suspiciousAccountIds}
                 />
               </div>
             )}
 
+            {/* Ring Overlap */}
             {activeTab === 'overlap' && (
               <div className="h-[800px] flex justify-center items-center bg-slate-950 border-2 border-slate-800">
                 <RingOverlapVisualization
@@ -360,10 +283,14 @@ export default function App() {
               </div>
             )}
 
+            {/* JSON Export */}
             {activeTab === 'json' && (
               <div className="p-8">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-slate-100 uppercase tracking-widest" style={{ fontFamily: 'Syne, sans-serif' }}>
+                  <h3
+                    className="text-xl font-bold text-slate-100 uppercase tracking-widest"
+                    style={{ fontFamily: 'Syne, sans-serif' }}
+                  >
                     JSON Export Preview
                   </h3>
                   <button
@@ -377,7 +304,7 @@ export default function App() {
                   className="bg-slate-950 p-6 text-xs text-green-400 border-2 border-slate-800 font-mono overflow-auto max-h-[600px] shadow-inner"
                   style={{ fontFamily: 'IBM Plex Mono, monospace' }}
                 >
-                  {formatJSONString(jsonOutput)}
+                  {JSON.stringify(analysisResults, null, 2)}
                 </pre>
               </div>
             )}
@@ -389,7 +316,7 @@ export default function App() {
           <RiskExplanationPanel
             account={selectedAccount}
             nodeStats={nodeStats}
-            transactions={analysisResults.transactions}
+            transactions={transactions}
             fraudRings={fraudRings}
             onClose={handleClosePanel}
           />
