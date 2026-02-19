@@ -1,92 +1,114 @@
 import React, { useState, useMemo } from 'react';
 
-const RING_COLORS = { cycle: '#EF4444', smurfing: '#F97316', shell: '#EAB308' };
 const SVG_W = 600;
-const SVG_H = 400;
+const SVG_H = 450;
 const CX = SVG_W / 2;
-const CY = SVG_H / 2;
+const CY = SVG_H / 2 - 10;
+const ORBIT_R = 170;
+const MAX_DISPLAY = 15;
 
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+const RING_COLORS = {
+    cycle: '#EF4444',
+    smurfing: '#F97316',
+    shell: '#EAB308',
+};
 
-function ringRadius(memberCount) {
-    return clamp(20 + memberCount * 3, 24, 80);
+function ringColor(type) {
+    return RING_COLORS[type] || '#6366F1';
 }
 
-function getRingPositions(rings) {
-    const n = rings.length;
-    if (n === 0) return [];
-    const positions = [];
-    const baseRadius = Math.min(SVG_W, SVG_H) * 0.28;
-    for (let i = 0; i < n; i++) {
-        const angle = (2 * Math.PI * i) / n - Math.PI / 2;
-        positions.push({
-            x: CX + baseRadius * Math.cos(angle),
-            y: CY + baseRadius * Math.sin(angle),
-        });
-    }
-    return positions;
-}
-
-export default function RingOverlapVisualization({ fraudRings, suspiciousAccounts, nodeStats }) {
+export default function RingOverlapVisualization({ fraudRings = [], suspiciousAccounts = [], nodeStats = {} }) {
     const [hoveredRing, setHoveredRing] = useState(null);
     const [hoveredAccount, setHoveredAccount] = useState(null);
-    const [tooltip, setTooltip] = useState(null);
 
-    const accountMap = useMemo(() => {
-        const m = {};
-        for (const acc of suspiciousAccounts || []) m[acc.account_id] = acc;
-        return m;
-    }, [suspiciousAccounts]);
+    // Top 15 rings by risk_score
+    const displayRings = useMemo(
+        () =>
+            [...fraudRings]
+                .sort((a, b) => b.risk_score - a.risk_score)
+                .slice(0, MAX_DISPLAY),
+        [fraudRings]
+    );
 
-    // Find overlap accounts
-    const overlapAccounts = useMemo(() => {
-        return Object.entries(nodeStats || {})
-            .filter(([, stats]) => stats.ringMemberships && stats.ringMemberships.length >= 2)
-            .map(([id, stats]) => ({ id, ringMemberships: stats.ringMemberships, score: accountMap[id]?.suspicion_score ?? 0 }))
-            .sort((a, b) => b.ringMemberships.length - a.ringMemberships.length || b.score - a.score);
-    }, [nodeStats, accountMap]);
+    // Position each ring on an orbit circle
+    const ringPositions = useMemo(() => {
+        return displayRings.map((ring, i) => {
+            const angle = (2 * Math.PI * i) / displayRings.length - Math.PI / 2;
+            const x = CX + ORBIT_R * Math.cos(angle);
+            const y = CY + ORBIT_R * Math.sin(angle);
+            const r = Math.max(18, Math.min(50, 12 + ring.member_accounts.length * 2));
+            return { ring, x, y, r };
+        });
+    }, [displayRings]);
 
-    // Rings that share accounts (connections)
-    const ringConnections = useMemo(() => {
-        const connections = [];
-        const rings = fraudRings || [];
-        for (let i = 0; i < rings.length; i++) {
-            for (let j = i + 1; j < rings.length; j++) {
-                const setA = new Set(rings[i].member_accounts || []);
-                const shared = (rings[j].member_accounts || []).filter((m) => setA.has(m));
-                if (shared.length >= 1) {
-                    connections.push({ ringA: rings[i].ring_id, ringB: rings[j].ring_id, shared: shared.length });
+    // Find cross-ring accounts (in ≥2 display rings)
+    const crossRingAccounts = useMemo(() => {
+        const membership = {};
+        for (const { ring } of ringPositions) {
+            for (const id of ring.member_accounts) {
+                if (!membership[id]) membership[id] = [];
+                membership[id].push(ring.ring_id);
+            }
+        }
+        return Object.entries(membership)
+            .filter(([, rids]) => rids.length >= 2)
+            .map(([id, rids]) => ({ id, rids }));
+    }, [ringPositions]);
+
+    // Connections between rings that share at least 1 member
+    const connections = useMemo(() => {
+        const lines = [];
+        for (let i = 0; i < ringPositions.length; i++) {
+            for (let j = i + 1; j < ringPositions.length; j++) {
+                const setA = new Set(ringPositions[i].ring.member_accounts);
+                const shared = ringPositions[j].ring.member_accounts.filter((id) => setA.has(id));
+                if (shared.length > 0) {
+                    lines.push({ i, j, sharedCount: shared.length });
                 }
             }
         }
-        return connections;
-    }, [fraudRings]);
+        return lines;
+    }, [ringPositions]);
 
-    const rings = fraudRings || [];
-    const positions = getRingPositions(rings);
+    // Diamond marker position: midpoint between the two ring centers
+    const diamondMarkers = useMemo(() => {
+        const markers = [];
+        for (const acc of crossRingAccounts) {
+            // Use the first two rings this account belongs to
+            const posA = ringPositions.find((rp) => rp.ring.ring_id === acc.rids[0]);
+            const posB = ringPositions.find((rp) => rp.ring.ring_id === acc.rids[1]);
+            if (!posA || !posB) continue;
+            markers.push({
+                id: acc.id,
+                x: (posA.x + posB.x) / 2,
+                y: (posA.y + posB.y) / 2,
+                rids: acc.rids,
+            });
+        }
+        return markers;
+    }, [crossRingAccounts, ringPositions]);
 
-    // Index ring positions by ring_id
-    const ringPosMap = {};
-    rings.forEach((r, i) => { ringPosMap[r.ring_id] = positions[i]; });
-    const ringMap = {};
-    rings.forEach((r) => { ringMap[r.ring_id] = r; });
-
-    // Overlap account diamond positions: midpoint of two ring circles
-    const overlapAccountPositions = useMemo(() => {
-        return overlapAccounts.map((acc) => {
-            const memberships = acc.ringMemberships;
-            // Average position of all ring centers this account belongs to
-            let sumX = 0, sumY = 0, count = 0;
-            for (const rid of memberships) {
-                const pos = ringPosMap[rid];
-                if (pos) { sumX += pos.x; sumY += pos.y; count++; }
+    // Ranked cross-ring list
+    const rankedCrossRing = useMemo(() => {
+        const membership = {};
+        for (const { ring } of ringPositions) {
+            for (const id of ring.member_accounts) {
+                if (!membership[id]) membership[id] = 0;
+                membership[id]++;
             }
-            return count > 0 ? { id: acc.id, x: sumX / count, y: sumY / count } : null;
-        }).filter(Boolean);
-    }, [overlapAccounts, ringPosMap]);
+        }
+        return Object.entries(membership)
+            .filter(([, cnt]) => cnt >= 2)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10);
+    }, [ringPositions]);
 
-    if (rings.length === 0) {
-        return <div className="text-slate-400 text-center py-12">No fraud rings to visualize.</div>;
+    if (displayRings.length === 0) {
+        return (
+            <div className="bg-slate-900 rounded-2xl border border-slate-700 p-8 text-center text-slate-500">
+                No fraud rings to visualize.
+            </div>
+        );
     }
 
     return (
@@ -94,186 +116,176 @@ export default function RingOverlapVisualization({ fraudRings, suspiciousAccount
             <h3 className="text-lg font-bold text-slate-100 mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>
                 🔗 Ring Overlap Visualization
             </h3>
-            <p className="text-slate-400 text-xs mb-5">Bubble overlap showing fraud rings and their shared accounts. Diamonds = cross-ring nodes.</p>
+            <p className="text-xs text-slate-500 mb-4">
+                Showing top {displayRings.length} rings by risk score · {fraudRings.length} total rings detected
+            </p>
 
-            {/* SVG */}
-            <div className="relative bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
-                <svg
-                    viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-                    width="100%"
-                    style={{ maxHeight: 400, display: 'block' }}
-                >
-                    {/* Connecting lines between rings sharing accounts */}
-                    {ringConnections.map((conn) => {
-                        const posA = ringPosMap[conn.ringA];
-                        const posB = ringPosMap[conn.ringB];
-                        if (!posA || !posB) return null;
-                        const mx = (posA.x + posB.x) / 2;
-                        const my = (posA.y + posB.y) / 2;
-                        return (
-                            <g key={`${conn.ringA}-${conn.ringB}`}>
-                                <line
-                                    x1={posA.x} y1={posA.y}
-                                    x2={posB.x} y2={posB.y}
-                                    stroke="#9333EA"
-                                    strokeWidth={2}
-                                    strokeDasharray="6 4"
-                                    opacity={0.6}
-                                />
-                                <text x={mx} y={my - 4} textAnchor="middle" fill="#C084FC" fontSize={9} fontFamily="IBM Plex Mono, monospace">
-                                    {conn.shared} shared
-                                </text>
-                            </g>
-                        );
-                    })}
-
-                    {/* Ring circles */}
-                    {rings.map((ring, i) => {
-                        const pos = positions[i];
-                        if (!pos) return null;
-                        const r = ringRadius((ring.member_accounts || []).length);
-                        const color = RING_COLORS[ring.pattern_type] || '#6B7280';
-                        const isHovered = hoveredRing === ring.ring_id;
-                        return (
-                            <g key={ring.ring_id}>
-                                <circle
-                                    cx={pos.x} cy={pos.y} r={r}
-                                    fill={color + '33'}
-                                    stroke={color}
-                                    strokeWidth={isHovered ? 3 : 2}
-                                    opacity={isHovered ? 1 : 0.8}
-                                    style={{ cursor: 'pointer', transition: 'all 0.15s' }}
-                                    onMouseEnter={(e) => {
-                                        setHoveredRing(ring.ring_id);
-                                        const overlappingWith = ringConnections
-                                            .filter((c) => c.ringA === ring.ring_id || c.ringB === ring.ring_id)
-                                            .map((c) => c.ringA === ring.ring_id ? c.ringB : c.ringA);
-                                        const rect = e.currentTarget.getBoundingClientRect();
-                                        setTooltip({
-                                            type: 'ring',
-                                            x: rect.left + rect.width / 2,
-                                            y: rect.top,
-                                            ring_id: ring.ring_id,
-                                            pattern_type: ring.pattern_type,
-                                            memberCount: (ring.member_accounts || []).length,
-                                            risk_score: ring.risk_score,
-                                            sharedWith: overlappingWith,
-                                        });
-                                    }}
-                                    onMouseLeave={() => { setHoveredRing(null); setTooltip(null); }}
-                                />
-                                {/* Ring labels */}
-                                <text x={pos.x} y={pos.y - 4} textAnchor="middle" fill={color} fontSize={11} fontWeight="bold" fontFamily="IBM Plex Mono, monospace" pointerEvents="none">
-                                    {ring.ring_id}
-                                </text>
-                                <text x={pos.x} y={pos.y + 9} textAnchor="middle" fill="#94A3B8" fontSize={9} fontFamily="Inter, sans-serif" pointerEvents="none">
-                                    {(ring.member_accounts || []).length} accts
-                                </text>
-                            </g>
-                        );
-                    })}
-
-                    {/* Overlap account diamonds */}
-                    {overlapAccountPositions.map(({ id, x, y }) => {
-                        const acc = overlapAccounts.find((a) => a.id === id);
-                        const isHov = hoveredAccount === id;
-                        const ds = 12;
-                        const points = `${x},${y - ds} ${x + ds},${y} ${x},${y + ds} ${x - ds},${y}`;
-                        return (
-                            <g key={id}>
-                                <polygon
-                                    points={points}
-                                    fill={isHov ? '#FFFFFF' : '#F0ABFC'}
-                                    stroke="#EF4444"
-                                    strokeWidth={2}
-                                    style={{ cursor: 'pointer', transition: 'all 0.15s' }}
-                                    onMouseEnter={(e) => {
-                                        setHoveredAccount(id);
-                                        const rect = e.currentTarget.getBoundingClientRect();
-                                        setTooltip({
-                                            type: 'account',
-                                            x: rect.left + rect.width / 2,
-                                            y: rect.top,
-                                            id,
-                                            score: acc?.score ?? 0,
-                                            rings: acc?.ringMemberships || [],
-                                        });
-                                    }}
-                                    onMouseLeave={() => { setHoveredAccount(null); setTooltip(null); }}
-                                />
-                            </g>
-                        );
-                    })}
-                </svg>
-
-                {/* SVG Tooltip */}
-                {tooltip && (
-                    <div
-                        className="fixed z-50 pointer-events-none bg-slate-800 border border-slate-600 rounded-xl px-3 py-2 text-xs shadow-xl"
-                        style={{ left: tooltip.x + 8, top: tooltip.y - 80, fontFamily: 'IBM Plex Mono, monospace' }}
+            <div className="flex flex-col lg:flex-row gap-6">
+                {/* SVG */}
+                <div className="flex-1 min-w-0">
+                    <svg
+                        viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+                        className="w-full rounded-xl bg-slate-950 border border-slate-800"
+                        style={{ maxHeight: 460 }}
                     >
-                        {tooltip.type === 'ring' ? (
-                            <>
-                                <div className="font-bold text-amber-400 mb-1">Ring: {tooltip.ring_id}</div>
-                                <div>Type: <span className="text-orange-400">{tooltip.pattern_type}</span></div>
-                                <div>Members: {tooltip.memberCount}</div>
-                                <div>Risk Score: <span className="text-red-400">{tooltip.risk_score}</span></div>
-                                {tooltip.sharedWith.length > 0 && (
-                                    <div>Shared with: <span className="text-purple-400">{tooltip.sharedWith.join(', ')}</span></div>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                <div className="font-bold text-fuchsia-400 mb-1">Account: {tooltip.id}</div>
-                                <div>Score: <span className="text-red-400">{tooltip.score}</span></div>
-                                <div>Rings: <span className="text-purple-400">{tooltip.rings.join(', ')}</span></div>
-                            </>
-                        )}
-                    </div>
-                )}
-            </div>
+                        {/* Connection lines between rings sharing members */}
+                        {connections.map(({ i, j, sharedCount }) => {
+                            const a = ringPositions[i];
+                            const b = ringPositions[j];
+                            const isHovered = hoveredRing &&
+                                (hoveredRing.ring_id === a.ring.ring_id || hoveredRing.ring_id === b.ring.ring_id);
+                            return (
+                                <line
+                                    key={`${i}-${j}`}
+                                    x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+                                    stroke={isHovered ? '#94A3B8' : '#334155'}
+                                    strokeWidth={isHovered ? 1.5 : 1}
+                                    strokeDasharray="4 3"
+                                    opacity={isHovered ? 0.9 : 0.5}
+                                />
+                            );
+                        })}
 
-            {/* Legend */}
-            <div className="flex gap-4 mt-3 text-xs text-slate-400">
-                {Object.entries(RING_COLORS).map(([type, color]) => (
-                    <div key={type} className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-                        <span>{type}</span>
-                    </div>
-                ))}
-                <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rotate-45 bg-fuchsia-300" />
-                    <span>cross-ring account</span>
-                </div>
-            </div>
+                        {/* Ring circles */}
+                        {ringPositions.map(({ ring, x, y, r }) => {
+                            const isHov = hoveredRing?.ring_id === ring.ring_id;
+                            const color = ringColor(ring.pattern_type);
+                            return (
+                                <g
+                                    key={ring.ring_id}
+                                    onMouseEnter={() => setHoveredRing(ring)}
+                                    onMouseLeave={() => setHoveredRing(null)}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <circle
+                                        cx={x} cy={y} r={r}
+                                        fill={color}
+                                        fillOpacity={isHov ? 0.35 : 0.18}
+                                        stroke={color}
+                                        strokeWidth={isHov ? 2.5 : 1.5}
+                                    />
+                                    <text
+                                        x={x} y={y - 2}
+                                        textAnchor="middle"
+                                        fill={isHov ? '#F1F5F9' : '#94A3B8'}
+                                        fontSize={isHov ? 9 : 8}
+                                        fontWeight={isHov ? 'bold' : 'normal'}
+                                        style={{ userSelect: 'none' }}
+                                    >
+                                        {ring.ring_id}
+                                    </text>
+                                    <text
+                                        x={x} y={y + 9}
+                                        textAnchor="middle"
+                                        fill={color}
+                                        fontSize={7}
+                                        style={{ userSelect: 'none' }}
+                                    >
+                                        {ring.risk_score.toFixed(1)}
+                                    </text>
+                                </g>
+                            );
+                        })}
 
-            {/* Cross-ring ranked list */}
-            <div className="mt-6">
-                <h4 className="text-sm font-bold text-slate-200 mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>
-                    🔗 Cross-Ring Accounts (Most Dangerous Nodes)
-                </h4>
-                {overlapAccounts.length === 0 ? (
-                    <p className="text-slate-400 text-sm">No cross-ring account overlap detected in this dataset.</p>
-                ) : (
-                    <div className="space-y-2">
-                        {overlapAccounts.map((acc, i) => (
-                            <div
-                                key={acc.id}
-                                className={`flex items-center gap-3 px-4 py-2 rounded-xl text-sm ${i === 0 ? 'bg-fuchsia-950/40 border border-fuchsia-800' : 'bg-slate-800 border border-slate-700'}`}
-                                style={{ fontFamily: 'IBM Plex Mono, monospace' }}
-                            >
-                                <span className="text-slate-400 w-5 text-xs">{i + 1}.</span>
-                                <span className="text-fuchsia-300 font-bold flex-1">{acc.id}</span>
-                                <span className="text-slate-400 text-xs">member of {acc.ringMemberships.length} rings</span>
-                                <span className="text-amber-400 font-bold">score: {acc.score}</span>
-                                <span className="text-purple-400 text-xs">{acc.ringMemberships.join(', ')}</span>
-                                {i === 0 && (
-                                    <span className="ml-1 px-2 py-0.5 bg-red-900/60 border border-red-700 text-red-300 text-xs rounded font-bold">
-                                        ⚠ HIGHEST RISK NODE
-                                    </span>
-                                )}
+                        {/* Diamond markers for cross-ring accounts */}
+                        {diamondMarkers.map((marker) => {
+                            const isHov = hoveredAccount === marker.id;
+                            return (
+                                <g
+                                    key={marker.id}
+                                    transform={`translate(${marker.x},${marker.y})`}
+                                    onMouseEnter={() => setHoveredAccount(marker.id)}
+                                    onMouseLeave={() => setHoveredAccount(null)}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <polygon
+                                        points="0,-6 5,0 0,6 -5,0"
+                                        fill={isHov ? '#A855F7' : '#7C3AED'}
+                                        stroke="#C084FC"
+                                        strokeWidth={isHov ? 1.5 : 1}
+                                        opacity={isHov ? 1 : 0.75}
+                                    />
+                                    {isHov && (
+                                        <text
+                                            y={-10}
+                                            textAnchor="middle"
+                                            fill="#E2E8F0"
+                                            fontSize={8}
+                                            style={{ userSelect: 'none' }}
+                                        >
+                                            {marker.id}
+                                        </text>
+                                    )}
+                                </g>
+                            );
+                        })}
+
+                        {/* Hover tooltip for ring */}
+                        {hoveredRing && (() => {
+                            const pos = ringPositions.find((rp) => rp.ring.ring_id === hoveredRing.ring_id);
+                            if (!pos) return null;
+                            const tx = pos.x + (pos.x > CX ? -120 : 10);
+                            const ty = Math.min(pos.y - 30, SVG_H - 80);
+                            return (
+                                <g>
+                                    <rect x={tx} y={ty} width={120} height={60} rx={6}
+                                        fill="#1E293B" stroke="#475569" strokeWidth={1} opacity={0.97} />
+                                    <text x={tx + 6} y={ty + 14} fill="#F1F5F9" fontSize={9} fontWeight="bold">
+                                        {hoveredRing.ring_id}
+                                    </text>
+                                    <text x={tx + 6} y={ty + 26} fill="#94A3B8" fontSize={8}>
+                                        {hoveredRing.pattern_type} · {hoveredRing.risk_score.toFixed(1)} risk
+                                    </text>
+                                    <text x={tx + 6} y={ty + 38} fill="#94A3B8" fontSize={8}>
+                                        {hoveredRing.member_accounts.length} accounts
+                                    </text>
+                                    <text x={tx + 6} y={ty + 50} fill="#94A3B8" fontSize={7.5}>
+                                        {hoveredRing.detected_patterns.join(', ')}
+                                    </text>
+                                </g>
+                            );
+                        })()}
+                    </svg>
+
+                    {/* Legend */}
+                    <div className="flex gap-4 mt-3 flex-wrap">
+                        {Object.entries(RING_COLORS).map(([type, color]) => (
+                            <div key={type} className="flex items-center gap-1.5 text-xs text-slate-400">
+                                <div className="w-3 h-3 rounded-full border-2" style={{ borderColor: color, background: color + '33' }} />
+                                {type}
                             </div>
                         ))}
+                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                            <svg width="12" height="12"><polygon points="6,0 12,6 6,12 0,6" fill="#7C3AED" /></svg>
+                            cross-ring account
+                        </div>
+                    </div>
+                </div>
+
+                {/* Ranked list */}
+                {rankedCrossRing.length > 0 && (
+                    <div className="w-full lg:w-56 flex-shrink-0">
+                        <h4 className="text-sm font-bold text-slate-300 mb-3">Top Cross-Ring Accounts</h4>
+                        <div className="space-y-1.5">
+                            {rankedCrossRing.map(([id, count], idx) => (
+                                <div
+                                    key={id}
+                                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs cursor-pointer transition-colors
+                    ${hoveredAccount === id ? 'bg-purple-900/50 border border-purple-700' : 'bg-slate-800 border border-slate-700 hover:border-purple-700'}`}
+                                    onMouseEnter={() => setHoveredAccount(id)}
+                                    onMouseLeave={() => setHoveredAccount(null)}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <span className="text-slate-500 font-mono w-4">{idx + 1}</span>
+                                        <span className="text-slate-200 font-mono truncate max-w-[90px]">{id}</span>
+                                    </span>
+                                    <span className="text-purple-400 font-bold">{count} rings</span>
+                                </div>
+                            ))}
+                        </div>
+                        {crossRingAccounts.length === 0 && (
+                            <p className="text-xs text-slate-600 italic">No cross-ring accounts in top {MAX_DISPLAY}</p>
+                        )}
                     </div>
                 )}
             </div>

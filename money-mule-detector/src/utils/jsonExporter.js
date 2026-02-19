@@ -39,7 +39,7 @@ export function formatJSONString(obj) {
  * @returns {Object} The complete JSON output object
  */
 export function generateJSON(suspiciousAccounts, fraudRings, totalAccounts, startTimeMs) {
-    const processingTimeSec = parseFloat(((Date.now() - startTimeMs) / 1000).toFixed(1));
+    const processingTimeSec = parseFloat(Math.max(0.1, (Date.now() - startTimeMs) / 1000).toFixed(1));
 
     // Sort suspicious accounts by suspicion_score descending
     const sortedAccounts = [...suspiciousAccounts].sort(
