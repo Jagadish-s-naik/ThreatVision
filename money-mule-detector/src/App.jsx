@@ -11,7 +11,7 @@ import { detectCycles } from './algorithms/cycleDetector.js';
 import { detectSmurfing } from './algorithms/smurfingDetector.js';
 import { detectShellChains } from './algorithms/shellDetector.js';
 import { calculateSuspicionScore, calculateRingRiskScore } from './algorithms/suspicionScorer.js';
-import { generateJSON, downloadJSON } from './utils/jsonExporter.js';
+import { generateJSON, downloadJSON, formatJSONString } from './utils/jsonExporter.js';
 
 const TABS = [
   { id: 'graph', label: '🕸 Graph View' },
@@ -126,16 +126,31 @@ function runAnalysis(transactions) {
   // 12. Sort fraud rings by risk_score descending
   ringIdAssigned.sort((a, b) => b.risk_score - a.risk_score);
 
-  // Filter rings to only include those with ALL members in suspicious set (per spec rule 9)
-  const validRings = ringIdAssigned.map((ring) => ({
-    ...ring,
-    member_accounts: ring.member_accounts.filter((id) => suspiciousAccountIds.has(id)),
-  })).filter((ring) => ring.member_accounts.length > 0);
+  // Filter rings: only include members in suspicious set
+  const validRings = ringIdAssigned
+    .map((ring) => ({
+      ...ring,
+      member_accounts: ring.member_accounts.filter((id) => suspiciousAccountIds.has(id)),
+    }))
+    .filter((ring) => ring.member_accounts.length > 0);
 
-  // 13. Generate JSON output
+  // 13. Final safety-net filter: remove any legitimate accounts that slipped through
+  const finalSuspicious = suspiciousAccounts.filter(
+    (acc) => !isLegitimateAccount(acc.account_id, nodeStats)
+  );
+  const finalRings = validRings
+    .map((ring) => ({
+      ...ring,
+      member_accounts: ring.member_accounts.filter(
+        (id) => !isLegitimateAccount(id, nodeStats)
+      ),
+    }))
+    .filter((ring) => ring.member_accounts.length > 0);
+
+  // 14. Generate JSON output
   const jsonOutput = generateJSON(
-    suspiciousAccounts,
-    validRings,
+    finalSuspicious,
+    finalRings,
     allNodes.size,
     startTimeMs
   );
@@ -145,8 +160,8 @@ function runAnalysis(transactions) {
     edges,
     nodeStats,
     allNodes,
-    suspiciousAccounts,
-    fraudRings: validRings,
+    suspiciousAccounts: finalSuspicious,
+    fraudRings: finalRings,
     cycles,
     smurfingRings,
     shellChains,
@@ -318,7 +333,7 @@ export default function App() {
                 className="bg-slate-950 rounded-xl p-4 text-xs text-slate-300 overflow-auto max-h-[600px] border border-slate-800"
                 style={{ fontFamily: 'IBM Plex Mono, monospace' }}
               >
-                {JSON.stringify(jsonOutput, null, 2)}
+                {formatJSONString(jsonOutput)}
               </pre>
             </div>
           )}

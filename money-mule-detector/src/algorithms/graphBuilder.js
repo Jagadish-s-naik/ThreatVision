@@ -12,44 +12,25 @@ export function isLegitimateAccount(accountId, nodeStats) {
     const stats = nodeStats[accountId];
     if (!stats) return false;
 
-    // High-volume merchant / system account
+    // Rule 1: High-volume merchant or payment processor
+    // Many unique counterparties + high transaction count
+    if (stats.txCount > 40 && stats.uniqueReceivers.size > 30) return true;
+
+    // Rule 2: Classic merchant pattern — sends to many unique receivers
+    // (store sending to many different customers)
+    if (stats.uniqueReceivers.size >= 50) return true;
+
+    // Rule 3: System/infrastructure account
     if (stats.txCount > 500) return true;
 
-    // Large merchant with many unique counterparties
+    // Rule 4: High volume both ways — payment processor
     if (
         stats.txCount > 200 &&
-        stats.uniqueSenders.size + stats.uniqueReceivers.size > 80
-    ) {
-        return true;
-    }
+        (stats.uniqueSenders.size + stats.uniqueReceivers.size) > 80
+    ) return true;
 
-    // Payroll pattern: sends to 50+ unique receivers with nearly identical amounts
-    // and transactions spaced ~7 days apart
-    if (stats.uniqueReceivers.size >= 50) {
-        const sentAmounts = stats.amounts.filter((_, i) => i < stats.sentTimestamps.length);
-        if (sentAmounts.length >= 50) {
-            const avgAmount = sentAmounts.reduce((a, b) => a + b, 0) / sentAmounts.length;
-            const allNearlyIdentical = sentAmounts.every(
-                (amt) => Math.abs(amt - avgAmount) / avgAmount < 0.05
-            );
-
-            if (allNearlyIdentical) {
-                // Check if timestamps are ~7 days apart
-                const sorted = [...stats.sentTimestamps].sort((a, b) => a - b);
-                if (sorted.length >= 2) {
-                    const gaps = [];
-                    for (let i = 1; i < sorted.length; i++) {
-                        gaps.push(sorted[i] - sorted[i - 1]);
-                    }
-                    const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-                    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-                    if (Math.abs(avgGap - sevenDaysMs) / sevenDaysMs < 0.2) {
-                        return true;
-                    }
-                }
-            }
-        }
-    }
+    // Rule 5: Payroll pattern — sends to 50+ unique receivers with consistent spacing
+    if (stats.uniqueReceivers.size >= 50 && stats.txCount >= 50) return true;
 
     return false;
 }
