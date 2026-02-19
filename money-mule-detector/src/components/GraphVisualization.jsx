@@ -27,6 +27,7 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
     const containerRef = useRef(null);
     const cyRef = useRef(null);
     const [tooltip, setTooltip] = useState(null);
+    const [isFocusMode, setIsFocusMode] = useState(false); // Track focus mode state
 
     const accountMap = {};
     for (const acc of suspiciousAccounts || []) accountMap[acc.account_id] = acc;
@@ -85,7 +86,9 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                         target: e.receiver_id,
                         edgeColor: bothSuspect ? '#EF4444' : '#64748B', // Red or Slate-500
                         edgeWidth: bothSuspect ? 3 : 1.5,
+                        lineStyle: bothSuspect ? 'dashed' : 'solid', // Dashed for suspicious
                     },
+                    classes: bothSuspect ? 'suspicious-edge' : '',
                 });
             }
         }
@@ -141,6 +144,10 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                     style: { 'opacity': 0.1, 'ghost': 'no' },
                 },
                 {
+                    selector: 'node.hidden',
+                    style: { 'display': 'none' }, // For Focus Mode
+                },
+                {
                     selector: 'node.highlighted',
                     style: {
                         'opacity': 1,
@@ -161,11 +168,23 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                         'target-arrow-shape': 'triangle',
                         'curve-style': 'bezier',
                         'arrow-scale': 1.2,
+                        'line-style': 'data(lineStyle)',
                     },
+                },
+                {
+                    selector: 'edge.suspicious-edge',
+                    style: {
+                        'line-dash-pattern': [6, 3],
+                        'line-dash-offset': 0, // Will animate this
+                    }
                 },
                 {
                     selector: 'edge.faded',
                     style: { 'opacity': 0.05 },
+                },
+                {
+                    selector: 'edge.hidden',
+                    style: { 'display': 'none' },
                 },
             ],
             layout: {
@@ -191,6 +210,16 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
 
         cyRef.current = cy;
 
+        // Marching Ants Animation for Suspicious Edges
+        let offset = 0;
+        function animateEdges() {
+            offset -= 1;
+            cy.edges('.suspicious-edge').style('line-dash-offset', offset);
+            requestAnimationFrame(animateEdges);
+        }
+        animateEdges();
+
+
         // Ring member index for click highlight
         const ringMemberIndex = {};
         for (const ring of fraudRings || []) {
@@ -207,12 +236,19 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
             const d = node.data();
             // Use rendered position but clamp to container bounds
             const pos = node.renderedPosition();
-            const containerRect = containerRef.current.getBoundingClientRect();
 
             // Adjust coordinates to be relative to the container
+            // Use existing zoom/pan to get screen coords
+            const pan = cy.pan();
+            const zoom = cy.zoom();
+
+            // Calculate screen coordinates approximately
+            const x = pos.x * zoom + pan.x;
+            const y = pos.y * zoom + pan.y;
+
             setTooltip({
-                x: pos.x,
-                y: pos.y,
+                x: x,
+                y: y,
                 accountId: d.id,
                 score: d.suspicion_score,
                 patterns: d.detected_patterns,
@@ -264,14 +300,28 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
             if (acc) onSelectAccount(acc);
         });
 
+        // Double Click → Focus Mode
+        cy.on('dblclick', 'node', (e) => {
+            const node = e.target;
+            const neighborhood = node.neighborhood().add(node);
+
+            cy.elements().addClass('hidden');
+            neighborhood.removeClass('hidden').addClass('highlighted');
+
+            cy.fit(neighborhood, 50); // Zoom into the focused cluster
+            setIsFocusMode(true);
+        });
+
         // Click background → reset
         cy.on('tap', (e) => {
             if (e.target === cy) {
-                cy.elements().removeClass('faded highlighted');
+                if (!isFocusMode) {
+                    cy.elements().removeClass('faded highlighted');
+                }
                 setTooltip(null);
             }
         });
-    }, [edges, nodeStats, suspiciousAccounts, fraudRings, onSelectAccount]);
+    }, [edges, nodeStats, suspiciousAccounts, fraudRings, onSelectAccount, isFocusMode]); // Re-run if focus mode logic fundamentally changes, though mostly internal
 
     useEffect(() => {
         buildAndMount();
@@ -284,8 +334,9 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
     const handleFit = () => cyRef.current && cyRef.current.fit(undefined, 50);
     const handleReset = () => {
         if (cyRef.current) {
+            cyRef.current.elements().removeClass('faded highlighted hidden');
             cyRef.current.fit(undefined, 50);
-            cyRef.current.elements().removeClass('faded highlighted');
+            setIsFocusMode(false);
         }
     };
 
@@ -308,20 +359,49 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                 <button onClick={handleReset} className="neobutton bg-amber-900/50 text-amber-200 border-amber-800 hover:bg-amber-900 p-2 text-xs" title="Reset">
                     ↺ RST
                 </button>
+                {isFocusMode && (
+                    <div className="bg-red-900/80 text-red-100 text-[10px] px-2 py-1 border border-red-600 font-bold uppercase tracking-widest text-center animate-pulse">
+                        Focus Mode Active
+                    </div>
+                )}
             </div>
 
-            {/* Tooltip Overlay */}
+            {/* Tooltip Overlay (Neo-Brutal Data Card) */}
             {tooltip && (
                 <div
-                    className="absolute z-20 pointer-events-none bg-slate-900/95 border-2 border-slate-700 p-4 text-xs text-slate-200 shadow-2xl backdrop-blur-md"
-                    style={{ left: tooltip.x + 20, top: tooltip.y - 20, minWidth: 200, fontFamily: 'IBM Plex Mono, monospace' }}
+                    className="absolute z-20 pointer-events-none bg-slate-950 border-2 border-slate-100 p-0 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-opacity"
+                    style={{
+                        left: Math.min(tooltip.x + 20, containerRef.current?.offsetWidth - 240 || 0), // Prevent right overflow
+                        top: Math.min(tooltip.y - 20, containerRef.current?.offsetHeight - 200 || 0),  // Prevent bottom overflow
+                        width: 240,
+                        fontFamily: 'IBM Plex Mono, monospace'
+                    }}
                 >
-                    <div className="font-bold text-amber-400 mb-2 text-sm border-b border-slate-700 pb-1">{tooltip.accountId}</div>
-                    <div className="space-y-1">
-                        <div className="flex justify-between"><span>Score:</span> <span className={`${tooltip.score >= 50 ? 'text-red-400' : 'text-slate-400'}`}>{tooltip.score}</span></div>
-                        {tooltip.ringId && <div className="flex justify-between"><span>Ring:</span> <span className="text-orange-400">{tooltip.ringId}</span></div>}
-                        {tooltip.txCount > 0 && <div className="flex justify-between"><span>Tx Count:</span> <span>{tooltip.txCount}</span></div>}
-                        {tooltip.patterns && <div className="mt-2 text-yellow-500/80 italic">{tooltip.patterns}</div>}
+                    <div className="bg-slate-100 text-slate-950 px-3 py-2 font-bold text-sm border-b-2 border-slate-100 flex justify-between items-center">
+                        <span className="truncate">{truncate(tooltip.accountId, 15)}</span>
+                        {tooltip.score >= 50 && <span className="text-red-600">⚠</span>}
+                    </div>
+                    <div className="p-3 space-y-2 text-xs text-slate-300">
+                        <div className="flex justify-between border-b border-slate-800 pb-1">
+                            <span className="text-slate-500 uppercase font-bold tracking-wider">Score</span>
+                            <span className={`font-bold ${tooltip.score >= 75 ? 'text-red-500' : (tooltip.score >= 50 ? 'text-orange-500' : 'text-slate-200')}`}>{tooltip.score}/100</span>
+                        </div>
+                        {tooltip.ringId && (
+                            <div className="flex justify-between border-b border-slate-800 pb-1">
+                                <span className="text-slate-500 uppercase font-bold tracking-wider">Ring ID</span>
+                                <span className="text-amber-400 font-bold">{tooltip.ringId}</span>
+                            </div>
+                        )}
+                        <div className="flex justify-between border-b border-slate-800 pb-1">
+                            <span className="text-slate-500 uppercase font-bold tracking-wider">Tx Count</span>
+                            <span className="font-bold">{tooltip.txCount}</span>
+                        </div>
+                        {tooltip.patterns && (
+                            <div className="pt-1">
+                                <span className="text-slate-500 uppercase font-bold tracking-wider block mb-1">Patterns</span>
+                                <span className="text-cyan-400 bg-cyan-950/30 px-1 py-0.5 border border-cyan-900/50 block w-full text-center">{tooltip.patterns}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
