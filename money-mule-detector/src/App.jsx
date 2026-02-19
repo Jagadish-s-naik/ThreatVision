@@ -134,25 +134,26 @@ function runAnalysis(transactions) {
     }))
     .filter((ring) => ring.member_accounts.length > 0);
 
-  // 13. Final safety-net filter: remove any legitimate accounts that slipped through
+  // 13. Final safety-net: remove legitimate accounts that slipped through
   const finalSuspicious = suspiciousAccounts.filter(
     (acc) => !isLegitimateAccount(acc.account_id, nodeStats)
   );
 
-  const finalSuspiciousIds = new Set(finalSuspicious.map((a) => a.account_id));
+  // Bug #3 fix — Orphan ring cleanup (exact spec pattern):
+  // Step 1: Build set of ring_ids referenced by suspicious accounts
+  const referencedRingIds = new Set(finalSuspicious.map((a) => a.ring_id));
 
-  // Filter rings — member_accounts must exist in finalSuspicious
-  const cleanedRings = validRings
-    .map((ring) => ({
-      ...ring,
-      member_accounts: ring.member_accounts.filter((id) => finalSuspiciousIds.has(id)),
+  // Step 2: Keep only rings referenced + filter member_accounts to suspicious accounts
+  const suspiciousAccountIds2 = new Set(finalSuspicious.map((a) => a.account_id));
+  const finalRings = validRings
+    .filter((r) => referencedRingIds.has(r.ring_id))
+    .map((r) => ({
+      ...r,
+      member_accounts: r.member_accounts.filter((id) =>
+        suspiciousAccountIds2.has(id)
+      ),
     }))
-    .filter((ring) => ring.member_accounts.length >= 2);
-
-  // Bug #3 fix: Remove orphan rings — rings must be referenced by at least one
-  // suspicious account. Rings not referenced by any account are orphans.
-  const referencedRingIds = new Set(finalSuspicious.map((acc) => acc.ring_id));
-  const finalRings = cleanedRings.filter((ring) => referencedRingIds.has(ring.ring_id));
+    .filter((r) => r.member_accounts.length >= 2);
 
   // 14. Generate JSON output
   const jsonOutput = generateJSON(

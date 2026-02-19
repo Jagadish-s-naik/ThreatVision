@@ -12,25 +12,35 @@ export function isLegitimateAccount(accountId, nodeStats) {
     const stats = nodeStats[accountId];
     if (!stats) return false;
 
-    // Rule 1: High-volume merchant or payment processor
-    // Many unique counterparties + high transaction count
-    if (stats.txCount > 40 && stats.uniqueReceivers.size > 30) return true;
+    const uniqueSenders = stats.uniqueSenders?.size ?? 0;
+    const uniqueReceivers = stats.uniqueReceivers?.size ?? 0;
+    const totalCounterparties = uniqueSenders + uniqueReceivers;
 
-    // Rule 2: Classic merchant pattern — sends to many unique receivers
-    // (store sending to many different customers)
-    if (stats.uniqueReceivers.size >= 50) return true;
+    // Rule 1: High-volume merchant — many DIFFERENT people send to it
+    // e.g. MERCHANT_AMAZON: 50 customers → Rule 1 catches it, NOT flagged
+    if (uniqueSenders >= 30) return true;
 
-    // Rule 3: System/infrastructure account
+    // Rule 2: High-volume distributor — sends to many different people
+    // e.g. BIG_MERCH with 60 unique receivers → NOT flagged
+    if (uniqueReceivers >= 50) return true;
+
+    // Rule 3: Total counterparty volume — high-traffic hub either direction
+    if (totalCounterparties >= 50) return true;
+
+    // Rule 4: System account — extremely high volume
     if (stats.txCount > 500) return true;
 
-    // Rule 4: High volume both ways — payment processor
-    if (
-        stats.txCount > 200 &&
-        (stats.uniqueSenders.size + stats.uniqueReceivers.size) > 80
-    ) return true;
-
-    // Rule 5: Payroll pattern — sends to 50+ unique receivers with consistent spacing
-    if (stats.uniqueReceivers.size >= 50 && stats.txCount >= 50) return true;
+    // Rule 5: Payroll pattern — sends to 20+ receivers spread over 7+ days
+    if (uniqueReceivers >= 20 && stats.txCount >= 20) {
+        const timestamps = stats.timestamps || [];
+        if (timestamps.length >= 2) {
+            const sorted = [...timestamps].sort((a, b) => new Date(a) - new Date(b));
+            const totalSpanDays =
+                (new Date(sorted[sorted.length - 1]) - new Date(sorted[0])) /
+                (1000 * 60 * 60 * 24);
+            if (totalSpanDays >= 7) return true;
+        }
+    }
 
     return false;
 }
