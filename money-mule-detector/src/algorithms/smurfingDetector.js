@@ -1,112 +1,121 @@
 import { isLegitimateAccount } from './graphBuilder.js';
 
 export function detectSmurfing(transactions, nodeStats) {
-    const WINDOW_MS = 72 * 60 * 60 * 1000;  // 72 hours in ms
-    const HV_MS = 6 * 60 * 60 * 1000;  // 6 hours in ms
-    const THRESHOLD = 10; // minimum unique counterparts
-
     const rings = [];
-    const seenKeys = new Set();
 
-    // ── Helper: find best 72-hour window for a list of {timeMs, id} ──
-    function bestWindow(entries) {
-        if (entries.length === 0) return { ids: new Set(), startMs: 0, endMs: 0 };
-        entries.sort((a, b) => a.timeMs - b.timeMs);
-
-        let best = { ids: new Set(), startMs: 0, endMs: 0 };
-        let left = 0;
-
-        for (let right = 0; right < entries.length; right++) {
-            // shrink window from left if outside 72h
-            while (entries[right].timeMs - entries[left].timeMs > WINDOW_MS) {
-                left++;
-            }
-            // unique IDs in window [left..right]
-            const ids = new Set(entries.slice(left, right + 1).map(e => e.id));
-            if (ids.size > best.ids.size) {
-                best = {
-                    ids,
-                    startMs: entries[left].timeMs,
-                    endMs: entries[right].timeMs,
-                };
-            }
-        }
-        return best;
-    }
-
-    // ── FAN-IN: many senders → one receiver ──
+    // ── FAN-IN: group transactions by receiver ──
     const byReceiver = {};
     for (const tx of transactions) {
         if (!byReceiver[tx.receiver_id]) byReceiver[tx.receiver_id] = [];
-        byReceiver[tx.receiver_id].push({
-            timeMs: new Date(tx.timestamp).getTime(),
-            id: tx.sender_id,
-        });
+        byReceiver[tx.receiver_id].push(tx);
     }
 
-    for (const [receiverId, entries] of Object.entries(byReceiver)) {
+    for (const [receiverId, txList] of Object.entries(byReceiver)) {
         if (isLegitimateAccount(receiverId, nodeStats)) continue;
 
-        const { ids: bestSenders, startMs, endMs } = bestWindow(entries);
-        if (bestSenders.size < THRESHOLD) continue;
+        txList.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        // Filter out legitimate senders
-        const fraudSenders = [...bestSenders].filter(
-            s => !isLegitimateAccount(s, nodeStats)
-        );
-        if (fraudSenders.length < THRESHOLD && bestSenders.size < THRESHOLD) continue;
+        // Track BEST window (most unique senders) across all positions
+        let bestSenders = new Set();
+        let bestStartMs = 0;
+        let bestEndMs = 0;
+        let left = 0;
+        const WINDOW_MS = 72 * 60 * 60 * 1000;
 
-        const members = [receiverId, ...bestSenders];
-        const key = [...members].sort().join('|');
-        if (seenKeys.has(key)) continue;
-        seenKeys.add(key);
+        for (let right = 0; right < txList.length; right++) {
+            const rightMs = new Date(txList[right].timestamp).getTime();
 
-        const patterns = ['fan_in'];
-        if (endMs - startMs < HV_MS) patterns.push('high_velocity');
+            // Shrink from left if outside 72h window
+            while (new Date(txList[left].timestamp).getTime() < rightMs - WINDOW_MS) {
+                left++;
+            }
 
-        rings.push({
-            members,
-            pattern_type: 'smurfing',
-            detected_patterns: patterns,
-            subtype: 'fan_in',
-            windowStartMs: startMs,
-            windowEndMs: endMs,
-        });
+            // Count unique senders in current window
+            const sendersNow = new Set(
+                txList.slice(left, right + 1).map(t => t.sender_id)
+            );
+
+            // Update best if this window is larger
+            if (sendersNow.size > bestSenders.size) {
+                bestSenders = sendersNow;
+                bestStartMs = new Date(txList[left].timestamp).getTime();
+                bestEndMs = rightMs;
+            }
+            // ← NO rings.push() here. Loop just tracks the best window.
+        }
+        // ← rings.push() is HERE, after loop ends, only if threshold met
+        if (bestSenders.size >= 10) {
+            const patterns = ['fan_in'];
+            if (bestEndMs - bestStartMs < 6 * 60 * 60 * 1000) {
+                patterns.push('high_velocity');
+            }
+            rings.push({
+                members: [receiverId, ...bestSenders],
+                pattern_type: 'smurfing',
+                detected_patterns: patterns,
+                subtype: 'fan_in',
+            });
+        }
     }
 
-    // ── FAN-OUT: one sender → many receivers ──
+    // ── FAN-OUT: group transactions by sender ──
     const bySender = {};
     for (const tx of transactions) {
         if (!bySender[tx.sender_id]) bySender[tx.sender_id] = [];
-        bySender[tx.sender_id].push({
-            timeMs: new Date(tx.timestamp).getTime(),
-            id: tx.receiver_id,
-        });
+        bySender[tx.sender_id].push(tx);
     }
 
-    for (const [senderId, entries] of Object.entries(bySender)) {
+    for (const [senderId, txList] of Object.entries(bySender)) {
         if (isLegitimateAccount(senderId, nodeStats)) continue;
 
-        const { ids: bestReceivers, startMs, endMs } = bestWindow(entries);
-        if (bestReceivers.size < THRESHOLD) continue;
+        txList.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        const members = [senderId, ...bestReceivers];
-        const key = [...members].sort().join('|');
-        if (seenKeys.has(key)) continue;
-        seenKeys.add(key);
+        let bestReceivers = new Set();
+        let bestStartMs = 0;
+        let bestEndMs = 0;
+        let left = 0;
+        const WINDOW_MS = 72 * 60 * 60 * 1000;
 
-        const patterns = ['fan_out'];
-        if (endMs - startMs < HV_MS) patterns.push('high_velocity');
+        for (let right = 0; right < txList.length; right++) {
+            const rightMs = new Date(txList[right].timestamp).getTime();
 
-        rings.push({
-            members,
-            pattern_type: 'smurfing',
-            detected_patterns: patterns,
-            subtype: 'fan_out',
-            windowStartMs: startMs,
-            windowEndMs: endMs,
-        });
+            while (new Date(txList[left].timestamp).getTime() < rightMs - WINDOW_MS) {
+                left++;
+            }
+
+            const receiversNow = new Set(
+                txList.slice(left, right + 1).map(t => t.receiver_id)
+            );
+
+            if (receiversNow.size > bestReceivers.size) {
+                bestReceivers = receiversNow;
+                bestStartMs = new Date(txList[left].timestamp).getTime();
+                bestEndMs = rightMs;
+            }
+        }
+
+        if (bestReceivers.size >= 10) {
+            const patterns = ['fan_out'];
+            if (bestEndMs - bestStartMs < 6 * 60 * 60 * 1000) {
+                patterns.push('high_velocity');
+            }
+            rings.push({
+                members: [senderId, ...bestReceivers],
+                pattern_type: 'smurfing',
+                detected_patterns: patterns,
+                subtype: 'fan_out',
+            });
+        }
     }
 
-    return rings;
+    // Add deduplication
+    const smurfSeen = new Set();
+    const dedupedSmurfing = rings.filter(ring => {
+        const key = [...ring.members].sort().join('|');
+        if (smurfSeen.has(key)) return false;
+        smurfSeen.add(key);
+        return true;
+    });
+
+    return dedupedSmurfing;
 }

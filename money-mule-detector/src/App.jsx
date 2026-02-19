@@ -26,6 +26,7 @@ function zeroPad(n, len = 3) {
 }
 
 function runAnalysis(transactions) {
+  // FIX: Start time MUST be the very first line
   const startTimeMs = Date.now();
 
   // 1. Build graph
@@ -39,8 +40,8 @@ function runAnalysis(transactions) {
   // 3. Collect all rings
   const allRings = [...cycles, ...smurfingRings, ...shellChains];
 
-  // 4. Deduplicate rings using canonical key(members sorted with |)
-  const canonicalMap = new Map(); // canonical key → ring index in deduped
+  // 4. Deduplicate rings using canonical key
+  const canonicalMap = new Map();
   const deduped = [];
   for (const ring of allRings) {
     const key = [...ring.members].sort().join('|');
@@ -58,7 +59,7 @@ function runAnalysis(transactions) {
     risk_score: 0,
   }));
 
-  // 6. Collect all suspicious account IDs (members of any ring that aren't legitimate)
+  // 6. Collect suspicious account IDs
   const suspiciousAccountIds = new Set();
   for (const ring of ringIdAssigned) {
     for (const member of ring.member_accounts) {
@@ -67,7 +68,7 @@ function runAnalysis(transactions) {
   }
 
   // 7. Build per-account pattern set
-  const accountPatterns = {}; // accountId → Set of pattern strings
+  const accountPatterns = {};
   for (const ring of ringIdAssigned) {
     for (const member of ring.member_accounts) {
       if (!accountPatterns[member]) accountPatterns[member] = new Set();
@@ -75,7 +76,7 @@ function runAnalysis(transactions) {
     }
   }
 
-  // 8. Populate ringMemberships in nodeStats (before scoring)
+  // 8. Populate ringMemberships
   for (const ring of ringIdAssigned) {
     for (const member of ring.member_accounts) {
       if (!nodeStats[member]) continue;
@@ -91,12 +92,11 @@ function runAnalysis(transactions) {
     const patterns = accountPatterns[accountId] ? [...accountPatterns[accountId]] : [];
     const score = calculateSuspicionScore(accountId, patterns, nodeStats, transactions);
 
-    // Find primary ring_id (ring with highest risk score — compute after ring scores)
     suspiciousAccounts.push({
       account_id: accountId,
       suspicion_score: score,
       detected_patterns: patterns,
-      ring_id: '', // filled below
+      ring_id: '',
       ringMemberships: nodeStats[accountId]?.ringMemberships || [],
     });
   }
@@ -108,7 +108,7 @@ function runAnalysis(transactions) {
     ring.risk_score = calculateRingRiskScore(memberScores);
   }
 
-  // 11. For each account assign ring_id with highest risk score
+  // 11. Assign ring_id with highest risk score
   for (const acc of suspiciousAccounts) {
     const memberships = nodeStats[acc.account_id]?.ringMemberships || [];
     let bestRing = null;
@@ -123,44 +123,40 @@ function runAnalysis(transactions) {
     acc.ring_id = bestRing || '';
   }
 
-  // 12. Sort fraud rings by risk_score descending
+  // 12. Sort fraud rings
   ringIdAssigned.sort((a, b) => b.risk_score - a.risk_score);
 
-  // Filter rings: only include members in suspicious set
-  const validRings = ringIdAssigned
-    .map((ring) => ({
-      ...ring,
-      member_accounts: ring.member_accounts.filter((id) => suspiciousAccountIds.has(id)),
-    }))
-    .filter((ring) => ring.member_accounts.length > 0);
-
-  // 13. Final safety-net: remove legitimate accounts that slipped through
+  // 13. Final safety-net
   const finalSuspicious = suspiciousAccounts.filter(
     (acc) => !isLegitimateAccount(acc.account_id, nodeStats)
   );
 
-  // Bug #3 fix — Orphan ring cleanup (exact spec pattern):
-  // Step 1: Build set of ring_ids referenced by suspicious accounts
-  const referencedRingIds = new Set(finalSuspicious.map((a) => a.ring_id));
+  // FIX: ORPHAN RING CLEANUP
+  // Remove rings that no suspicious_account references
+  const referencedRingIds = new Set(
+    finalSuspicious.map(a => a.ring_id)
+  );
+  const flaggedIds = new Set(
+    finalSuspicious.map(a => a.account_id)
+  );
 
-  // Step 2: Keep only rings referenced + filter member_accounts to suspicious accounts
-  const suspiciousAccountIds2 = new Set(finalSuspicious.map((a) => a.account_id));
-  const finalRings = validRings
-    .filter((r) => referencedRingIds.has(r.ring_id))
-    .map((r) => ({
-      ...r,
-      member_accounts: r.member_accounts.filter((id) =>
-        suspiciousAccountIds2.has(id)
+  // Clean rings = only referenced rings, only suspicious members
+  const finalRings = ringIdAssigned
+    .filter(ring => referencedRingIds.has(ring.ring_id))
+    .map(ring => ({
+      ...ring,
+      member_accounts: ring.member_accounts.filter(
+        id => flaggedIds.has(id)
       ),
     }))
-    .filter((r) => r.member_accounts.length >= 2);
+    .filter(ring => ring.member_accounts.length >= 2);
 
   // 14. Generate JSON output
   const jsonOutput = generateJSON(
     finalSuspicious,
     finalRings,
     allNodes.size,
-    startTimeMs
+    startTimeMs // Pass correct start time
   );
 
   return {
