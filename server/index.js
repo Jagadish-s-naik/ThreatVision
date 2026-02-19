@@ -17,8 +17,13 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// ─── Health check ───────────────────────────────────────────
-app.get('/api/health', async (req, res) => {
+// ─── Railway healthcheck (must always return 200) ──────────
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', service: 'ThreatVision backend' });
+});
+
+// ─── Neo4j connectivity check ────────────────────────────────
+app.get('/api/status', async (req, res) => {
     try {
         const session = await getSession();
         await session.run('RETURN 1');
