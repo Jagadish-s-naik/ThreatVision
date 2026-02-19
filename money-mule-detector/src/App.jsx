@@ -15,7 +15,7 @@ import { generateJSON, downloadJSON, formatJSONString } from './utils/jsonExport
 
 const TABS = [
   { id: 'graph', label: '🕸 Graph View' },
-  { id: 'table', label: '💍 Fraud Rings' },
+  { id: 'table', label: 'Fraud Rings' },
   { id: 'heatmap', label: '🔥 Timeline Heatmap' },
   { id: 'overlap', label: '🔗 Ring Overlap' },
   { id: 'json', label: '📄 JSON Export' },
@@ -175,7 +175,43 @@ export default function App() {
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
+  // Persistence Logic
+  useEffect(() => {
+    const savedData = localStorage.getItem('threat_vision_data');
+    if (savedData && !csvData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Auto-load and run analysis
+          setCsvData(parsed);
+          setIsProcessing(true);
+          setTimeout(() => {
+            try {
+              const results = runAnalysis(parsed);
+              setAnalysisResults(results);
+            } catch (err) {
+              console.error('Restoration error:', err);
+              localStorage.removeItem('threat_vision_data'); // Clear bad data
+            } finally {
+              setIsProcessing(false);
+            }
+          }, 0);
+        }
+      } catch (e) {
+        console.error("Failed to load saved data", e);
+        localStorage.removeItem('threat_vision_data');
+      }
+    }
+  }, []); // Run once on mount
+
   const handleCSVUpload = useCallback((transactions) => {
+    // Save to local storage
+    try {
+      localStorage.setItem('threat_vision_data', JSON.stringify(transactions));
+    } catch (e) {
+      console.warn("Storage full or disabled", e);
+    }
+
     setCsvData(transactions);
     setIsProcessing(true);
     setError('');
@@ -210,12 +246,14 @@ export default function App() {
   }, [analysisResults]);
 
   const handleReset = () => {
+    localStorage.removeItem('threat_vision_data'); // Clear storage
     setCsvData(null);
     setAnalysisResults(null);
     setIsProcessing(false);
     setError('');
     setSelectedAccount(null);
     setIsPanelOpen(false);
+    window.location.reload(); // Force reload to ensure clean state
   };
 
   // Show uploader
@@ -250,7 +288,7 @@ export default function App() {
               Threat Vision
             </h1>
             <p className="text-slate-400 text-sm font-mono mt-1 tracking-wider">
-              // RIFT_2026 // GRAPH_THEORY_TRACK
+              Graph-Based Financial Crime Detection Engine
             </p>
           </div>
           <button
