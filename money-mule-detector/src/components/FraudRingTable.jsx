@@ -85,16 +85,16 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelec
     }
 
     return (
-        <div className="bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden">
+        <div className="bg-slate-900 rounded-none border-2 border-slate-700 overflow-hidden brutal-shadow">
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-slate-300" style={{ fontFamily: 'IBM Plex Mono, monospace' }}>
                     <thead>
-                        <tr className="border-b border-slate-700 bg-slate-800 text-slate-400 text-xs uppercase tracking-widest">
-                            <th className="px-4 py-3 text-left"><SortBtn col="ring_id" label="Ring ID" /></th>
-                            <th className="px-4 py-3 text-left"><SortBtn col="pattern_type" label="Pattern" /></th>
-                            <th className="px-4 py-3 text-right"><SortBtn col="member_count" label="Members" /></th>
-                            <th className="px-4 py-3 text-right"><SortBtn col="risk_score" label="Risk Score" /></th>
-                            <th className="px-4 py-3 text-left">Member Accounts</th>
+                        <tr className="border-b-2 border-slate-700 bg-slate-800 text-slate-300 text-xs uppercase tracking-widest font-bold">
+                            <th className="px-4 py-4 text-left border-r border-slate-700"><SortBtn col="ring_id" label="Ring ID" /></th>
+                            <th className="px-4 py-4 text-left border-r border-slate-700"><SortBtn col="pattern_type" label="Pattern" /></th>
+                            <th className="px-4 py-4 text-right border-r border-slate-700"><SortBtn col="member_count" label="Members" /></th>
+                            <th className="px-4 py-4 text-right border-r border-slate-700"><SortBtn col="risk_score" label="Risk Score" /></th>
+                            <th className="px-4 py-4 text-left">Member Accounts</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -105,24 +105,24 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelec
                             return (
                                 <tr
                                     key={ring.ring_id}
-                                    className={`border-b border-slate-700/50 cursor-pointer hover:brightness-125 transition-all ${getRowStyle(ring.risk_score)}`}
+                                    className={`border-b border-slate-700 hover:bg-slate-800/50 cursor-pointer transition-colors ${getRowStyle(ring.risk_score)}`}
                                     onClick={() => handleRowClick(ring)}
                                 >
-                                    <td className="px-4 py-3 font-bold text-amber-400">{ring.ring_id}</td>
-                                    <td className="px-4 py-3">
-                                        <span className={`px-2 py-0.5 rounded text-xs border ${getPatternBadgeColor(ring.pattern_type)}`}>
+                                    <td className="px-4 py-3 font-bold text-amber-500 border-r border-slate-700/50">{ring.ring_id}</td>
+                                    <td className="px-4 py-3 border-r border-slate-700/50">
+                                        <span className={`px-2 py-1 text-xs font-bold uppercase tracking-wider border ${getPatternBadgeColor(ring.pattern_type)}`}>
                                             {ring.pattern_type}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-right">{members.length}</td>
-                                    <td className="px-4 py-3 text-right">
-                                        <span className={`font-bold text-base ${ring.risk_score >= 80 ? 'text-red-400' : ring.risk_score >= 60 ? 'text-orange-400' : ring.risk_score >= 40 ? 'text-yellow-400' : 'text-slate-300'}`}>
+                                    <td className="px-4 py-3 text-right border-r border-slate-700/50">{members.length}</td>
+                                    <td className="px-4 py-3 text-right border-r border-slate-700/50">
+                                        <span className={`font-bold text-base ${ring.risk_score >= 80 ? 'text-red-500' : ring.risk_score >= 60 ? 'text-orange-500' : ring.risk_score >= 40 ? 'text-yellow-500' : 'text-slate-400'}`}>
                                             {ring.risk_score.toFixed(1)}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-slate-400 text-xs">
+                                    <td className="px-4 py-3 text-slate-400 text-xs font-mono">
                                         {shown.join(', ')}
-                                        {extra > 0 && <span className="text-amber-500 ml-1">+{extra} more</span>}
+                                        {extra > 0 && <span className="text-amber-500 font-bold ml-1">+{extra} more</span>}
                                     </td>
                                 </tr>
                             );
@@ -133,22 +133,22 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelec
 
             {/* Pagination */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-t border-slate-700">
-                    <p className="text-slate-400 text-xs">
-                        Page {page + 1} of {totalPages} · {sorted.length} rings total
+                <div className="flex items-center justify-between px-4 py-3 bg-slate-800 border-t-2 border-slate-700">
+                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+                        Page {page + 1} of {totalPages}
                     </p>
                     <div className="flex gap-2">
                         <button
                             disabled={page === 0}
                             onClick={() => setPage(page - 1)}
-                            className="px-3 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-slate-300 text-xs transition-colors"
+                            className="neobutton text-xs py-1 px-3 bg-slate-900 hover:bg-slate-700 text-slate-300 disabled:opacity-50 disabled:shadow-none"
                         >
-                            ← Previous
+                            ← Prev
                         </button>
                         <button
                             disabled={page >= totalPages - 1}
                             onClick={() => setPage(page + 1)}
-                            className="px-3 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-slate-300 text-xs transition-colors"
+                            className="neobutton text-xs py-1 px-3 bg-slate-900 hover:bg-slate-700 text-slate-300 disabled:opacity-50 disabled:shadow-none"
                         >
                             Next →
                         </button>

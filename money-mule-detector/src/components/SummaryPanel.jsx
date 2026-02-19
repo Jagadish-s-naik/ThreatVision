@@ -1,10 +1,10 @@
 import React from 'react';
 import { downloadJSON } from '../utils/jsonExporter.js';
 
-function StatCard({ label, value, icon, accent }) {
+function StatCard({ label, value, icon, accent, shadowClass }) {
     return (
-        <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-slate-400 text-sm">
+        <div className={`neocard p-5 flex flex-col gap-2 ${shadowClass || 'brutal-shadow'}`}>
+            <div className="flex items-center gap-2 text-slate-400 text-sm font-bold uppercase tracking-wider">
                 <span className="text-xl">{icon}</span>
                 <span>{label}</span>
             </div>
@@ -50,67 +50,75 @@ export default function SummaryPanel({ analysisResults, onDownload }) {
     const summary = jsonOutput?.summary || {};
 
     return (
-        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 mb-6">
+        <div className="bg-slate-900 border-2 border-slate-800 rounded-none p-6 mb-8 brutal-shadow relative">
+            <div className="absolute -top-3 left-4 bg-slate-950 px-2 text-xs font-bold text-slate-500 uppercase tracking-widest border border-slate-800">
+                Analysis Summary
+            </div>
+
             {/* Stat cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <StatCard
                     icon="🌐" label="Total Accounts"
                     value={(summary.total_accounts_analyzed || 0).toLocaleString()}
                     accent="text-slate-200"
+                    shadowClass="brutal-shadow-sm"
                 />
                 <StatCard
-                    icon="⚠" label="Suspicious Accounts"
+                    icon="⚠" label="Suspicious"
                     value={(summary.suspicious_accounts_flagged || 0).toLocaleString()}
                     accent="text-red-400"
+                    shadowClass="brutal-shadow-rose"
                 />
                 <StatCard
                     icon="💍" label="Fraud Rings"
                     value={(summary.fraud_rings_detected || 0).toLocaleString()}
                     accent="text-orange-400"
+                    shadowClass="brutal-shadow-amber"
                 />
                 <StatCard
                     icon="⏱" label="Processing Time"
                     value={`${summary.processing_time_seconds ?? '—'}s`}
                     accent="text-green-400"
+                    shadowClass="brutal-shadow-sm"
                 />
             </div>
 
             {/* Breakdown */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5 text-sm text-slate-300">
-                <div className="bg-slate-800 rounded-lg px-4 py-3 flex justify-between items-center">
-                    <span className="text-slate-400">🔄 Cycles detected</span>
-                    <span className="font-mono text-amber-400 font-semibold">{cycleCount}</span>
+                <div className="bg-slate-900 border-2 border-slate-800 p-3 flex justify-between items-center brutal-shadow-sm">
+                    <span className="text-slate-400 font-bold uppercase text-xs">Cycle Patterns</span>
+                    <span className="font-mono text-amber-400 font-bold ml-2">{cycleCount}</span>
                 </div>
-                <div className="bg-slate-800 rounded-lg px-4 py-3 flex justify-between items-center">
-                    <span className="text-slate-400">🌊 Smurfing patterns</span>
-                    <span className="font-mono text-amber-400 font-semibold">{smurfingCount}</span>
+                <div className="bg-slate-900 border-2 border-slate-800 p-3 flex justify-between items-center brutal-shadow-sm">
+                    <span className="text-slate-400 font-bold uppercase text-xs">Smurfing Patterns</span>
+                    <span className="font-mono text-amber-400 font-bold ml-2">{smurfingCount}</span>
                 </div>
-                <div className="bg-slate-800 rounded-lg px-4 py-3 flex justify-between items-center">
-                    <span className="text-slate-400">🐚 Shell chains</span>
-                    <span className="font-mono text-amber-400 font-semibold">{shellCount}</span>
+                <div className="bg-slate-900 border-2 border-slate-800 p-3 flex justify-between items-center brutal-shadow-sm">
+                    <span className="text-slate-400 font-bold uppercase text-xs">Shell Chains</span>
+                    <span className="font-mono text-amber-400 font-bold ml-2">{shellCount}</span>
                 </div>
-                <div className="bg-slate-800 rounded-lg px-4 py-3 flex justify-between items-center">
-                    <span className="text-slate-400">🔗 Cross-ring accounts</span>
-                    <span className="font-mono text-fuchsia-400 font-semibold">{overlapCount}</span>
+                <div className="bg-slate-900 border-2 border-slate-800 p-3 flex justify-between items-center brutal-shadow-sm">
+                    <span className="text-slate-400 font-bold uppercase text-xs">Cross-Ring Nodes</span>
+                    <span className="font-mono text-fuchsia-400 font-bold ml-2">{overlapCount}</span>
                 </div>
-                <div className="bg-slate-800 rounded-lg px-4 py-3 flex justify-between items-center col-span-2">
-                    <span className="text-slate-400">🕵 Smurfing 72hr clusters</span>
-                    <span className="font-mono text-orange-400 font-semibold">{smurfingCount}</span>
+                <div className="bg-slate-900 border-2 border-slate-800 p-3 flex justify-between items-center brutal-shadow-sm col-span-2">
+                    <span className="text-slate-400 font-bold uppercase text-xs">Smurfing 72hr Clusters</span>
+                    <span className="font-mono text-orange-400 font-bold ml-2">{smurfingCount}</span>
                 </div>
             </div>
 
             {/* Peak window */}
             {peakWindowText !== 'N/A' && peakWindowText !== '' && (
-                <div className="bg-orange-900/20 border border-orange-800 rounded-xl px-4 py-3 mb-5 text-sm text-orange-300">
-                    <span className="font-semibold">🔥 Top suspicious windows: </span>
-                    <span className="font-mono">{peakWindowText}</span>
+                <div className="bg-orange-950/30 border-2 border-orange-900/50 p-4 mb-5 text-sm text-orange-300 font-mono">
+                    <span className="font-bold uppercase text-xs text-orange-500 block mb-1">🔥 Top Suspicious Windows</span>
+                    {peakWindowText}
                 </div>
             )}
 
             {/* Download button */}
             <button
                 onClick={onDownload}
-                className="w-full md:w-auto px-8 py-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-900 font-bold rounded-xl transition-all duration-200 text-base shadow-lg shadow-amber-900/40 flex items-center gap-2"
+                className="neobutton w-full md:w-auto bg-amber-500 hover:bg-amber-400 text-slate-900 border-amber-600 brutal-shadow-sm flex items-center justify-center gap-2"
             >
                 <span>⬇</span> Download JSON Report
             </button>

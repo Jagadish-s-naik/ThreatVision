@@ -93,3 +93,57 @@
     opacity: 0.5;
   }
 }
+
+/* Neo-Brutalism Utilities */
+.brutal-shadow {
+  box-shadow: 4px 4px 0px 0px #000;
+}
+
+.brutal-shadow-sm {
+  box-shadow: 2px 2px 0px 0px #000;
+}
+
+.brutal-shadow-amber {
+  box-shadow: 4px 4px 0px 0px #d97706;
+  /* amber-600 */
+}
+
+.brutal-shadow-rose {
+  box-shadow: 4px 4px 0px 0px #e11d48;
+  /* rose-600 */
+}
+
+.brutal-border {
+  border: 2px solid #1e293b;
+  /* slate-800 */
+}
+
+.neocard {
+  @apply bg-slate-900 border-2 border-slate-800 rounded-lg;
+  box-shadow: 4px 4px 0px 0px #000;
+}
+
+.neobutton {
+  @apply px-4 py-2 font-bold uppercase tracking-wider border-2 border-slate-900 transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+  border-left: 2px solid #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border: 2px solid #0f172a;
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

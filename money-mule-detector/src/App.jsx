@@ -240,36 +240,39 @@ export default function App() {
   const { edges, nodeStats, suspiciousAccounts, fraudRings, smurfingRings, jsonOutput, suspiciousAccountIds } = analysisResults;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100" style={{ fontFamily: 'Inter, sans-serif' }}>
-      {/* Top bar */}
-      <div className="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between flex-wrap gap-3">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6" style={{ fontFamily: 'Inter, sans-serif' }}>
+
+      {/* Neo-Brutal Header */}
+      <header className="mb-8 bg-slate-900 border-2 border-slate-800 p-6 rounded-none brutal-shadow flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-amber-400" style={{ fontFamily: 'Syne, sans-serif' }}>
-            💰 Financial Forensics Engine
+          <h1 className="text-3xl md:text-4xl font-extrabold text-amber-400 tracking-tight uppercase" style={{ fontFamily: 'Syne, sans-serif' }}>
+            ThreatVision
           </h1>
-          <p className="text-slate-400 text-sm">Money Muling Detection · Graph Theory Track · RIFT 2026</p>
+          <p className="text-slate-400 text-sm font-mono mt-1 tracking-wider">
+            // RIFT_2026 // GRAPH_THEORY_TRACK
+          </p>
         </div>
         <button
           onClick={handleReset}
-          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-semibold transition-colors border border-slate-600"
+          className="neobutton bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white"
         >
           ↑ Upload New File
         </button>
-      </div>
+      </header>
 
-      <div className="px-4 md:px-6 py-6 max-w-screen-2xl mx-auto animate-fadeIn">
-        {/* Summary Panel always visible */}
+      <div className="max-w-screen-2xl mx-auto animate-fadeIn">
+        {/* Summary Panel */}
         <SummaryPanel analysisResults={analysisResults} onDownload={handleDownload} />
 
-        {/* Tabs */}
-        <div className="flex gap-1 bg-slate-900 border border-slate-700 rounded-xl p-1 mb-5 overflow-x-auto">
+        {/* Neo-Tabs */}
+        <div className="flex flex-wrap gap-3 mb-6">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === tab.id
-                ? 'bg-amber-500 text-slate-900'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              className={`px-5 py-3 font-bold uppercase tracking-wider border-2 transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${activeTab === tab.id
+                ? 'bg-amber-500 text-slate-950 border-amber-600 brutal-shadow-amber'
+                : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-200 brutal-shadow'
                 }`}
             >
               {tab.label}
@@ -277,16 +280,18 @@ export default function App() {
           ))}
         </div>
 
-        {/* Tab content */}
-        <div className="animate-fadeIn">
+        {/* Tab content area */}
+        <div className="bg-slate-900 border-2 border-slate-800 p-1 brutal-shadow min-h-[600px] animate-fadeIn">
           {activeTab === 'graph' && (
-            <GraphVisualization
-              edges={edges}
-              nodeStats={nodeStats}
-              suspiciousAccounts={suspiciousAccounts}
-              fraudRings={fraudRings}
-              onSelectAccount={handleSelectAccount}
-            />
+            <div className="h-[800px] border-2 border-slate-800 bg-slate-950">
+              <GraphVisualization
+                edges={edges}
+                nodeStats={nodeStats}
+                suspiciousAccounts={suspiciousAccounts}
+                fraudRings={fraudRings}
+                onSelectAccount={handleSelectAccount}
+              />
+            </div>
           )}
 
           {activeTab === 'table' && (
@@ -298,35 +303,39 @@ export default function App() {
           )}
 
           {activeTab === 'heatmap' && (
-            <TemporalHeatmap
-              transactions={analysisResults.transactions}
-              suspiciousAccountIds={suspiciousAccountIds}
-            />
+            <div className="p-6">
+              <TemporalHeatmap
+                transactions={analysisResults.transactions}
+                suspiciousAccountIds={suspiciousAccountIds}
+              />
+            </div>
           )}
 
           {activeTab === 'overlap' && (
-            <RingOverlapVisualization
-              fraudRings={fraudRings}
-              suspiciousAccounts={suspiciousAccounts}
-              nodeStats={nodeStats}
-            />
+            <div className="h-[800px] flex justify-center items-center bg-slate-950 border-2 border-slate-800">
+              <RingOverlapVisualization
+                fraudRings={fraudRings}
+                suspiciousAccounts={suspiciousAccounts}
+                nodeStats={nodeStats}
+              />
+            </div>
           )}
 
           {activeTab === 'json' && (
-            <div className="bg-slate-900 rounded-2xl border border-slate-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-slate-100" style={{ fontFamily: 'Syne, sans-serif' }}>
-                  📄 JSON Export Preview
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-slate-100 uppercase tracking-widest" style={{ fontFamily: 'Syne, sans-serif' }}>
+                  JSON Export Preview
                 </h3>
                 <button
                   onClick={handleDownload}
-                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold rounded-lg text-sm transition-colors"
+                  className="neobutton bg-amber-500 text-slate-900 hover:bg-amber-400 border-amber-600 brutal-shadow-sm"
                 >
-                  ⬇ Download fraud_analysis.json
+                  ⬇ Download JSON
                 </button>
               </div>
               <pre
-                className="bg-slate-950 rounded-xl p-4 text-xs text-slate-300 overflow-auto max-h-[600px] border border-slate-800"
+                className="bg-slate-950 p-6 text-xs text-green-400 border-2 border-slate-800 font-mono overflow-auto max-h-[600px] shadow-inner"
                 style={{ fontFamily: 'IBM Plex Mono, monospace' }}
               >
                 {formatJSONString(jsonOutput)}
