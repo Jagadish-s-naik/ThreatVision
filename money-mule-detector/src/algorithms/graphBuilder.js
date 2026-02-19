@@ -12,33 +12,38 @@ export function isLegitimateAccount(accountId, nodeStats) {
     const stats = nodeStats[accountId];
     if (!stats) return false;
 
-    const uniqueSenders = stats.uniqueSenders?.size ?? 0;
-    const uniqueReceivers = stats.uniqueReceivers?.size ?? 0;
-    const totalCounterparties = uniqueSenders + uniqueReceivers;
+    const numSenders = stats.uniqueSenders?.size ?? 0;
+    const numReceivers = stats.uniqueReceivers?.size ?? 0;
+    const totalCounterparties = numSenders + numReceivers;
 
-    // Rule 1: High-volume merchant — many DIFFERENT people send to it
-    // e.g. MERCHANT_AMAZON: 50 customers → Rule 1 catches it, NOT flagged
-    if (uniqueSenders >= 30) return true;
+    // Rule 1: Merchant pattern
+    // Many DIFFERENT people send money TO this account (e.g. e-commerce store)
+    // MERCHANT_AMAZON has uniqueSenders=50 → caught here
+    if (numSenders >= 30) return true;
 
-    // Rule 2: High-volume distributor — sends to many different people
-    // e.g. BIG_MERCH with 60 unique receivers → NOT flagged
-    if (uniqueReceivers >= 50) return true;
+    // Rule 2: Mass distributor
+    // This account sends to very many unique receivers
+    // BIG_MERCH has uniqueReceivers=60 → caught here
+    if (numReceivers >= 50) return true;
 
-    // Rule 3: Total counterparty volume — high-traffic hub either direction
+    // Rule 3: High-traffic hub (either direction combined)
     if (totalCounterparties >= 50) return true;
 
-    // Rule 4: System account — extremely high volume
+    // Rule 4: Extremely high transaction volume system account
     if (stats.txCount > 500) return true;
 
-    // Rule 5: Payroll pattern — sends to 20+ receivers spread over 7+ days
-    if (uniqueReceivers >= 20 && stats.txCount >= 20) {
-        const timestamps = stats.timestamps || [];
+    // Rule 5: Payroll pattern
+    // Sends to 20+ unique receivers BUT transactions are spread across 7+ days
+    // (smurfing happens in tight windows; payroll is periodic)
+    // PAYROLL_SYS: 30 receivers, spans 14 days → caught here
+    if (numReceivers >= 20 && stats.txCount >= 20) {
+        const timestamps = (stats.timestamps || [])
+            .map(t => typeof t === 'number' ? t : new Date(t).getTime())
+            .sort((a, b) => a - b);
         if (timestamps.length >= 2) {
-            const sorted = [...timestamps].sort((a, b) => new Date(a) - new Date(b));
-            const totalSpanDays =
-                (new Date(sorted[sorted.length - 1]) - new Date(sorted[0])) /
-                (1000 * 60 * 60 * 24);
-            if (totalSpanDays >= 7) return true;
+            const spanDays = (timestamps[timestamps.length - 1] - timestamps[0])
+                / (1000 * 60 * 60 * 24);
+            if (spanDays >= 7) return true;
         }
     }
 

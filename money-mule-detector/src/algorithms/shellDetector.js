@@ -2,10 +2,9 @@
  * shellDetector.js
  * Detects shell account chains (pass-through nodes) using BFS.
  *
- * KEY FIX: Added 3 guards to eliminate LN_ false positives:
- *   GUARD 1 — Pure linear chain detection (all txCount===2, ≤1 unique receiver → skip)
- *   GUARD 2 — Source validation (must actively distribute: uniqueReceivers≥2 OR txCount≥4)
- *   GUARD 3 — Canonical dedup (sort members, join with '|')
+ * Guard A: Skip pure linear chains (txCount===2 and <=1 unique receiver per node)
+ * Guard B: Require active source injection (sourceOutDegree >= 2)
+ * Dedup:   Canonical member-set key
  */
 import { isLegitimateAccount } from './graphBuilder.js';
 
@@ -30,7 +29,7 @@ export function detectShellChains(graph, nodeStats) {
         }
     }
 
-    const allChains = [];
+    const chains = [];
 
     for (const startNode of Object.keys(graph)) {
         if (!graph[startNode]) continue;
@@ -51,44 +50,53 @@ export function detectShellChains(graph, nodeStats) {
                         queue.push({ chain: [...chain, nextNode], currentNode: nextNode });
                     } else {
                         const fullChain = [...chain, nextNode];
-                        const shellCount = chain.length - 1;
-                        if (shellCount < 3) continue;
+                        const shellCount = chain.length - 1; // shells = all nodes minus startNode
+                        if (shellCount < 3) continue; // need at least 3 consecutive shell hops
 
-                        // GUARD 1: Pure linear chain — all nodes have txCount===2
-                        // and ≤1 unique receiver (LN_ pattern). Skip.
-                        const isPureLinear = fullChain.every((nodeId) => {
-                            const s = nodeStats[nodeId];
-                            return s && s.txCount === 2 && s.uniqueReceivers.size <= 1;
+                        // Build chain object (members array)
+                        const chainObj = {
+                            members: fullChain,
+                            pattern_type: 'shell',
+                            detected_patterns: ['shell_chain'],
+                        };
+
+                        // ── GUARD A: Skip pure linear chains ──
+                        // A pure linear chain = every node has txCount===2 AND sends to only 1 receiver
+                        // This is normal A→B→C payment flow, NOT a shell network
+                        const isPureLinear = chainObj.members.every(memberId => {
+                            const st = nodeStats[memberId];
+                            if (!st) return false;
+                            const txCount = st.txCount ?? 0;
+                            const uniqueRecv = st.uniqueReceivers?.size ?? 0;
+                            return txCount === 2 && uniqueRecv <= 1;
                         });
-                        if (isPureLinear) continue;
+                        if (isPureLinear) continue; // skip this chain, do NOT push it
 
-                        // GUARD 2: Source must actively distribute funds
-                        const sourceId = fullChain[0];
-                        const sourceStats = nodeStats[sourceId];
-                        if (!sourceStats) continue;
-                        if (sourceStats.uniqueReceivers.size < 2 && sourceStats.txCount < 4) continue;
+                        // ── GUARD B: Require active source injection ──
+                        // The first node (source) must send to 2+ different accounts,
+                        // proving it's injecting funds into multiple shell paths
+                        const sourceId = chainObj.members[0];
+                        const sourceSt = nodeStats[sourceId];
+                        const sourceOutDegree = sourceSt?.uniqueReceivers?.size ?? 0;
+                        if (sourceOutDegree < 2) continue; // single-path source, skip
 
-                        allChains.push(fullChain);
+                        // ── NOW push the chain (passes both guards) ──
+                        chains.push(chainObj);
                     }
                 }
             }
         }
     }
 
-    // GUARD 3: Canonical dedup — sort member IDs alphabetically, join with '|'
-    const seen = new Set();
-    const finalChains = [];
-    for (const chain of allChains) {
-        const key = [...chain].sort().join('|');
-        if (!seen.has(key)) {
-            seen.add(key);
-            finalChains.push({
-                members: chain,
-                pattern_type: 'shell',
-                detected_patterns: ['shell_chain'],
-            });
+    // ── DEDUPLICATION: remove chains with identical member sets ──
+    const seenShellKeys = new Set();
+    const deduplicatedChains = [];
+    for (const chain of chains) {
+        const key = [...chain.members].sort().join('|');
+        if (!seenShellKeys.has(key)) {
+            seenShellKeys.add(key);
+            deduplicatedChains.push(chain);
         }
     }
-
-    return finalChains;
+    return deduplicatedChains;
 }
