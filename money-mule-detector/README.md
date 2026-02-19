@@ -101,4 +101,7 @@ npm run dev
 - Timestamps must be in `YYYY-MM-DD HH:MM:SS` format exactly
 
 ## Team Members
-[Add names here]
+Jagadish S Naik
+Ashwin Nethan
+Prajna
+Swara Hegde 

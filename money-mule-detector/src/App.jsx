@@ -26,7 +26,7 @@ function zeroPad(n, len = 3) {
 }
 
 function runAnalysis(transactions) {
-  // FIX: Start time MUST be the very first line
+  // FIX B: First line of analysis function
   const startTimeMs = Date.now();
 
   // 1. Build graph
@@ -131,32 +131,24 @@ function runAnalysis(transactions) {
     (acc) => !isLegitimateAccount(acc.account_id, nodeStats)
   );
 
-  // FIX: ORPHAN RING CLEANUP
-  // Remove rings that no suspicious_account references
-  const referencedRingIds = new Set(
-    finalSuspicious.map(a => a.ring_id)
-  );
-  const flaggedIds = new Set(
-    finalSuspicious.map(a => a.account_id)
-  );
+  // FIX 3A: ORPHAN RING CLEANUP
+  const refRingIds = new Set(finalSuspicious.map(a => a.ring_id));
+  const flaggedIds = new Set(finalSuspicious.map(a => a.account_id));
 
-  // Clean rings = only referenced rings, only suspicious members
-  const finalRings = ringIdAssigned
-    .filter(ring => referencedRingIds.has(ring.ring_id))
-    .map(ring => ({
-      ...ring,
-      member_accounts: ring.member_accounts.filter(
-        id => flaggedIds.has(id)
-      ),
+  const cleanRings = ringIdAssigned
+    .filter(r => refRingIds.has(r.ring_id))
+    .map(r => ({
+      ...r,
+      member_accounts: r.member_accounts.filter(id => flaggedIds.has(id))
     }))
-    .filter(ring => ring.member_accounts.length >= 2);
+    .filter(r => r.member_accounts.length >= 2);
 
-  // 14. Generate JSON output
+  // 14. Generate JSON output (Use cleanRings)
   const jsonOutput = generateJSON(
     finalSuspicious,
-    finalRings,
+    cleanRings,
     allNodes.size,
-    startTimeMs // Pass correct start time
+    startTimeMs
   );
 
   return {
@@ -165,7 +157,7 @@ function runAnalysis(transactions) {
     nodeStats,
     allNodes,
     suspiciousAccounts: finalSuspicious,
-    fraudRings: finalRings,
+    fraudRings: cleanRings,
     cycles,
     smurfingRings,
     shellChains,

@@ -2,6 +2,8 @@ import { isLegitimateAccount } from './graphBuilder.js';
 
 export function detectSmurfing(transactions, nodeStats) {
     const rings = [];
+    const WINDOW_MS = 72 * 60 * 60 * 1000;
+    const HV_MS = 6 * 60 * 60 * 1000;
 
     // ── FAN-IN: group transactions by receiver ──
     const byReceiver = {};
@@ -20,7 +22,6 @@ export function detectSmurfing(transactions, nodeStats) {
         let bestStartMs = 0;
         let bestEndMs = 0;
         let left = 0;
-        const WINDOW_MS = 72 * 60 * 60 * 1000;
 
         for (let right = 0; right < txList.length; right++) {
             const rightMs = new Date(txList[right].timestamp).getTime();
@@ -43,10 +44,11 @@ export function detectSmurfing(transactions, nodeStats) {
             }
             // ← NO rings.push() here. Loop just tracks the best window.
         }
-        // ← rings.push() is HERE, after loop ends, only if threshold met
+
+        // ← ONE push AFTER the loop:
         if (bestSenders.size >= 10) {
             const patterns = ['fan_in'];
-            if (bestEndMs - bestStartMs < 6 * 60 * 60 * 1000) {
+            if (bestEndMs - bestStartMs < HV_MS) {
                 patterns.push('high_velocity');
             }
             rings.push({
@@ -74,7 +76,6 @@ export function detectSmurfing(transactions, nodeStats) {
         let bestStartMs = 0;
         let bestEndMs = 0;
         let left = 0;
-        const WINDOW_MS = 72 * 60 * 60 * 1000;
 
         for (let right = 0; right < txList.length; right++) {
             const rightMs = new Date(txList[right].timestamp).getTime();
@@ -96,7 +97,7 @@ export function detectSmurfing(transactions, nodeStats) {
 
         if (bestReceivers.size >= 10) {
             const patterns = ['fan_out'];
-            if (bestEndMs - bestStartMs < 6 * 60 * 60 * 1000) {
+            if (bestEndMs - bestStartMs < HV_MS) {
                 patterns.push('high_velocity');
             }
             rings.push({
@@ -109,13 +110,9 @@ export function detectSmurfing(transactions, nodeStats) {
     }
 
     // Add deduplication
-    const smurfSeen = new Set();
-    const dedupedSmurfing = rings.filter(ring => {
-        const key = [...ring.members].sort().join('|');
-        if (smurfSeen.has(key)) return false;
-        smurfSeen.add(key);
-        return true;
+    const seen = new Set();
+    return rings.filter(r => {
+        const k = [...r.members].sort().join('|');
+        return seen.has(k) ? false : (seen.add(k), true);
     });
-
-    return dedupedSmurfing;
 }

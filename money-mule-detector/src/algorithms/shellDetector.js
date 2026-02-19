@@ -55,24 +55,19 @@ export function detectShellChains(graph, nodeStats) {
                             detected_patterns: ['shell_chain'],
                         };
 
-                        // GUARD 1: Skip pure linear chains
-                        // A pure linear chain has every node with txCount=2 AND
-                        // only 1 unique receiver — normal A→B→C payments, not shells
-                        const isPureLinear = chainObj.members.every(id => {
+                        // Guard 1: skip pure linear chains
+                        const isLinear = chainObj.members.every(id => {
                             const st = nodeStats[id];
-                            return st &&
-                                (st.txCount ?? 0) === 2 &&
+                            return st && st.txCount === 2 &&
                                 (st.uniqueReceivers?.size ?? 0) <= 1;
                         });
-                        if (isPureLinear) continue;  // skip — do NOT push
+                        if (isLinear) continue;
 
-                        // GUARD 2: Require branching source
-                        // Source node must send to 2+ receivers (proves active injection)
-                        const srcStats = nodeStats[chainObj.members[0]];
-                        if (!srcStats || (srcStats.uniqueReceivers?.size ?? 0) < 2) continue;
+                        // Guard 2: source must branch (send to 2+ receivers)
+                        const src = nodeStats[chainObj.members[0]];
+                        if (!src || (src.uniqueReceivers?.size ?? 0) < 2) continue;
 
-                        // Only now push — passed both guards
-                        chains.push(chainObj);
+                        chains.push(chainObj); // ← only reaches here if both guards pass
                     }
                 }
             }
@@ -80,12 +75,9 @@ export function detectShellChains(graph, nodeStats) {
     }
 
     // Deduplication
-    const shellSeen = new Set();
-    const dedupedShells = chains.filter(chain => {
-        const key = [...chain.members].sort().join('|');
-        if (shellSeen.has(key)) return false;
-        shellSeen.add(key);
-        return true;
+    const seen = new Set();
+    return chains.filter(c => {
+        const k = [...c.members].sort().join('|');
+        return seen.has(k) ? false : (seen.add(k), true);
     });
-    return dedupedShells;
 }

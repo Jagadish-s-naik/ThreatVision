@@ -4,7 +4,7 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
     const [hoveredRing, setHoveredRing] = useState(null);
 
     // Limit to top 15 rings by risk_score
-    const displayRings = useMemo(
+    const show = useMemo(
         () => [...fraudRings]
             .sort((a, b) => b.risk_score - a.risk_score)
             .slice(0, 15),
@@ -12,45 +12,44 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
     );
 
     // Calculate orbital positions — spread evenly around center
-    const SVG_W = 600, SVG_H = 450;
-    const CX = 300, CY = 225, ORBIT = 155;
+    const CX = 300, CY = 225, OR = 155;
 
-    const ringPositions = useMemo(
-        () => displayRings.map((ring, i) => {
-            const angle = (2 * Math.PI * i / displayRings.length) - Math.PI / 2;
+    const pos = useMemo(
+        () => show.map((ring, i) => {
+            const a = (2 * Math.PI * i / show.length) - Math.PI / 2;
             return {
                 ring,
-                x: CX + ORBIT * Math.cos(angle),
-                y: CY + ORBIT * Math.sin(angle),
+                x: CX + OR * Math.cos(a),
+                y: CY + OR * Math.sin(a),
                 r: Math.max(18, Math.min(50, 10 + ring.member_accounts.length * 2)),
             };
         }),
-        [displayRings]
+        [show]
     );
 
     // Draw connecting lines only between rings sharing ≥1 member
     const connections = useMemo(() => {
         const conns = [];
-        for (let i = 0; i < ringPositions.length; i++) {
-            for (let j = i + 1; j < ringPositions.length; j++) {
-                const shared = ringPositions[i].ring.member_accounts.filter(
-                    id => ringPositions[j].ring.member_accounts.includes(id)
+        for (let i = 0; i < pos.length; i++) {
+            for (let j = i + 1; j < pos.length; j++) {
+                const shared = pos[i].ring.member_accounts.filter(
+                    id => pos[j].ring.member_accounts.includes(id)
                 );
                 if (shared.length > 0) {
                     conns.push({
-                        x1: ringPositions[i].x, y1: ringPositions[i].y,
-                        x2: ringPositions[j].x, y2: ringPositions[j].y,
+                        x1: pos[i].x, y1: pos[i].y,
+                        x2: pos[j].x, y2: pos[j].y,
                         count: shared.length,
-                        ringA: ringPositions[i].ring.ring_id,
-                        ringB: ringPositions[j].ring.ring_id
+                        ringA: pos[i].ring.ring_id,
+                        ringB: pos[j].ring.ring_id
                     });
                 }
             }
         }
         return conns;
-    }, [ringPositions]);
+    }, [pos]);
 
-    if (displayRings.length === 0) {
+    if (show.length === 0) {
         return (
             <div className="bg-slate-900 rounded-2xl border border-slate-700 p-8 text-center text-slate-500">
                 No fraud rings to visualize.
@@ -68,10 +67,10 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
             </p>
 
             <svg
-                width={SVG_W}
-                height={SVG_H}
+                width={600}
+                height={450}
                 style={{ background: '#0a0a1a', borderRadius: 10, display: 'block', maxWidth: '100%' }}
-                viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+                viewBox="0 0 600 450"
             >
                 {/* Connection lines */}
                 {connections.map((c, idx) => {
@@ -96,7 +95,7 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                 })}
 
                 {/* Ring circles */}
-                {ringPositions.map(({ ring, x, y, r }) => {
+                {pos.map(({ ring, x, y, r }) => {
                     const color =
                         ring.pattern_type === 'cycle' ? '#fbbf24'
                             : ring.pattern_type === 'smurfing' ? '#f97316'
@@ -133,7 +132,7 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
             </svg>
 
             <p style={{ textAlign: 'center', fontSize: 11, color: '#666', marginTop: 8 }}>
-                Showing top {displayRings.length} of {fraudRings.length} rings
+                Showing top {show.length} of {fraudRings.length} rings
             </p>
         </div>
     );
