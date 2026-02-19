@@ -12,6 +12,7 @@ import { detectSmurfing } from './algorithms/smurfingDetector.js';
 import { detectShellChains } from './algorithms/shellDetector.js';
 import { calculateSuspicionScore, calculateRingRiskScore } from './algorithms/suspicionScorer.js';
 import { generateJSON, downloadJSON, formatJSONString } from './utils/jsonExporter.js';
+import Aurora from './components/ui/Aurora.jsx';
 
 const TABS = [
   { id: 'graph', label: '🕸 Graph View' },
@@ -240,121 +241,131 @@ export default function App() {
   const { edges, nodeStats, suspiciousAccounts, fraudRings, smurfingRings, jsonOutput, suspiciousAccountIds } = analysisResults;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="relative min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 overflow-hidden" style={{ fontFamily: 'Inter, sans-serif' }}>
 
-      {/* Neo-Brutal Header */}
-      <header className="mb-8 bg-slate-900 border-2 border-slate-800 p-6 rounded-none brutal-shadow flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-amber-400 tracking-tight uppercase" style={{ fontFamily: 'Syne, sans-serif' }}>
-            Threat Vision
-          </h1>
-          <p className="text-slate-400 text-sm font-mono mt-1 tracking-wider">
-            // RIFT_2026 // GRAPH_THEORY_TRACK
-          </p>
-        </div>
-        <button
-          onClick={handleReset}
-          className="neobutton bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white"
-        >
-          ↑ Upload New File
-        </button>
-      </header>
-
-      <div className="max-w-screen-2xl mx-auto animate-fadeIn">
-        {/* Summary Panel */}
-        <SummaryPanel analysisResults={analysisResults} onDownload={handleDownload} />
-
-        {/* Neo-Tabs */}
-        <div className="flex flex-wrap gap-3 mb-6">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-5 py-3 font-bold uppercase tracking-wider border-2 transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${activeTab === tab.id
-                ? 'bg-amber-500 text-slate-950 border-amber-600 brutal-shadow-amber'
-                : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-200 brutal-shadow'
-                }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab content area */}
-        <div className="bg-slate-900 border-2 border-slate-800 p-1 brutal-shadow min-h-[600px] animate-fadeIn">
-          {activeTab === 'graph' && (
-            <div className="h-[800px] border-2 border-slate-800 bg-slate-950">
-              <GraphVisualization
-                edges={edges}
-                nodeStats={nodeStats}
-                suspiciousAccounts={suspiciousAccounts}
-                fraudRings={fraudRings}
-                onSelectAccount={handleSelectAccount}
-              />
-            </div>
-          )}
-
-          {activeTab === 'table' && (
-            <FraudRingTable
-              fraudRings={fraudRings}
-              suspiciousAccounts={suspiciousAccounts}
-              onSelectAccount={handleSelectAccount}
-            />
-          )}
-
-          {activeTab === 'heatmap' && (
-            <div className="p-6">
-              <TemporalHeatmap
-                transactions={analysisResults.transactions}
-                suspiciousAccountIds={suspiciousAccountIds}
-              />
-            </div>
-          )}
-
-          {activeTab === 'overlap' && (
-            <div className="h-[800px] flex justify-center items-center bg-slate-950 border-2 border-slate-800">
-              <RingOverlapVisualization
-                fraudRings={fraudRings}
-                suspiciousAccounts={suspiciousAccounts}
-                nodeStats={nodeStats}
-              />
-            </div>
-          )}
-
-          {activeTab === 'json' && (
-            <div className="p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-slate-100 uppercase tracking-widest" style={{ fontFamily: 'Syne, sans-serif' }}>
-                  JSON Export Preview
-                </h3>
-                <button
-                  onClick={handleDownload}
-                  className="neobutton bg-amber-500 text-slate-900 hover:bg-amber-400 border-amber-600 brutal-shadow-sm"
-                >
-                  ⬇ Download JSON
-                </button>
-              </div>
-              <pre
-                className="bg-slate-950 p-6 text-xs text-green-400 border-2 border-slate-800 font-mono overflow-auto max-h-[600px] shadow-inner"
-                style={{ fontFamily: 'IBM Plex Mono, monospace' }}
-              >
-                {formatJSONString(jsonOutput)}
-              </pre>
-            </div>
-          )}
-        </div>
+      {/* Aurora Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
+        <Aurora
+          colorStops={['#0f172a', '#1e293b', '#0f172a']} // Subtle slate/dark theme colors
+          speed={0.5}
+        />
       </div>
 
-      {/* Risk Explanation Panel */}
-      {isPanelOpen && selectedAccount && (
-        <RiskExplanationPanel
-          account={selectedAccount}
-          nodeStats={nodeStats}
-          transactions={analysisResults.transactions}
-          fraudRings={fraudRings}
-          onClose={handleClosePanel}
-        />
-      )}
+      <div className="relative z-10 max-w-screen-2xl mx-auto">
+        {/* Neo-Brutal Header */}
+        <header className="mb-8 bg-slate-900 border-2 border-slate-800 p-6 rounded-none brutal-shadow flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-amber-400 tracking-tight uppercase" style={{ fontFamily: 'Syne, sans-serif' }}>
+              Threat Vision
+            </h1>
+            <p className="text-slate-400 text-sm font-mono mt-1 tracking-wider">
+              // RIFT_2026 // GRAPH_THEORY_TRACK
+            </p>
+          </div>
+          <button
+            onClick={handleReset}
+            className="neobutton bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white"
+          >
+            ↑ Upload New File
+          </button>
+        </header>
+
+        <div className="animate-fadeIn">
+          {/* Summary Panel */}
+          <SummaryPanel analysisResults={analysisResults} onDownload={handleDownload} />
+
+          {/* Neo-Tabs */}
+          <div className="flex flex-wrap gap-3 mb-6">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-5 py-3 font-bold uppercase tracking-wider border-2 transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${activeTab === tab.id
+                  ? 'bg-amber-500 text-slate-950 border-amber-600 brutal-shadow-amber'
+                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-200 brutal-shadow'
+                  }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content area */}
+          <div className="bg-slate-900 border-2 border-slate-800 p-1 brutal-shadow min-h-[600px] animate-fadeIn">
+            {activeTab === 'graph' && (
+              <div className="h-[800px] border-2 border-slate-800 bg-slate-950">
+                <GraphVisualization
+                  edges={edges}
+                  nodeStats={nodeStats}
+                  suspiciousAccounts={suspiciousAccounts}
+                  fraudRings={fraudRings}
+                  onSelectAccount={handleSelectAccount}
+                />
+              </div>
+            )}
+
+            {activeTab === 'table' && (
+              <FraudRingTable
+                fraudRings={fraudRings}
+                suspiciousAccounts={suspiciousAccounts}
+                onSelectAccount={handleSelectAccount}
+              />
+            )}
+
+            {activeTab === 'heatmap' && (
+              <div className="p-6">
+                <TemporalHeatmap
+                  transactions={analysisResults.transactions}
+                  suspiciousAccountIds={suspiciousAccountIds}
+                />
+              </div>
+            )}
+
+            {activeTab === 'overlap' && (
+              <div className="h-[800px] flex justify-center items-center bg-slate-950 border-2 border-slate-800">
+                <RingOverlapVisualization
+                  fraudRings={fraudRings}
+                  suspiciousAccounts={suspiciousAccounts}
+                  nodeStats={nodeStats}
+                />
+              </div>
+            )}
+
+            {activeTab === 'json' && (
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-slate-100 uppercase tracking-widest" style={{ fontFamily: 'Syne, sans-serif' }}>
+                    JSON Export Preview
+                  </h3>
+                  <button
+                    onClick={handleDownload}
+                    className="neobutton bg-amber-500 text-slate-900 hover:bg-amber-400 border-amber-600 brutal-shadow-sm"
+                  >
+                    ⬇ Download JSON
+                  </button>
+                </div>
+                <pre
+                  className="bg-slate-950 p-6 text-xs text-green-400 border-2 border-slate-800 font-mono overflow-auto max-h-[600px] shadow-inner"
+                  style={{ fontFamily: 'IBM Plex Mono, monospace' }}
+                >
+                  {formatJSONString(jsonOutput)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Risk Explanation Panel */}
+        {isPanelOpen && selectedAccount && (
+          <RiskExplanationPanel
+            account={selectedAccount}
+            nodeStats={nodeStats}
+            transactions={analysisResults.transactions}
+            fraudRings={fraudRings}
+            onClose={handleClosePanel}
+          />
+        )}
+      </div>
     </div>
   );
 }
