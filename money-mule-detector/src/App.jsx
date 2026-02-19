@@ -12,7 +12,6 @@ import { detectSmurfing } from './algorithms/smurfingDetector.js';
 import { detectShellChains } from './algorithms/shellDetector.js';
 import { calculateSuspicionScore, calculateRingRiskScore } from './algorithms/suspicionScorer.js';
 import { generateJSON, downloadJSON, formatJSONString } from './utils/jsonExporter.js';
-import Aurora from './components/ui/Aurora.jsx';
 
 const TABS = [
   { id: 'graph', label: '🕸 Graph View' },
@@ -241,16 +240,7 @@ export default function App() {
   const { edges, nodeStats, suspiciousAccounts, fraudRings, smurfingRings, jsonOutput, suspiciousAccountIds } = analysisResults;
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 overflow-hidden" style={{ fontFamily: 'Inter, sans-serif' }}>
-
-      {/* Aurora Background */}
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-50">
-        <Aurora
-          colorStops={['#4338ca', '#3b82f6', '#4338ca']} // Indigo-700 -> Blue-500 -> Indigo-700
-          speed={0.5}
-          amplitude={1.2}
-        />
-      </div>
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6" style={{ fontFamily: 'Inter, sans-serif' }}>
 
       <div className="relative z-10 max-w-screen-2xl mx-auto">
         {/* Neo-Brutal Header */}
