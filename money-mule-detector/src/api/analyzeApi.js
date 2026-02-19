@@ -23,8 +23,15 @@ export async function analyzeCSV(file, onProgress) {
     });
 
     if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: 'Server error' }));
-        throw new Error(err.error || `Server returned ${response.status}`);
+        let errMsg = `HTTP ${response.status}`;
+        try {
+            const body = await response.text();
+            const json = JSON.parse(body);
+            errMsg = json.error || errMsg;
+        } catch {
+            // non-JSON body (HTML error page etc)
+        }
+        throw new Error(errMsg);
     }
 
     onProgress?.('Processing complete');
