@@ -10,7 +10,9 @@
 
 ## 📸 Live Demo
 
-🔗 [https://threat-vision-nb4y0g8ic-jagadish-naik-s-projects.vercel.app](https://threat-vision-nb4y0g8ic-jagadish-naik-s-projects.vercel.app?_vercel_share=gGLPZgvlahh99jK5obpOKGRMWlaPM7Xh)
+🔗 **Live URL:**
+
+https://threat-vision-nb4y0g8ic-jagadish-naik-s-projects.vercel.app?_vercel_share=gGLPZgvlahh99jK5obpOKGRMWlaPM7Xh
 
 ---
 
