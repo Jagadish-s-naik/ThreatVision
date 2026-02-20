@@ -14,15 +14,12 @@ dotenv.config();
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
-const corsOptions = {
+app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    preflightContinue: false,
+    allowedHeaders: ['Content-Type'],
     optionsSuccessStatus: 204,
-};
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Handle preflight for all routes
+}));
 app.use(express.json({ limit: '10mb' }));
 
 
