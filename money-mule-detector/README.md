@@ -1,7 +1,7 @@
 # 💰 Financial Forensics Engine — Money Muling Detection
 
 ## Live Demo
-[LIVE_URL_HERE]
+https://threat-vision-nb4y0g8ic-jagadish-naik-s-projects.vercel.app?_vercel_share=gGLPZgvlahh99jK5obpOKGRMWlaPM7Xh
 
 ## Problem Statement
 Graph-based money muling detection engine for RIFT 2026 Hackathon — 
