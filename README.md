@@ -1,6 +1,6 @@
 # 🔍 ThreatVision — Money Mule Detection System
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?logo=vercel)](https://threat-vision.vercel.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?logo=vercel)](https://threat-vision-nb4y0g8ic-jagadish-naik-s-projects.vercel.app?_vercel_share=gGLPZgvlahh99jK5obpOKGRMWlaPM7Xh)
 [![Backend](https://img.shields.io/badge/Backend-Railway-blueviolet?logo=railway)](https://railway.app)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
@@ -8,9 +8,9 @@
 
 ---
 
-## 📸 Screenshot
+## 📸 Live Demo
 
-![ThreatVision Dashboard](https://threat-vision.vercel.app)
+🔗 [https://threat-vision-nb4y0g8ic-jagadish-naik-s-projects.vercel.app](https://threat-vision-nb4y0g8ic-jagadish-naik-s-projects.vercel.app?_vercel_share=gGLPZgvlahh99jK5obpOKGRMWlaPM7Xh)
 
 ---
 
