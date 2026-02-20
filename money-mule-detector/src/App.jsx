@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import CSVUploader from './components/CSVUploader.jsx';
-import GraphView from './components/GraphView.jsx';
+import GraphVisualization from './components/GraphVisualization.jsx';
 import FraudRingTable from './components/FraudRingTable.jsx';
 import SummaryPanel from './components/SummaryPanel.jsx';
 import TemporalHeatmap from './components/TemporalHeatmap.jsx';
@@ -242,13 +242,15 @@ export default function App() {
           {/* Tab content area */}
           <div className="bg-slate-900 border-2 border-slate-800 p-1 brutal-shadow min-h-[600px] animate-fadeIn">
 
-            {/* Graph View — dual panel */}
+            {/* Graph View — single tree: root → Fraud / Non-Fraud branches */}
             {activeTab === 'graph' && (
-              <div className="p-4">
-                <GraphView
+              <div className="p-2">
+                <GraphVisualization
+                  edges={transactions.map(tx => ({ sender_id: tx.sender_id, receiver_id: tx.receiver_id, amount: tx.amount, timestamp: tx.timestamp, transaction_id: tx.transaction_id }))}
+                  nodeStats={{}}
                   suspiciousAccounts={suspiciousAccounts}
                   fraudRings={fraudRings}
-                  allTransactions={transactions}
+                  onSelectAccount={handleSelectAccount}
                 />
               </div>
             )}
