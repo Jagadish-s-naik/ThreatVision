@@ -27,72 +27,157 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
     const containerRef = useRef(null);
     const cyRef = useRef(null);
     const [tooltip, setTooltip] = useState(null);
-    const [isFocusMode, setIsFocusMode] = useState(false); // Track focus mode state
+    const [isFocusMode, setIsFocusMode] = useState(false);
 
     const accountMap = {};
     for (const acc of suspiciousAccounts || []) accountMap[acc.account_id] = acc;
 
     const buildAndMount = useCallback(() => {
-        if (!containerRef.current || !edges || edges.length === 0) return;
+        if (!containerRef.current || !edges) return;
+
         if (cyRef.current) { cyRef.current.destroy(); cyRef.current = null; }
 
-        // Collect all nodes
+        // ─── Collect all unique node IDs from edges ───────────────────
         const nodeIds = new Set();
-        for (const e of edges) {
-            nodeIds.add(e.sender_id);
-            nodeIds.add(e.receiver_id);
+        for (const e of edges || []) {
+            nodeIds.add(String(e.sender_id));
+            nodeIds.add(String(e.receiver_id));
         }
 
-        const useGrid = nodeIds.size > 2000;
+        // ─── Also include suspicious accounts not in edges ─────────────
+        for (const acc of suspiciousAccounts || []) {
+            nodeIds.add(String(acc.account_id));
+        }
 
-        const cyNodes = [...nodeIds].map((id) => {
+        const suspiciousIds = new Set(Object.keys(accountMap));
+        const normalIds = [...nodeIds].filter(id => !suspiciousIds.has(id));
+        const fraudIds = [...suspiciousIds].filter(id => nodeIds.has(id));
+
+        // ─── Virtual root + branch nodes ──────────────────────────────
+        const ROOT_ID = '__ROOT__';
+        const FRAUD_ID = '__FRAUD__';
+        const NORMAL_ID = '__NORMAL__';
+
+        const cyNodes = [];
+        const cyEdges = [];
+
+        // Root node
+        cyNodes.push({
+            data: {
+                id: ROOT_ID,
+                label: 'THREAT\nVISION',
+                color: '#F59E0B',
+                size: 58,
+                borderWidth: 4,
+                shape: 'ellipse',
+                suspicion_score: 0,
+                ring_id: '',
+                detected_patterns: '',
+                txCount: nodeIds.size,
+                ringCount: 0,
+            },
+            classes: 'root-node',
+        });
+
+        // Fraud branch hub
+        if (fraudIds.length > 0) {
+            cyNodes.push({
+                data: {
+                    id: FRAUD_ID,
+                    label: '⚠ FRAUD\n' + fraudIds.length + ' accounts',
+                    color: '#DC2626',
+                    size: 52,
+                    borderWidth: 4,
+                    shape: 'round-rectangle',
+                    suspicion_score: 100,
+                    ring_id: '',
+                    detected_patterns: '',
+                    txCount: fraudIds.length,
+                    ringCount: 0,
+                },
+                classes: 'branch-fraud',
+            });
+            cyEdges.push({
+                data: { id: `${ROOT_ID}__${FRAUD_ID}`, source: ROOT_ID, target: FRAUD_ID, edgeColor: '#DC2626', edgeWidth: 3, lineStyle: 'solid' },
+            });
+        }
+
+        // Non-fraud branch hub
+        if (normalIds.length > 0) {
+            cyNodes.push({
+                data: {
+                    id: NORMAL_ID,
+                    label: '✓ CLEAN\n' + normalIds.length + ' accounts',
+                    color: '#16A34A',
+                    size: 52,
+                    borderWidth: 4,
+                    shape: 'round-rectangle',
+                    suspicion_score: 0,
+                    ring_id: '',
+                    detected_patterns: '',
+                    txCount: normalIds.length,
+                    ringCount: 0,
+                },
+                classes: 'branch-normal',
+            });
+            cyEdges.push({
+                data: { id: `${ROOT_ID}__${NORMAL_ID}`, source: ROOT_ID, target: NORMAL_ID, edgeColor: '#16A34A', edgeWidth: 3, lineStyle: 'solid' },
+            });
+        }
+
+        // ─── Fraud account leaf nodes ──────────────────────────────────
+        for (const id of fraudIds) {
             const acc = accountMap[id];
-            const stats = nodeStats[id];
-            const isMultiRing = stats && stats.ringMemberships && stats.ringMemberships.length >= 2;
-            const isSuspicious = !!acc;
-
-            // Neo-Brutalism Shapes: Rectangle for normal, Diamond for risky
-            return {
+            const stats = nodeStats?.[id];
+            const isMultiRing = acc?.ring_ids?.length >= 2;
+            cyNodes.push({
                 data: {
                     id,
                     label: truncate(id),
                     color: getNodeColor(acc),
-                    // Make nodes larger for better visibility
                     size: getNodeSize(acc) * 1.2,
-                    borderWidth: isSuspicious ? 3 : 2,
-                    shape: isMultiRing ? 'diamond' : (isSuspicious ? 'round-rectangle' : 'rectangle'),
+                    borderWidth: 3,
+                    shape: isMultiRing ? 'diamond' : 'round-rectangle',
                     suspicion_score: acc?.suspicion_score ?? 0,
-                    ring_id: acc?.ring_id ?? '',
-                    detected_patterns: acc ? acc.detected_patterns.join(', ') : '',
-                    txCount: stats?.txCount ?? 0,
-                    ringCount: stats ? (stats.ringMemberships?.length || 0) : 0,
+                    ring_id: acc?.ring_ids?.[0] ?? '',
+                    detected_patterns: acc ? (acc.detected_patterns || []).join(', ') : '',
+                    txCount: stats?.txCount ?? acc?.transaction_count ?? 0,
+                    ringCount: acc?.ring_ids?.length ?? 0,
                 },
-                classes: isMultiRing ? 'multi-ring' : (isSuspicious ? 'suspicious' : 'normal'),
-            };
-        });
-
-        // Deduplicate edges by pair
-        const edgeSet = new Set();
-        const cyEdges = [];
-        for (const e of edges) {
-            const key = `${e.sender_id}__${e.receiver_id}`;
-            if (!edgeSet.has(key)) {
-                edgeSet.add(key);
-                const bothSuspect = accountMap[e.sender_id] && accountMap[e.receiver_id];
-                cyEdges.push({
-                    data: {
-                        id: key,
-                        source: e.sender_id,
-                        target: e.receiver_id,
-                        edgeColor: bothSuspect ? '#EF4444' : '#64748B', // Red or Slate-500
-                        edgeWidth: bothSuspect ? 3 : 1.5,
-                        lineStyle: bothSuspect ? 'dashed' : 'solid', // Dashed for suspicious
-                    },
-                    classes: bothSuspect ? 'suspicious-edge' : '',
-                });
-            }
+                classes: isMultiRing ? 'multi-ring' : 'suspicious',
+            });
+            cyEdges.push({
+                data: { id: `${FRAUD_ID}__${id}`, source: FRAUD_ID, target: id, edgeColor: '#EF4444', edgeWidth: 2, lineStyle: 'dashed' },
+                classes: 'suspicious-edge',
+            });
         }
 
+        // ─── Normal account leaf nodes (cap at 300 to keep tree readable) ─
+        const normalToShow = normalIds.slice(0, 300);
+        for (const id of normalToShow) {
+            const stats = nodeStats?.[id];
+            cyNodes.push({
+                data: {
+                    id,
+                    label: truncate(id),
+                    color: '#6B7280',
+                    size: 30,
+                    borderWidth: 2,
+                    shape: 'rectangle',
+                    suspicion_score: 0,
+                    ring_id: '',
+                    detected_patterns: '',
+                    txCount: stats?.txCount ?? 0,
+                    ringCount: 0,
+                },
+                classes: 'normal',
+            });
+            cyEdges.push({
+                data: { id: `${NORMAL_ID}__${id}`, source: NORMAL_ID, target: id, edgeColor: '#475569', edgeWidth: 1, lineStyle: 'solid' },
+            });
+        }
+
+        // ─── Cytoscape instance ───────────────────────────────────────
         const cy = cytoscape({
             container: containerRef.current,
             elements: { nodes: cyNodes, edges: cyEdges },
@@ -105,22 +190,45 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                         'height': 'data(size)',
                         'label': 'data(label)',
                         'color': '#F1F5F9',
-                        'font-size': '11px',
+                        'font-size': '10px',
                         'font-weight': 'bold',
                         'font-family': 'IBM Plex Mono, monospace',
                         'text-valign': 'center',
                         'text-halign': 'center',
+                        'text-wrap': 'wrap',
                         'text-background-opacity': 0.7,
                         'text-background-color': '#020617',
                         'text-background-shape': 'round-rectangle',
                         'text-background-padding': 2,
                         'border-width': 'data(borderWidth)',
-                        'border-color': '#000000', // Hard black border
+                        'border-color': '#000000',
                         'shape': 'data(shape)',
-                        'ghost': 'yes',
-                        'ghost-offset-x': 4,
-                        'ghost-offset-y': 4,
-                        'ghost-opacity': 0.5,
+                    },
+                },
+                {
+                    selector: 'node.root-node',
+                    style: {
+                        'background-color': '#F59E0B',
+                        'color': '#000',
+                        'font-size': '12px',
+                        'border-color': '#FCD34D',
+                        'border-width': 4,
+                    },
+                },
+                {
+                    selector: 'node.branch-fraud',
+                    style: {
+                        'background-color': '#991B1B',
+                        'font-size': '11px',
+                        'border-color': '#EF4444',
+                    },
+                },
+                {
+                    selector: 'node.branch-normal',
+                    style: {
+                        'background-color': '#14532D',
+                        'font-size': '11px',
+                        'border-color': '#22C55E',
                     },
                 },
                 {
@@ -128,35 +236,22 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                     style: {
                         'border-color': '#F0ABFC',
                         'border-width': 4,
-                        'ghost-offset-x': 6,
-                        'ghost-offset-y': 6,
-                        'ghost-opacity': 0.8,
                     },
                 },
                 {
-                    selector: 'node.suspicious',
-                    style: {
-                        'border-color': '#000000',
-                    }
-                },
-                {
                     selector: 'node.faded',
-                    style: { 'opacity': 0.1, 'ghost': 'no' },
+                    style: { 'opacity': 0.1 },
                 },
                 {
                     selector: 'node.hidden',
-                    style: { 'display': 'none' }, // For Focus Mode
+                    style: { 'display': 'none' },
                 },
                 {
                     selector: 'node.highlighted',
                     style: {
                         'opacity': 1,
                         'border-width': 4,
-                        'border-color': '#22D3EE', // Cyan highlight
-                        'ghost-offset-x': 6,
-                        'ghost-offset-y': 6,
-                        'width': (n) => n.data('size') * 1.3,
-                        'height': (n) => n.data('size') * 1.3,
+                        'border-color': '#22D3EE',
                     },
                 },
                 {
@@ -167,7 +262,7 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                         'target-arrow-color': 'data(edgeColor)',
                         'target-arrow-shape': 'triangle',
                         'curve-style': 'bezier',
-                        'arrow-scale': 1.2,
+                        'arrow-scale': 1.0,
                         'line-style': 'data(lineStyle)',
                     },
                 },
@@ -175,8 +270,8 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                     selector: 'edge.suspicious-edge',
                     style: {
                         'line-dash-pattern': [6, 3],
-                        'line-dash-offset': 0, // Will animate this
-                    }
+                        'line-dash-offset': 0,
+                    },
                 },
                 {
                     selector: 'edge.faded',
@@ -188,29 +283,23 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                 },
             ],
             layout: {
-                name: useGrid ? 'grid' : 'cose',
+                name: 'breadthfirst',
+                directed: true,
+                roots: `#${ROOT_ID}`,
+                padding: 60,
+                spacingFactor: 1.6,
                 animate: true,
-                animationDuration: 500,
-                randomize: false,
-                componentSpacing: 120,    // Spread out clusters
-                nodeRepulsion: 800000,    // Push nodes apart (stronger)
-                idealEdgeLength: 150,     // Longer edges
-                edgeElasticity: 50,
-                nestingFactor: 5,
-                gravity: 0.1,             // Lower gravity to spread out
-                numIter: 1000,
-                initialTemp: 200,
-                coolingFactor: 0.95,
-                minTemp: 1.0,
+                animationDuration: 600,
+                avoidOverlap: true,
             },
-            minZoom: 0.2,
+            minZoom: 0.1,
             maxZoom: 3,
-            wheelSensitivity: 0.3, // Smoother zoom
+            wheelSensitivity: 0.3,
         });
 
         cyRef.current = cy;
 
-        // Marching Ants Animation for Suspicious Edges
+        // Marching ants animation on suspicious edges
         let offset = 0;
         function animateEdges() {
             offset -= 1;
@@ -219,8 +308,7 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
         }
         animateEdges();
 
-
-        // Ring member index for click highlight
+        // Ring member index
         const ringMemberIndex = {};
         for (const ring of fraudRings || []) {
             for (const member of ring.member_accounts || []) {
@@ -232,23 +320,14 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
         // Hover tooltip
         cy.on('mouseover', 'node', (e) => {
             const node = e.target;
+            const id = node.data('id');
+            if (id === ROOT_ID || id === FRAUD_ID || id === NORMAL_ID) return;
             containerRef.current.style.cursor = 'pointer';
             const d = node.data();
-            // Use rendered position but clamp to container bounds
             const pos = node.renderedPosition();
-
-            // Adjust coordinates to be relative to the container
-            // Use existing zoom/pan to get screen coords
-            const pan = cy.pan();
-            const zoom = cy.zoom();
-
-            // Calculate screen coordinates approximately
-            const x = pos.x * zoom + pan.x;
-            const y = pos.y * zoom + pan.y;
-
             setTooltip({
-                x: x,
-                y: y,
+                x: pos.x,
+                y: pos.y,
                 accountId: d.id,
                 score: d.suspicion_score,
                 patterns: d.detected_patterns,
@@ -263,15 +342,13 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
             setTooltip(null);
         });
 
-        // Click node → highlight ring, open panel
+        // Click node
         cy.on('tap', 'node', (e) => {
             const nodeId = e.target.data('id');
+            if (nodeId === ROOT_ID || nodeId === FRAUD_ID || nodeId === NORMAL_ID) return;
             const acc = accountMap[nodeId];
-
-            // Reset
             cy.elements().removeClass('faded highlighted');
 
-            // Highlight ring members
             const memberRings = ringMemberIndex[nodeId] || [];
             if (memberRings.length > 0) {
                 const ringMembers = new Set();
@@ -291,7 +368,6 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                     else edge.addClass('faded');
                 });
             } else {
-                // For non-ring nodes, just highlight connections
                 const neighborhood = e.target.neighborhood().add(e.target);
                 cy.elements().addClass('faded');
                 neighborhood.removeClass('faded').addClass('highlighted');
@@ -300,35 +376,32 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
             if (acc) onSelectAccount(acc);
         });
 
-        // Double Click → Focus Mode
+        // Double click focus mode
         cy.on('dblclick', 'node', (e) => {
-            const node = e.target;
-            const neighborhood = node.neighborhood().add(node);
-
+            const nodeId = e.target.data('id');
+            if (nodeId === ROOT_ID || nodeId === FRAUD_ID || nodeId === NORMAL_ID) return;
+            const neighborhood = e.target.neighborhood().add(e.target);
             cy.elements().addClass('hidden');
             neighborhood.removeClass('hidden').addClass('highlighted');
-
-            cy.fit(neighborhood, 50); // Zoom into the focused cluster
+            cy.fit(neighborhood, 50);
             setIsFocusMode(true);
         });
 
         // Click background → reset
         cy.on('tap', (e) => {
             if (e.target === cy) {
-                if (!isFocusMode) {
-                    cy.elements().removeClass('faded highlighted');
-                }
+                cy.elements().removeClass('faded highlighted');
                 setTooltip(null);
             }
         });
-    }, [edges, nodeStats, suspiciousAccounts, fraudRings, onSelectAccount, isFocusMode]); // Re-run if focus mode logic fundamentally changes, though mostly internal
+
+    }, [edges, nodeStats, suspiciousAccounts, fraudRings, onSelectAccount]);
 
     useEffect(() => {
         buildAndMount();
         return () => { if (cyRef.current) { cyRef.current.destroy(); cyRef.current = null; } };
     }, [buildAndMount]);
 
-    // Graph Controls
     const handleZoomIn = () => cyRef.current && cyRef.current.zoom(cyRef.current.zoom() + 0.2);
     const handleZoomOut = () => cyRef.current && cyRef.current.zoom(cyRef.current.zoom() - 0.2);
     const handleFit = () => cyRef.current && cyRef.current.fit(undefined, 50);
@@ -342,39 +415,30 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
 
     return (
         <div className="relative bg-slate-950/50 rounded-none border-2 border-slate-800 brutal-shadow overflow-hidden group" style={{ height: 750 }}>
-            {/* Graph Container */}
             <div ref={containerRef} style={{ width: '100%', height: '100%' }} className="bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px]" />
 
-            {/* Controls Toolbar */}
+            {/* Controls */}
             <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-                <button onClick={handleFit} className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Fit to View">
-                    ⤢ FIT
-                </button>
-                <button onClick={handleZoomIn} className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Zoom In">
-                    + IN
-                </button>
-                <button onClick={handleZoomOut} className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Zoom Out">
-                    - OUT
-                </button>
-                <button onClick={handleReset} className="neobutton bg-amber-900/50 text-amber-200 border-amber-800 hover:bg-amber-900 p-2 text-xs" title="Reset">
-                    ↺ RST
-                </button>
+                <button onClick={handleFit} className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Fit to View">⤢ FIT</button>
+                <button onClick={handleZoomIn} className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Zoom In">+ IN</button>
+                <button onClick={handleZoomOut} className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Zoom Out">- OUT</button>
+                <button onClick={handleReset} className="neobutton bg-amber-900/50 text-amber-200 border-amber-800 hover:bg-amber-900 p-2 text-xs" title="Reset">↺ RST</button>
                 {isFocusMode && (
                     <div className="bg-red-900/80 text-red-100 text-[10px] px-2 py-1 border border-red-600 font-bold uppercase tracking-widest text-center animate-pulse">
-                        Focus Mode Active
+                        Focus Mode
                     </div>
                 )}
             </div>
 
-            {/* Tooltip Overlay (Neo-Brutal Data Card) */}
+            {/* Tooltip */}
             {tooltip && (
                 <div
-                    className="absolute z-20 pointer-events-none bg-slate-950 border-2 border-slate-100 p-0 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-opacity"
+                    className="absolute z-20 pointer-events-none bg-slate-950 border-2 border-slate-100 p-0 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                     style={{
-                        left: Math.min(tooltip.x + 20, containerRef.current?.offsetWidth - 240 || 0), // Prevent right overflow
-                        top: Math.min(tooltip.y - 20, containerRef.current?.offsetHeight - 200 || 0),  // Prevent bottom overflow
+                        left: Math.min(tooltip.x + 20, (containerRef.current?.offsetWidth ?? 0) - 240),
+                        top: Math.min(tooltip.y - 20, (containerRef.current?.offsetHeight ?? 0) - 200),
                         width: 240,
-                        fontFamily: 'IBM Plex Mono, monospace'
+                        fontFamily: 'IBM Plex Mono, monospace',
                     }}
                 >
                     <div className="bg-slate-100 text-slate-950 px-3 py-2 font-bold text-sm border-b-2 border-slate-100 flex justify-between items-center">
@@ -408,9 +472,12 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
 
             {/* Legend */}
             <div className="absolute bottom-4 left-4 bg-slate-900/90 border-2 border-slate-800 p-3 z-10">
-                <div className="text-slate-500 text-[10px] uppercase font-bold mb-2 tracking-widest">Node Risk Levels</div>
+                <div className="text-slate-500 text-[10px] uppercase font-bold mb-2 tracking-widest">Tree Legend</div>
                 <div className="flex flex-col gap-2 text-xs text-slate-300 font-mono">
                     {[
+                        { color: '#F59E0B', label: 'Root (ThreatVision)', shape: '●' },
+                        { color: '#DC2626', label: 'Fraud Branch', shape: '■' },
+                        { color: '#16A34A', label: 'Non-Fraud Branch', shape: '■' },
                         { color: '#EF4444', label: 'Critical (≥75)', shape: '■' },
                         { color: '#F97316', label: 'High (≥50)', shape: '■' },
                         { color: '#EAB308', label: 'Medium (≥25)', shape: '■' },
