@@ -11,6 +11,7 @@ Graph Theory / Financial Crime Detection Track.
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 18 + Vite |
+|Backend  | Node.js + Neo4j |
 | Styling | Tailwind CSS |
 | Graph Visualization | Cytoscape.js |
 | CSV Parsing | PapaParse |
