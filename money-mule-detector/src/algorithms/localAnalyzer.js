@@ -143,9 +143,9 @@ export async function analyzeLocally(file) {
         fraud_rings: filteredRings,
         summary: {
             total_accounts_analyzed: totalNodes,
-            suspicious_accounts_found: suspicious_accounts.length,
+            suspicious_accounts_flagged: suspicious_accounts.length,
             fraud_rings_detected: filteredRings.length,
-            processing_time_ms: processingMs,
+            processing_time_seconds: parseFloat(Math.max(0.1, processingMs / 1000).toFixed(1)),
             analysis_mode: 'local',   // indicates browser-side fallback
         },
         _transactions: rows,

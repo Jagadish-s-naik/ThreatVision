@@ -143,7 +143,7 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                         ? 'bg-blue-600 border-blue-800 text-white brutal-shadow-sm'
                         : 'bg-slate-800 border-slate-950 text-slate-300 hover:bg-slate-700 brutal-shadow'}`}
                 >
-                    {showNormal ? '🔵 Showing All Traffic' : '⬜ Show Suspicious Only'}
+                    {showNormal ? '🔴 Show Suspicious Only' : '🔵 Show All Traffic'}
                 </button>
             </div>
 

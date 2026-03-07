@@ -32,7 +32,8 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelec
     const sorted = useMemo(() => {
         const arr = [...(fraudRings || [])];
         arr.sort((a, b) => {
-            let av = a[sortKey], bv = b[sortKey];
+            let av = sortKey === 'member_count' ? a.member_accounts.length : a[sortKey];
+            let bv = sortKey === 'member_count' ? b.member_accounts.length : b[sortKey];
             if (typeof av === 'string') av = av.toLowerCase();
             if (typeof bv === 'string') bv = bv.toLowerCase();
             if (av < bv) return sortAsc ? -1 : 1;

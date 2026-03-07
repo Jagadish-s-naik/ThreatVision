@@ -26,6 +26,7 @@ function getNodeSize(acc) {
 export default function GraphVisualization({ edges, nodeStats, suspiciousAccounts, fraudRings, onSelectAccount }) {
     const containerRef = useRef(null);
     const cyRef = useRef(null);
+    const rafRef = useRef(null);   // ← track animation frame for cleanup
     const [tooltip, setTooltip] = useState(null);
     const [isFocusMode, setIsFocusMode] = useState(false);
 
@@ -35,6 +36,8 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
     const buildAndMount = useCallback(() => {
         if (!containerRef.current || !edges) return;
 
+        // Cancel any running animation frame before rebuilding
+        if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
         if (cyRef.current) { cyRef.current.destroy(); cyRef.current = null; }
 
         // ─── Collect all unique node IDs from edges ───────────────────
@@ -304,9 +307,9 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
         function animateEdges() {
             offset -= 1;
             cy.edges('.suspicious-edge').style('line-dash-offset', offset);
-            requestAnimationFrame(animateEdges);
+            rafRef.current = requestAnimationFrame(animateEdges);
         }
-        animateEdges();
+        rafRef.current = requestAnimationFrame(animateEdges);
 
         // Ring member index
         const ringMemberIndex = {};
@@ -399,7 +402,10 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
 
     useEffect(() => {
         buildAndMount();
-        return () => { if (cyRef.current) { cyRef.current.destroy(); cyRef.current = null; } };
+        return () => {
+            if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+            if (cyRef.current) { cyRef.current.destroy(); cyRef.current = null; }
+        };
     }, [buildAndMount]);
 
     const handleZoomIn = () => cyRef.current && cyRef.current.zoom(cyRef.current.zoom() + 0.2);

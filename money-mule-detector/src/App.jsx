@@ -61,6 +61,14 @@ export default function App() {
       const txRows = result._transactions || [];
       delete result._transactions;
 
+      // Normalize ring_ids: ensure every suspicious account has a ring_ids array
+      // (backend now sends it, but guard for older data or local fallback)
+      for (const acc of result.suspicious_accounts || []) {
+        if (!acc.ring_ids) {
+          acc.ring_ids = acc.ring_id ? [acc.ring_id] : [];
+        }
+      }
+
       setAnalysisResults(result);
       setTransactions(txRows);
 
@@ -247,7 +255,7 @@ export default function App() {
               <div className="p-2">
                 <GraphVisualization
                   edges={transactions.map(tx => ({ sender_id: tx.sender_id, receiver_id: tx.receiver_id, amount: tx.amount, timestamp: tx.timestamp, transaction_id: tx.transaction_id }))}
-                  nodeStats={{}}
+                  nodeStats={nodeStats}
                   suspiciousAccounts={suspiciousAccounts}
                   fraudRings={fraudRings}
                   onSelectAccount={handleSelectAccount}

@@ -61,10 +61,18 @@ export function buildResult(cycleRings, smurfingRings, shellRings, allNodes, sta
                     suspicion_score: parseFloat(score.toFixed(1)),
                     detected_patterns: [...new Set(detectedPatterns)],
                     ring_id: ringId,
+                    ring_ids: [ringId],  // ← array for multi-ring tracking
                 });
-            } else if (score > existing.suspicion_score) {
-                existing.suspicion_score = parseFloat(score.toFixed(1));
-                existing.ring_id = ringId;
+            } else {
+                // Update highest score
+                if (score > existing.suspicion_score) {
+                    existing.suspicion_score = parseFloat(score.toFixed(1));
+                    existing.ring_id = ringId;
+                }
+                // Always accumulate ring_ids
+                if (!existing.ring_ids.includes(ringId)) {
+                    existing.ring_ids.push(ringId);
+                }
                 for (const p of detectedPatterns) {
                     if (!existing.detected_patterns.includes(p)) {
                         existing.detected_patterns.push(p);
@@ -94,3 +102,4 @@ export function buildResult(cycleRings, smurfingRings, shellRings, allNodes, sta
         },
     };
 }
+
