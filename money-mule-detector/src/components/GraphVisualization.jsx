@@ -122,42 +122,57 @@ export default function GraphVisualization({
                         'width': 'data(size)',
                         'height': 'data(size)',
                         'label': 'data(label)',
-                        'color': '#F1F5F9',
-                        'font-size': '9px',
-                        'font-weight': 'bold',
-                        'font-family': 'IBM Plex Mono, monospace',
-                        'text-valign': 'center',
+                        'color': '#F8FAFC',
+                        'font-size': '10px',
+                        'font-weight': '700',
+                        'font-family': 'Syne, sans-serif',
+                        'text-valign': 'top',
                         'text-halign': 'center',
-                        'text-wrap': 'wrap',
-                        'text-background-opacity': 0.8,
-                        'text-background-color': '#020617',
-                        'text-background-shape': 'round-rectangle',
-                        'text-background-padding': 2,
-                        'border-width': 'data(borderWidth)',
-                        'border-color': '#1E293B',
+                        'text-margin-y': -6,
+                        'text-outline-width': 2,
+                        'text-outline-color': '#020617',
+                        'border-width': 2,
+                        'border-color': '#FFFFFF',
+                        'border-opacity': 0.2, // Acts like an inner glow/highlight
+                        'shadow-blur': 15,
+                        'shadow-color': 'data(color)',
+                        'shadow-opacity': 0.8,
+                        'transition-property': 'background-color, width, height, border-color, shadow-blur, underlay-opacity',
+                        'transition-duration': 300,
                     },
                 },
                 {
                     selector: 'node.suspicious',
                     style: {
-                        'border-color': '#EF4444',
-                        'border-style': 'solid',
+                        'border-color': '#FFFFFF', // keep highlight ring
+                        'border-opacity': 0.5,
+                        'shadow-color': '#EF4444',
+                        'shadow-blur': 30,
                     },
                 },
                 {
                     selector: 'node.hub',
                     style: {
-                        'border-color': '#06B6D4',
-                        'border-width': 4,
-                        'border-style': 'double',
+                        'border-color': '#FFFFFF', // keep highlight ring
+                        'border-width': 3,
+                        'border-opacity': 0.8,
+                        // Use a solid underlay for hubs to create a rich halo effect
+                        'underlay-color': '#06B6D4',
+                        'underlay-padding': 6,
+                        'underlay-opacity': 0.6,
+                        'underlay-shape': 'ellipse', // ensures the halo is circular
+                        'shadow-color': '#22D3EE',
+                        'shadow-blur': 40,
                     },
                 },
                 {
                     selector: 'node.highlighted',
                     style: {
                         'opacity': 1,
-                        'border-width': 4,
-                        'border-color': '#22D3EE',
+                        'underlay-color': '#F8FAFC',
+                        'underlay-padding': 8,
+                        'underlay-opacity': 0.8,
+                        'border-color': '#FFFFFF',
                     },
                 },
                 {
@@ -175,9 +190,13 @@ export default function GraphVisualization({
                         'width': 'data(edgeWidth)',
                         'target-arrow-color': 'data(edgeColor)',
                         'target-arrow-shape': 'triangle',
-                        'curve-style': 'bezier',
-                        'arrow-scale': 0.8,
-                        'opacity': 0.7,
+                        'curve-style': 'unbundled-bezier',
+                        'control-point-distances': 30,
+                        'control-point-weights': 0.5,
+                        'arrow-scale': 0.9,
+                        'opacity': 0.6,
+                        'transition-property': 'opacity, line-color',
+                        'transition-duration': 300,
                     },
                 },
                 {
@@ -208,7 +227,7 @@ export default function GraphVisualization({
                 nodeRepulsion: 8000,
                 gravity: 0.25,
                 numIter: 1000,
-                padding: 50,
+                padding: 60,
                 nodeDimensionsIncludeLabels: true,
             },
             minZoom: 0.05,
@@ -340,13 +359,16 @@ export default function GraphVisualization({
 
             {/* Top banner: Neo4j powered */}
             {!noData && (
-                <div className="absolute top-3 left-3 flex items-center gap-2 bg-cyan-950/80 border border-cyan-700 px-3 py-1.5 text-[10px] font-bold font-mono text-cyan-300 uppercase tracking-widest z-10 backdrop-blur-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse inline-block" />
-                    Neo4j Graph Analytics
+                <div className="absolute top-4 left-4 flex items-center gap-3 backdrop-blur-md bg-cyan-950/20 border border-cyan-800/50 px-4 py-2.5 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.15)] z-10">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse inline-block" />
+                    <span className="text-[11px] font-bold font-mono text-cyan-300 uppercase tracking-[0.2em]">Neo4j Analytics</span>
                     {graphData?.analytics && (
-                        <span className="text-cyan-500 normal-case ml-1">
-                            {graphData.analytics.totalNodes}N · {graphData.analytics.totalEdges}E · {graphData.analytics.hubCount} hubs
-                        </span>
+                        <>
+                            <div className="w-px h-3 bg-cyan-800/50 mx-1"></div>
+                            <span className="text-cyan-100 text-[10px] uppercase font-bold tracking-wider opacity-80">
+                                {graphData.analytics.totalNodes} Nodes <span className="text-cyan-800 mx-1">•</span> {graphData.analytics.totalEdges} Edges <span className="text-cyan-800 mx-1">•</span> {graphData.analytics.hubCount} Hubs
+                            </span>
+                        </>
                     )}
                 </div>
             )}
@@ -367,18 +389,20 @@ export default function GraphVisualization({
             {/* Hover tooltip */}
             {tooltip && (
                 <div
-                    className="absolute z-20 pointer-events-none bg-slate-950 border-2 border-slate-100 p-0 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                    className="absolute z-20 pointer-events-none backdrop-blur-xl bg-slate-900/80 border border-slate-700/50 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-200 ease-out"
                     style={{
-                        left: Math.min(tooltip.x + 20, (containerRef.current?.offsetWidth ?? 0) - 260),
-                        top:  Math.min(tooltip.y - 20, (containerRef.current?.offsetHeight ?? 0) - 220),
-                        width: 260,
-                        fontFamily: 'IBM Plex Mono, monospace',
+                        left: Math.min(tooltip.x + 20, (containerRef.current?.offsetWidth ?? 0) - 280),
+                        top:  Math.min(tooltip.y - 20, (containerRef.current?.offsetHeight ?? 0) - 240),
+                        width: 280,
                     }}
                 >
-                    <div className="bg-slate-100 text-slate-950 px-3 py-2 font-bold text-sm border-b-2 border-slate-100 flex justify-between items-center">
-                        <span className="truncate">{truncate(tooltip.id, 18)}</span>
-                        {tooltip.suspicionScore >= 50 && <span className="text-red-600 ml-1">⚠</span>}
-                        {tooltip.isHub          && <span className="text-cyan-600 ml-1">⬡HUB</span>}
+                    <div className="bg-gradient-to-r from-slate-800/80 to-slate-900/80 px-4 py-3 border-b border-slate-700/50 flex justify-between items-center relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50"></div>
+                        <span className="font-bold text-slate-100 font-mono text-[13px] tracking-wide truncate">{truncate(tooltip.id, 18)}</span>
+                        <div className="flex gap-2">
+                            {tooltip.suspicionScore >= 50 && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-red-500/20 text-red-400 border border-red-500/30">RISK</span>}
+                            {tooltip.isHub && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">HUB</span>}
+                        </div>
                     </div>
                     <div className="p-3 space-y-1.5 text-xs text-slate-300">
                         {[
@@ -399,9 +423,12 @@ export default function GraphVisualization({
             )}
 
             {/* Legend */}
-            <div className="absolute bottom-4 left-4 bg-slate-900/90 border-2 border-slate-800 p-3 z-10">
-                <div className="text-slate-500 text-[10px] uppercase font-bold mb-2 tracking-widest">Legend</div>
-                <div className="flex flex-col gap-1.5 text-xs text-slate-300 font-mono">
+            <div className="absolute bottom-4 left-4 backdrop-blur-md bg-slate-950/60 border border-slate-800/80 rounded-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10 w-48">
+                <div className="text-slate-400 text-[9px] uppercase font-bold mb-3 tracking-[0.2em] relative">
+                    Network Legend
+                    <div className="absolute -bottom-1 left-0 w-8 h-px bg-slate-600"></div>
+                </div>
+                <div className="flex flex-col gap-2.5 text-[11px] text-slate-300 font-mono">
                     {[
                         { color: '#06B6D4', label: 'Hub (high centrality)', shape: '⬡' },
                         { color: '#8B5CF6', label: 'High centrality ≥70', shape: '●' },
