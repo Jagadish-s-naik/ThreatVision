@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { parseCSV } from '../utils/csvParser.js';
 import MatrixLoader from './MatrixLoader.jsx';
 import { HeroGeometric } from './ui/shape-landing-hero.jsx';
+import { ImagesBadge } from './ui/images-badge.jsx';
 
 // onFileSelected(file) — passes the raw File object to App.jsx for backend upload
 // onAnalysisComplete retained for backward compat (legacy frontend mode)
@@ -145,13 +146,6 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
                         </div>
                     ) : (
                         <>
-                            <div className="w-16 h-16 mb-5 text-amber-400 group-hover:text-amber-300 transition-colors">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round"
-                                        d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                                </svg>
-                            </div>
-
                             {fileName && rowCount !== null ? (
                                 <div className="text-center">
                                     <p className="text-green-400 font-bold text-lg mb-1 font-mono">✓ {fileName}</p>
@@ -160,10 +154,17 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
                                 </div>
                             ) : (
                                 <>
-                                    <p className="text-slate-200 font-bold text-xl mb-2" style={{ fontFamily: 'Syne, sans-serif' }}>
-                                        DROP CSV FILE
+                                    <ImagesBadge
+                                        text="DROP CSV FILE"
+                                        images={[
+                                            "https://assets.aceternity.com/pro/agenforce-1.webp",
+                                            "https://assets.aceternity.com/pro/agenforce-2.webp",
+                                            "https://assets.aceternity.com/pro/agenforce-3.webp",
+                                        ]}
+                                    />
+                                    <p className="text-slate-400 text-sm font-mono tracking-widest mt-2 mb-6">
+                                        [ .csv files only ]
                                     </p>
-                                    <p className="text-slate-400 text-sm mb-6 font-mono">[ .csv files only ]</p>
                                     <button
                                         className="neobutton bg-amber-500 hover:bg-amber-400 text-slate-900 border-amber-600 brutal-shadow-sm"
                                         onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
