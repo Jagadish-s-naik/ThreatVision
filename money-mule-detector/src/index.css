@@ -6,29 +6,12 @@
   }
 
   body {
-    background-color: #0F172A;
+    background-color: #171821; /* Brand BG */
     color: #F1F5F9;
     font-family: 'Inter', sans-serif;
     margin: 0;
     padding: 0;
-  }
-
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: #1E293B;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: #475569;
-    border-radius: 3px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: #64748B;
+    overflow: hidden; /* Prevent body scroll, handle scroll in main layout */
   }
 }
 
@@ -47,7 +30,7 @@
 @keyframes slideInRight {
   from {
     opacity: 0;
-    transform: translateX(40px);
+    transform: translateX(20px);
   }
 
   to {
@@ -66,12 +49,22 @@
   }
 }
 
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 .animate-fadeIn {
-  animation: fadeIn 0.4s ease-out;
+  animation: fadeIn 0.4s ease-out forwards;
 }
 
 .animate-slideInRight {
-  animation: slideInRight 0.3s ease-out;
+  animation: slideInRight 0.3s ease-out forwards;
 }
 
 .animate-spin {
@@ -82,68 +75,29 @@
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-@keyframes pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(33, 34, 45, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Neo-Brutalism Utilities */
-.brutal-shadow {
-  box-shadow: 4px 4px 0px 0px #000;
-}
-
-.brutal-shadow-sm {
-  box-shadow: 2px 2px 0px 0px #000;
-}
-
-.brutal-shadow-amber {
-  box-shadow: 4px 4px 0px 0px #d97706;
-  /* amber-600 */
-}
-
-.brutal-shadow-rose {
-  box-shadow: 4px 4px 0px 0px #e11d48;
-  /* rose-600 */
-}
-
-.brutal-border {
-  border: 2px solid #1e293b;
-  /* slate-800 */
-}
-
-.neocard {
-  @apply bg-slate-900 border-2 border-slate-800 rounded-lg;
-  box-shadow: 4px 4px 0px 0px #000;
-}
-
-.neobutton {
-  @apply px-4 py-2 font-bold uppercase tracking-wider border-2 border-slate-900 transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none;
-}
-
-/* Scrollbar styling */
+/* Smooth Premium Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
-  border-left: 2px solid #1e293b;
+  background: #171821;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border: 2px solid #0f172a;
-  border-radius: 0;
+  background: #3A3C4A;
+  border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #06B6D4;
 }

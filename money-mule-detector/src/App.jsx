@@ -1,4 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { 
+  Network, 
+  ShieldAlert, 
+  Activity, 
+  Layers, 
+  FileJson, 
+  Upload,
+  ActivitySquare
+} from 'lucide-react';
 import CSVUploader from './components/CSVUploader.jsx';
 import GraphVisualization from './components/GraphVisualization.jsx';
 import FraudRingTable from './components/FraudRingTable.jsx';
@@ -11,11 +20,11 @@ import { fetchGraphData, buildLocalGraphData } from './api/graphApi.js';
 import { downloadJSON } from './utils/jsonExporter.js';
 
 const TABS = [
-  { id: 'graph', label: '🕸 Graph View' },
-  { id: 'table', label: 'Fraud Rings' },
-  { id: 'heatmap', label: '🔥 Timeline Heatmap' },
-  { id: 'overlap', label: '🔗 Ring Overlap' },
-  { id: 'json', label: '📄 JSON Export' },
+  { id: 'graph', label: 'Graph View', icon: Network },
+  { id: 'table', label: 'Fraud Rings', icon: ShieldAlert },
+  { id: 'heatmap', label: 'Timeline Heatmap', icon: Activity },
+  { id: 'overlap', label: 'Ring Overlap', icon: Layers },
+  { id: 'json', label: 'JSON Export', icon: FileJson },
 ];
 
 export default function App() {
@@ -191,81 +200,85 @@ export default function App() {
   // ─── Show loading state ───────────────────────────────────────────────────
   if (isProcessing) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-6">
-        {/* Pulsing Neo4j icon */}
-        <div className="w-20 h-20 rounded-full border-4 border-amber-500 border-t-transparent animate-spin" />
+      <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center gap-6">
+        <div className="w-20 h-20 rounded-full border-4 border-brand-accent border-t-transparent animate-spin" />
         <div className="text-center">
-          <p className="text-amber-400 font-bold text-xl font-mono tracking-wider animate-pulse">
+          <p className="text-brand-accent font-bold text-xl font-mono tracking-wider animate-pulse">
             ⚡ Processing via Neo4j Graph Database...
           </p>
-          <p className="text-slate-500 text-sm mt-2 font-mono">{loadingMessage}</p>
+          <p className="text-brand-muted text-sm mt-2 font-mono">{loadingMessage}</p>
         </div>
       </div>
     );
   }
 
-  // ─── Main Dashboard ───────────────────────────────────────────────────────
+  // ─── Main Dashboard Layout ──────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <div className="relative z-10 max-w-screen-2xl mx-auto">
-
-        {/* Neo-Brutal Header */}
-        <header className="mb-8 bg-slate-900 border-2 border-slate-800 p-6 rounded-none brutal-shadow flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1
-              className="text-3xl md:text-4xl font-extrabold text-amber-400 tracking-tight uppercase"
-              style={{ fontFamily: 'Syne, sans-serif' }}
-            >
-              Threat Vision
-            </h1>
-            <p className="text-slate-400 text-sm font-mono mt-1 tracking-wider">
-              Graph-Based Financial Crime Detection Engine
-            </p>
+    <div className="h-screen w-full bg-brand-bg text-brand-text flex overflow-hidden">
+      
+      {/* ─── Sidebar ─── */}
+      <aside className="w-64 bg-brand-card flex flex-col border-r border-brand-border z-20 transition-all flex-shrink-0">
+        <div className="p-6 flex items-center gap-3 border-b border-brand-border">
+          <div className="w-8 h-8 rounded bg-gradient-to-br from-brand-accent to-brand-purple flex items-center justify-center shadow-lg">
+            <ActivitySquare className="w-5 h-5 text-white" />
           </div>
-          <div className="flex items-center gap-3">
-            {/* Neo4j badge */}
-            <span className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-none border border-slate-700 bg-slate-800 text-xs font-mono text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              Neo4j Backend
-            </span>
-            <button
-              onClick={handleReset}
-              className="neobutton bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white"
-            >
-              ↑ Upload New File
-            </button>
-          </div>
-        </header>
+          <h1 className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+            ThreatVision
+          </h1>
+        </div>
 
-        <div className="animate-fadeIn">
-          {/* Summary Panel */}
+        <nav className="flex-1 overflow-y-auto px-3 py-6 space-y-2">
+          <div className="text-xs font-semibold text-brand-muted uppercase tracking-wider mb-4 px-3">
+            Menu
+          </div>
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium text-sm
+                  ${isActive 
+                    ? 'bg-brand-accent/10 border border-brand-accent/20 text-brand-accent' 
+                    : 'text-brand-muted hover:text-white hover:bg-white/5 border border-transparent'
+                  }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'text-brand-accent' : 'opacity-70'}`} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-brand-border">
+          <button
+            onClick={handleReset}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-brand-red/10 hover:text-brand-red text-brand-muted border border-brand-border hover:border-brand-red/30 rounded-xl transition-colors text-sm font-medium"
+          >
+            <Upload className="w-4 h-4" />
+            Upload New Data
+          </button>
+        </div>
+      </aside>
+
+      {/* ─── Main Content Area ─── */}
+      <main className="flex-1 flex flex-col h-screen overflow-y-auto relative bg-[#13151A]">
+        <div className="p-6 md:p-8 max-w-[1600px] mx-auto w-full flex-1 flex flex-col gap-6 animate-fadeIn">
+          
+          {/* Header & KPIs (Replaces standalone SummaryPanel) */}
           <SummaryPanel analysisResults={summaryPanelResults} onDownload={handleDownload} />
 
           {/* Error banner */}
           {error && (
-            <div className="mb-4 bg-red-950/80 border-2 border-red-600 text-red-300 px-5 py-4 text-sm brutal-shadow-rose font-bold font-mono">
-              ⚠ {error}
+            <div className="bg-brand-red/10 border border-brand-red/30 text-brand-red px-5 py-4 text-sm rounded-xl font-medium flex items-center gap-3">
+              <ShieldAlert className="w-5 h-5" />
+              {error}
             </div>
           )}
 
-          {/* Neo-Tabs */}
-          <div className="flex flex-wrap gap-3 mb-6">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-5 py-3 font-bold uppercase tracking-wider border-2 transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${activeTab === tab.id
-                  ? 'bg-amber-500 text-slate-950 border-amber-600 brutal-shadow-amber'
-                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-200 brutal-shadow'
-                  }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Tab content area */}
-          <div className="bg-slate-900 border-2 border-slate-800 p-1 brutal-shadow min-h-[600px] animate-fadeIn">
+          {/* Active Widget Area */}
+          <div className="flex-1 bg-brand-card rounded-2xl border border-brand-border shadow-2xl overflow-hidden flex flex-col relative">
 
             {/* Graph View — Neo4j analytics-powered force-directed network */}
             {activeTab === 'graph' && (
@@ -311,24 +324,19 @@ export default function App() {
 
             {/* JSON Export */}
             {activeTab === 'json' && (
-              <div className="p-8">
+              <div className="p-8 h-full flex flex-col">
                 <div className="flex items-center justify-between mb-6">
-                  <h3
-                    className="text-xl font-bold text-slate-100 uppercase tracking-widest"
-                    style={{ fontFamily: 'Syne, sans-serif' }}
-                  >
-                    JSON Export Preview
-                  </h3>
+                  <h3 className="text-lg font-bold">JSON Data Export</h3>
                   <button
                     onClick={handleDownload}
-                    className="neobutton bg-amber-500 text-slate-900 hover:bg-amber-400 border-amber-600 brutal-shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-brand-accent/20 text-brand-accent hover:bg-brand-accent hover:text-brand-bg rounded-lg transition-colors text-sm font-semibold"
                   >
-                    ⬇ Download JSON
+                    <Upload className="w-4 h-4 rotate-180" />
+                    Download JSON
                   </button>
                 </div>
                 <pre
-                  className="bg-slate-950 p-6 text-xs text-green-400 border-2 border-slate-800 font-mono overflow-auto max-h-[600px] shadow-inner"
-                  style={{ fontFamily: 'IBM Plex Mono, monospace' }}
+                  className="bg-[#13151A] p-6 rounded-xl border border-brand-border text-brand-accent/80 font-mono text-sm overflow-auto flex-1 custom-scrollbar"
                 >
                   {JSON.stringify(analysisResults, null, 2)}
                 </pre>
@@ -347,7 +355,7 @@ export default function App() {
             onClose={handleClosePanel}
           />
         )}
-      </div>
+      </main>
     </div>
   );
 }
