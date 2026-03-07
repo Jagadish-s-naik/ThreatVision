@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import ReactDOM from 'react-dom';
 
 const CELL_W = 20;
 const CELL_H = 18;
@@ -144,6 +145,30 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
         }
     };
 
+    function handleCellMouseMove(event, cellData) {
+        if (typeof window === 'undefined') return;
+        const MARGIN = 12;
+        const OFFSET = 14;
+        const W = 180; // Tooltip width estimate
+        const H = 80;  // Tooltip height estimate
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const cx = event.clientX;
+        const cy = event.clientY;
+
+        let x = cx - W - OFFSET;
+        if (x < MARGIN) x = cx + OFFSET;
+        if (x + W > vw - MARGIN) x = vw - W - MARGIN;
+        x = Math.max(MARGIN, x);
+
+        let y = cy - H - OFFSET;
+        if (y < MARGIN) y = cy + OFFSET;
+        if (y + H > vh - MARGIN) y = vh - H - MARGIN;
+        y = Math.max(MARGIN, y);
+
+        setTooltip({ x, y, ...cellData });
+    }
+
     return (
         <div style={{
             background: 'rgba(255, 255, 255, 0.025)',
@@ -243,33 +268,15 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                                                         className={`transition-all hover:scale-125 hover:z-10 hover:border hover:border-white relative ${displayCount > 0 ? 'cursor-pointer' : 'cursor-default'}`}
                                                         onMouseEnter={(e) => {
                                                             const rect = e.currentTarget.getBoundingClientRect();
-                                                            let left = rect.left + 15;
-                                                            let top = rect.top - 15;
-                                                            let bottom = 'auto';
-                                                            let right = 'auto';
-
-                                                            // Flip horizontal if overflowing right edge
-                                                            if (left + 160 > window.innerWidth - 16) {
-                                                                left = 'auto';
-                                                                right = window.innerWidth - e.clientX + 8;
-                                                            }
-
-                                                            // Flip vertical if overflowing bottom edge  
-                                                            if (top + 100 > window.innerHeight - 16) {
-                                                                top = 'auto';
-                                                                bottom = window.innerHeight - e.clientY + 8;
-                                                            }
-
-                                                            // Keep inside left edge
-                                                            if (left !== 'auto' && left < 16) {
-                                                                left = 16;
-                                                            }
-
-                                                            setTooltip({
-                                                                x: left,
-                                                                y: top,
-                                                                r: right,
-                                                                b: bottom,
+                                                            handleCellMouseMove(e, {
+                                                                date: formatDateLabel(date),
+                                                                hour: h,
+                                                                count: suspCount,
+                                                                normCount,
+                                                            });
+                                                        }}
+                                                        onMouseMove={(e) => {
+                                                            handleCellMouseMove(e, {
                                                                 date: formatDateLabel(date),
                                                                 hour: h,
                                                                 count: suspCount,
@@ -310,14 +317,12 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                 </>
             )}
 
-            {/* Glass Tooltip */}
-            {tooltip && (
+            {/* Glass Tooltip via Portal */}
+            {tooltip && typeof document !== 'undefined' && ReactDOM.createPortal(
                 <div
                     style={{ 
                         left: tooltip.x, 
                         top: tooltip.y, 
-                        right: tooltip.r,
-                        bottom: tooltip.b,
                         background: 'rgba(10, 14, 26, 0.75)',
                         backdropFilter: 'blur(20px)',
                         WebkitBackdropFilter: 'blur(20px)',
@@ -326,7 +331,10 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                         padding: '10px 14px',
                         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
                         minWidth: '160px',
-                        zIndex: 9999,
+                        maxWidth: '200px',
+                        width: 'max-content',
+                        boxSizing: 'border-box',
+                        zIndex: 999999,
                         pointerEvents: 'none',
                         position: 'fixed'
                     }}
@@ -344,7 +352,8 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                         <div style={{ color: '#ff6b1a', fontSize: '13px', fontWeight: 700, letterSpacing: '0.03em', textShadow: '0 0 8px rgba(255, 107, 26, 0.6)' }}>Suspicious</div>
                         <div style={{ color: '#ffffff', fontSize: '20px', fontWeight: 800, lineHeight: 1, marginTop: '4px' }}>{tooltip.count}</div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
