@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import cytoscape from 'cytoscape';
+import { Maximize, ZoomIn, ZoomOut, RefreshCw, Layers } from 'lucide-react';
 
 function truncate(str, n = 10) {
     return str && str.length > n ? str.slice(0, n) + '…' : str;
@@ -375,15 +376,65 @@ export default function GraphVisualization({
 
             {/* Controls */}
             <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-                <button onClick={handleFit}    className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Fit">⤢ FIT</button>
-                <button onClick={handleZoomIn} className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Zoom In">+ IN</button>
-                <button onClick={handleZoomOut}className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Zoom Out">- OUT</button>
-                <button onClick={handleReset}  className="neobutton bg-amber-900/50 text-amber-200 border-amber-800 hover:bg-amber-900 p-2 text-xs" title="Reset">↺ RST</button>
+                <button
+                    onClick={handleFit}
+                    title="Fit Graph"
+                    className="p-2 bg-[#1e2435] text-white hover:bg-brand-accent/20 border border-brand-border rounded-full shadow-lg transition-colors flex items-center justify-center cursor-pointer"
+                >
+                    <Maximize className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={handleZoomIn}
+                    title="Zoom In"
+                    className="p-2 bg-[#1e2435] text-white hover:bg-brand-accent/20 border border-brand-border rounded-full shadow-lg transition-colors flex items-center justify-center cursor-pointer"
+                >
+                    <ZoomIn className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={handleZoomOut}
+                    title="Zoom Out"
+                    className="p-2 bg-[#1e2435] text-white hover:bg-brand-accent/20 border border-brand-border rounded-full shadow-lg transition-colors flex items-center justify-center cursor-pointer"
+                >
+                    <ZoomOut className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={handleReset}
+                    title="Reset Layout"
+                    className="p-2 bg-[#1e2435] text-brand-orange hover:bg-brand-orange/20 border border-brand-border rounded-full shadow-lg transition-colors flex items-center justify-center mt-2 cursor-pointer"
+                >
+                    <RefreshCw className="w-4 h-4 text-[#f97316]" />
+                </button>
                 {isFocusMode && (
-                    <div className="bg-red-900/80 text-red-100 text-[10px] px-2 py-1 border border-red-600 font-bold uppercase tracking-widest text-center animate-pulse">
+                    <div className="bg-red-900/80 text-red-100 text-[10px] px-2 py-1 border border-red-600 font-bold uppercase tracking-widest text-center animate-pulse rounded-full mt-2">
                         Focus Mode
                     </div>
                 )}
+            </div>
+
+            {/* Neo4j Style Legend */}
+            <div className="absolute bottom-4 left-4 z-10 bg-[#1a2035] border border-brand-border rounded-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-md pointer-events-none min-w-[160px]">
+                <div className="text-xs font-bold text-white mb-3 tracking-wider flex items-center gap-2 border-b border-brand-border/50 pb-2">
+                   <Layers className="w-3 h-3 text-brand-muted" />
+                   NETWORK LEGEND
+                </div>
+                <div className="space-y-2 mt-2">
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full border-2 border-white bg-[#06B6D4] shadow-[0_0_8px_#22D3EE]" />
+                        <span className="text-[10px] text-white font-medium uppercase">Hub Node</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full border border-white/50 bg-[#EF4444] shadow-[0_0_8px_#EF4444]" />
+                        <span className="text-[10px] text-white font-medium uppercase">Critical Suspect</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full border border-white/50 bg-[#F59E0B]" />
+                        <span className="text-[10px] text-slate-300 font-medium uppercase">High Risk</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full border border-white/20 bg-[#64748B]" />
+                        <span className="text-[10px] text-slate-400 font-medium uppercase">Normal Node</span>
+                    </div>
+                </div>
             </div>
 
             {/* Hover tooltip */}
@@ -411,7 +462,7 @@ export default function GraphVisualization({
                             { label: 'Total Sent',      value: `$${(tooltip.totalSent || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}` },
                             { label: 'Total Received',  value: `$${(tooltip.totalReceived || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}` },
                             ...(tooltip.suspicionScore > 0 ? [{ label: 'Suspicion Score', value: `${tooltip.suspicionScore}/100`, color: 'text-red-400' }] : []),
-                            ...(tooltip.patterns ? [{ label: 'Patterns', value: tooltip.patterns, color: 'text-amber-400' }] : []),
+                            ...(tooltip.patterns ? [{ label: 'Patterns', value: tooltip.patterns, color: 'text-brand-orange' }] : []),
                         ].map(({ label, value, color }) => (
                             <div key={label} className="flex justify-between border-b border-slate-800 pb-1">
                                 <span className="text-slate-500 uppercase text-[10px] tracking-wider">{label}</span>

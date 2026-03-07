@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import CSVUploader from './components/CSVUploader.jsx';
 import GraphVisualization from './components/GraphVisualization.jsx';
+import { RiskScoreTrendChart, FlaggedEntitiesChart, RiskDistributionDonut, RingActivityBar } from './components/DashboardCharts.jsx';
 import FraudRingTable from './components/FraudRingTable.jsx';
 import TemporalHeatmap from './components/TemporalHeatmap.jsx';
 import RiskExplanationPanel from './components/RiskExplanationPanel.jsx';
@@ -47,16 +48,24 @@ export default function App() {
     try {
       const saved = localStorage.getItem('threat_vision_results');
       const savedTx = localStorage.getItem('threat_vision_transactions');
+      const savedGraph = localStorage.getItem('threat_vision_graph');
       if (saved && savedTx) {
         const parsedResults = JSON.parse(saved);
         const parsedTx = JSON.parse(savedTx);
         setAnalysisResults(parsedResults);
         setTransactions(parsedTx);
+        if (savedGraph) {
+          setGraphData(JSON.parse(savedGraph));
+        } else {
+           // Fallback if graph data wasn't saved but we have txs
+           setGraphData(buildLocalGraphData(parsedTx, parsedResults.suspicious_accounts || []));
+        }
       }
     } catch (e) {
       console.warn('Failed to restore session:', e);
       localStorage.removeItem('threat_vision_results');
       localStorage.removeItem('threat_vision_transactions');
+      localStorage.removeItem('threat_vision_graph');
     }
   }, []);
 
@@ -104,6 +113,11 @@ export default function App() {
       try {
         localStorage.setItem('threat_vision_results', JSON.stringify(result));
         localStorage.setItem('threat_vision_transactions', JSON.stringify(txRows));
+        if (neo4jGraph) {
+          localStorage.setItem('threat_vision_graph', JSON.stringify(neo4jGraph));
+        } else {
+          localStorage.setItem('threat_vision_graph', JSON.stringify(buildLocalGraphData(txRows, result.suspicious_accounts || [])));
+        }
       } catch (e) {
         console.warn('Storage quota exceeded, skipping persistence:', e);
       }
@@ -145,6 +159,7 @@ export default function App() {
   const handleReset = () => {
     localStorage.removeItem('threat_vision_results');
     localStorage.removeItem('threat_vision_transactions');
+    localStorage.removeItem('threat_vision_graph');
     localStorage.removeItem('threat_vision_data');
     window.location.reload();
   };
@@ -219,7 +234,7 @@ export default function App() {
     <div className="h-screen w-full bg-brand-bg text-brand-text flex overflow-hidden">
       
       {/* ─── Sidebar ─── */}
-      <aside className="w-64 bg-brand-card flex flex-col border-r border-brand-border z-20 transition-all flex-shrink-0">
+      <aside className="w-[210px] bg-brand-sidebar flex flex-col border-r border-brand-border z-20 transition-all flex-shrink-0">
         <div className="p-6 flex items-center gap-3 border-b border-brand-border">
           <div className="w-8 h-8 rounded bg-gradient-to-br from-brand-accent to-brand-purple flex items-center justify-center shadow-lg">
             <ActivitySquare className="w-5 h-5 text-white" />
@@ -240,10 +255,10 @@ export default function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium text-sm
+                className={`w-full flex items-center gap-3 px-3 py-2.5 transition-all font-medium text-sm
                   ${isActive 
-                    ? 'bg-brand-accent/10 border border-brand-accent/20 text-brand-accent' 
-                    : 'text-brand-muted hover:text-white hover:bg-white/5 border border-transparent'
+                    ? 'border-l-[3px] border-brand-accent bg-brand-accent/10 text-white' 
+                    : 'text-brand-muted hover:text-white hover:bg-white/5 border-l-[3px] border-transparent'
                   }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-brand-accent' : 'opacity-70'}`} />
@@ -256,7 +271,7 @@ export default function App() {
         <div className="p-4 border-t border-brand-border">
           <button
             onClick={handleReset}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-brand-red/10 hover:text-brand-red text-brand-muted border border-brand-border hover:border-brand-red/30 rounded-xl transition-colors text-sm font-medium"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-transparent hover:bg-brand-accent/10 text-white border border-white/15 rounded-full hover:border-brand-accent/50 hover:shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all text-sm font-medium"
           >
             <Upload className="w-4 h-4" />
             Upload New Data
@@ -314,66 +329,141 @@ export default function App() {
 
           {/* Dynamic Board Area */}
           {activeTab === 'graph' ? (
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-[600px] overflow-hidden">
-              {/* Main Graph Card (spanning 2 columns) */}
-              <div className="lg:col-span-2 bg-brand-card rounded-2xl border border-brand-border shadow-2xl flex flex-col relative overflow-hidden">
-                <div className="absolute top-5 left-5 z-10">
-                   <h3 className="text-lg font-bold text-white mb-1">Network Visualization</h3>
-                   <p className="text-brand-muted text-xs">Force-directed relational mapping</p>
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
+              
+              {/* CENTER COLUMN (spanning 2 columns) */}
+              <div className="lg:col-span-2 flex flex-col gap-6 overflow-y-auto custom-scrollbar h-full pr-2">
+                
+                {/* ROW 1: Trend Charts */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[220px] flex-shrink-0">
+                  {/* Risk Score Trend */}
+                  <div className="bg-brand-card rounded-[14px] border border-brand-border p-5 flex flex-col relative overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:border-brand-accent/20 transition-colors">
+                    <div className="flex justify-between items-center mb-4 z-10">
+                      <h3 className="text-sm font-semibold text-white">Risk Score Trend</h3>
+                      <button className="text-brand-muted hover:text-white">...</button>
+                    </div>
+                    <div className="flex-1 -mx-5 -mb-5 relative z-0">
+                      <RiskScoreTrendChart data={suspiciousAccounts} />
+                    </div>
+                  </div>
+
+                  {/* Flagged Entities */}
+                  <div className="bg-brand-card rounded-[14px] border border-brand-border p-5 flex flex-col relative overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:border-brand-accent/20 transition-colors">
+                    <div className="flex justify-between items-start mb-2 z-10">
+                      <div>
+                        <h3 className="text-3xl font-bold text-white leading-none">{(summary.suspicious_accounts_flagged || 0)}</h3>
+                        <p className="text-xs text-brand-muted mt-1">Flagged Today</p>
+                      </div>
+                      <button className="text-brand-muted hover:text-white">...</button>
+                    </div>
+                    <div className="flex-1 -mx-5 -mb-5 relative z-0">
+                      <FlaggedEntitiesChart fraudRings={fraudRings} />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 h-full w-full">
-                  <GraphVisualization
-                    graphData={graphData}
-                    suspiciousAccounts={suspiciousAccounts}
-                    fraudRings={fraudRings}
-                    onSelectAccount={handleSelectAccount}
-                  />
+
+                {/* ROW 2: Main Graph Card (Hero) */}
+                <div className="bg-brand-card rounded-[14px] border border-brand-border shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex flex-col relative overflow-hidden min-h-[420px] flex-shrink-0 hover:border-brand-accent/20 transition-colors">
+                  <div className="absolute top-5 left-5 z-10 flex gap-4 items-baseline pointer-events-none">
+                     <h3 className="text-lg font-bold text-white">Network Visualization</h3>
+                     <span className="text-[10px] font-bold text-brand-accent tracking-widest">{graphData?.nodes?.length || 0} NODES · {graphData?.links?.length || 0} EDGES</span>
+                  </div>
+                  <div className="flex-1 h-full w-full">
+                    <GraphVisualization
+                      graphData={graphData}
+                      suspiciousAccounts={suspiciousAccounts}
+                      fraudRings={fraudRings}
+                      onSelectAccount={handleSelectAccount}
+                    />
+                  </div>
+                </div>
+
+                {/* ROW 3: Secondary Charts */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[260px] flex-shrink-0 mb-6">
+                  {/* Account Risk Donut */}
+                  <div className="bg-brand-card rounded-[14px] border border-brand-border p-5 flex flex-col relative shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:border-brand-accent/20 transition-colors">
+                    <h3 className="text-sm font-semibold text-white mb-2">Account Risk Distribution</h3>
+                    <div className="flex-1 relative flex items-center justify-center">
+                       <span className="absolute text-center flex flex-col items-center justify-center pointer-events-none z-10">
+                          <span className="text-2xl font-bold text-white leading-none">{(summary.total_accounts_analyzed || 0)}</span>
+                          <span className="text-[10px] text-brand-muted uppercase">Total</span>
+                       </span>
+                       <RiskDistributionDonut suspiciousAccounts={suspiciousAccounts} />
+                    </div>
+                  </div>
+
+                  {/* Ring Activity Bar */}
+                  <div className="bg-brand-card rounded-[14px] border border-brand-border p-5 flex flex-col relative shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:border-brand-accent/20 transition-colors">
+                    <div className="flex justify-between items-center mb-2">
+                       <h3 className="text-sm font-semibold text-white">Ring Activity Timeline</h3>
+                       <span className="text-[10px] bg-brand-accent/20 text-brand-accent px-2 py-0.5 rounded-full font-bold">+{fraudRings.length} rings</span>
+                    </div>
+                    <div className="flex-1 -mx-5 relative w-[calc(100%+40px)]">
+                       <RingActivityBar fraudRings={fraudRings} />
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Right Sidebar Columns matching reference */}
-              <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto custom-scrollbar h-full">
+              <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto custom-scrollbar h-full w-[300px] flex-shrink-0 relative">
+                 
+                 {/* Top Featured Alert (like Threat Intelligence) */}
+                 <div className="bg-brand-card rounded-[14px] border border-brand-border shadow-[0_4px_24px_rgba(0,0,0,0.3)] overflow-hidden">
+                    <div className="h-32 bg-gradient-to-br from-brand-sidebar via-brand-purple/20 to-brand-accent/20 relative flex items-center justify-center border-b border-brand-border/50 p-4 overflow-hidden">
+                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,229,255,0.1)_0%,transparent_70%)]" />
+                       <Network className="w-16 h-16 text-brand-accent opacity-20" />
+                       <span className="absolute top-4 left-4 bg-brand-accent/20 border border-brand-accent text-brand-accent text-[10px] font-bold px-2 py-0.5 rounded-sm tracking-wider">NEW ALERT</span>
+                    </div>
+                    <div className="p-5">
+                       <p className="font-bold text-white text-sm leading-snug">Critical fraud rings detected — smurfing pattern active.</p>
+                       <p className="text-xs text-brand-muted mt-2">Immediate review recommended.</p>
+                    </div>
+                 </div>
+
                  {/* Top Risk Accounts (like Referrals) */}
-                 <div className="bg-brand-card rounded-2xl p-6 border border-brand-border shadow-xl">
-                    <div className="flex items-center justify-between mb-6">
-                       <h3 className="text-base font-bold text-white">Top Risk Accounts</h3>
+                 <div className="bg-brand-card rounded-[14px] p-5 border border-brand-border shadow-[0_4px_24px_rgba(0,0,0,0.3)] hover:border-brand-accent/20 transition-colors">
+                    <div className="flex items-center justify-between mb-4">
+                       <h3 className="text-sm font-semibold text-white">Top Risk Accounts</h3>
                        <button className="text-brand-muted hover:text-white"><Layers className="w-4 h-4" /></button>
                     </div>
                     <div className="space-y-4">
-                       {suspiciousAccounts.slice(0, 4).map((acc, i) => (
+                       {(suspiciousAccounts || []).slice(0, 4).map((acc, i) => (
                          <div key={acc.account_id}>
                             <div className="flex justify-between text-xs mb-1.5">
                                <span className="text-white font-medium">{acc.account_id}</span>
                                <span className="text-brand-muted">{acc.suspicion_score.toFixed(0)} score</span>
                             </div>
-                            <div className="w-full bg-[#13151A] rounded-full h-1.5 overflow-hidden border border-brand-border">
+                            <div className="w-full bg-[#13151A] rounded-full h-1.5 overflow-hidden border border-brand-border/50">
                                <div 
-                                  className={`h-full rounded-full ${i === 0 ? 'bg-brand-red' : i === 1 ? 'bg-orange-500' : 'bg-brand-accent'}`} 
+                                  className={`h-full rounded-full ${i === 0 ? 'bg-brand-red' : i === 1 ? 'bg-orange-500' : i === 2 ? 'bg-brand-accent' : 'bg-brand-purple'}`} 
                                   style={{ width: `${Math.min(100, acc.suspicion_score)}%` }} 
                                />
                             </div>
                          </div>
                        ))}
-                       {suspiciousAccounts.length === 0 && <p className="text-xs text-brand-muted">No risky accounts detected.</p>}
+                       {(!suspiciousAccounts || suspiciousAccounts.length === 0) && <p className="text-xs text-brand-muted">No risky accounts detected.</p>}
                     </div>
                  </div>
 
                  {/* Recent Alerts (like Your Heystack) */}
-                 <div className="bg-brand-card rounded-2xl p-6 border border-brand-border shadow-xl flex-1">
-                    <h3 className="text-base font-bold text-white mb-6">Recent Alerts</h3>
-                    <div className="space-y-5">
-                       {fraudRings.slice(0, 4).map((ring) => (
-                         <div key={ring.ring_id} className="flex gap-4 items-start">
-                            <div className="w-8 h-8 rounded-full bg-brand-red/10 border border-brand-red/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                               <ShieldAlert className="w-4 h-4 text-brand-red" />
+                 <div className="bg-brand-card rounded-[14px] p-5 border border-brand-border shadow-[0_4px_24px_rgba(0,0,0,0.3)] flex-1 hover:border-brand-accent/20 transition-colors">
+                    <h3 className="text-sm font-semibold text-white mb-4">Recent Alerts</h3>
+                    <div className="space-y-0">
+                       {(fraudRings || []).slice(0, 4).map((ring, idx) => (
+                         <div key={ring.ring_id} className={`py-3 flex gap-3 items-start ${idx !== 0 ? 'border-t border-brand-border/50' : ''}`}>
+                            <div className="mt-1 flex-shrink-0">
+                               <div className="w-3 h-3 rounded-full border-2 border-brand-muted/50 flex items-center justify-center">
+                                  <div className="w-1 h-1 bg-brand-muted rounded-full"></div>
+                               </div>
                             </div>
                             <div>
-                               <p className="text-sm font-semibold text-white mb-1">Ring: {ring.ring_id}</p>
-                               <p className="text-xs text-brand-muted leading-relaxed">Detected {ring.member_accounts.length} linked accounts forming a {ring.pattern_type} pattern.</p>
+                               <p className="text-sm font-medium text-white mb-0.5">Ring: {ring.ring_id}</p>
+                               <p className="text-xs text-brand-muted leading-snug">Detected {ring.member_accounts.length} linked accounts forming a {ring.pattern_type} pattern.</p>
                             </div>
                          </div>
                        ))}
-                       {fraudRings.length === 0 && (
+                       {(!fraudRings || fraudRings.length === 0) && (
                           <p className="text-xs text-brand-muted">No recent alerts found.</p>
                        )}
                     </div>

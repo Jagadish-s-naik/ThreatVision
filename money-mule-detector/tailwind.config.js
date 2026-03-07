@@ -11,20 +11,23 @@ export default {
                     950: '#0F172A',
                 },
                 brand: {
-                    bg: '#171821',      // Dashboard deep dark background
-                    card: '#21222D',    // Dashboard card background
-                    border: '#3A3C4A',  // Subtle borders
-                    accent: '#06B6D4',  // Cyan highlighting
-                    purple: '#A855F7',  // Purple highlighting
-                    red: '#EF4444',     // Red alerts
-                    text: '#F1F5F9',    // Core text
-                    muted: '#8B8D97',   // Muted text
+                    bg: '#0d1117',        /* Main canvas background */
+                    card: '#161b27',      /* Card/panel background */
+                    sidebar: '#0f1520',   /* Sidebar background */
+                    accent: '#00e5ff',    /* Primary accent (cyan) */
+                    red: '#ff4d6d',       /* Alert/critical color */
+                    purple: '#a855f7',    /* Secondary accent */
+                    orange: '#f97316',    /* Warning color */
+                    text: '#ffffff',      /* Text primary */
+                    muted: '#8892a4',     /* Text secondary */
+                    border: 'rgba(255,255,255,0.06)' /* Card border */
                 }
             },
             fontFamily: {
-                syne: ['Syne', 'sans-serif'],
-                mono: ['IBM Plex Mono', 'monospace'],
-                sans: ['Inter', 'sans-serif'],
+                system: ['Inter', 'system-ui', 'sans-serif'],
+            },
+            borderRadius: {
+                'ek': '14px',
             },
             animation: {
                 'spin-slow': 'spin 3s linear infinite',

@@ -5,99 +5,132 @@
     box-sizing: border-box;
   }
 
+  html, body, #root {
+    height: 100%;
+  }
+
   body {
-    background-color: #171821; /* Brand BG */
+    /* Deep space layered background */
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(0,229,255,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(168,85,247,0.04) 0%, transparent 50%),
+      #0a0e1a;
     color: #F1F5F9;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     margin: 0;
     padding: 0;
-    overflow: hidden; /* Prevent body scroll, handle scroll in main layout */
+    overflow: hidden;
   }
 }
 
+/* ──────────────────────────────────────────
+   KEYFRAMES
+   ────────────────────────────────────────── */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 @keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.4s ease-out forwards;
+@keyframes barGrow {
+  from { width: 0; }
 }
 
-.animate-slideInRight {
-  animation: slideInRight 0.3s ease-out forwards;
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0,229,255,0.5); }
+  50%       { box-shadow: 0 0 20px rgba(0,229,255,0.9); }
 }
 
-.animate-spin {
-  animation: spin 1s linear infinite;
+/* ──────────────────────────────────────────
+   ANIMATION HELPERS
+   ────────────────────────────────────────── */
+.animate-fadeIn      { animation: fadeIn 0.4s ease-out forwards; }
+.animate-slideInRight{ animation: slideInRight 0.3s ease-out forwards; }
+.animate-spin        { animation: spin 1s linear infinite; }
+.animate-pulse       { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+.animate-barGrow     { animation: barGrow 0.6s ease-out forwards; }
+
+/* ──────────────────────────────────────────
+   GLASS CARD — global reusable
+   ────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: border 0.25s ease, box-shadow 0.25s ease;
 }
 
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.glass-card:hover {
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 229, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-/* Glassmorphism utility */
-.glass-panel {
-  background: rgba(33, 34, 45, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+/* glass-card hero variant — cyan top border glow */
+.glass-card-hero {
+  border-top: 1px solid rgba(0, 229, 255, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    0 -1px 20px rgba(0,229,255,0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-/* Smooth Premium Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* ──────────────────────────────────────────
+   GLASS SIDEBAR
+   ────────────────────────────────────────── */
+.glass-sidebar {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-::-webkit-scrollbar-track {
-  background: #171821;
+/* ──────────────────────────────────────────
+   DOT GRID TEXTURE OVERLAY
+   ────────────────────────────────────────── */
+.dot-grid {
+  background-image: radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #3A3C4A;
-  border-radius: 6px;
-}
+/* ──────────────────────────────────────────
+   PROGRESS BAR GLOW
+   ────────────────────────────────────────── */
+.bar-cyan   { background: #00e5ff; box-shadow: 0 0 8px rgba(0,229,255,0.6); }
+.bar-orange { background: #f97316; box-shadow: 0 0 8px rgba(249,115,22,0.6); }
+.bar-purple { background: #a855f7; box-shadow: 0 0 8px rgba(168,85,247,0.6); }
+.bar-red    { background: #ff4d6d; box-shadow: 0 0 8px rgba(255,77,109,0.6); }
 
+/* ──────────────────────────────────────────
+   CUSTOM SCROLLBAR
+   ────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  {
+  background: rgba(255,255,255,0.1);
+  border-radius: 999px;
+}
 ::-webkit-scrollbar-thumb:hover {
-  background: #06B6D4;
+  background: rgba(0,229,255,0.3);
 }
