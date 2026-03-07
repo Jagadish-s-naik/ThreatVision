@@ -5,180 +5,110 @@ function truncate(str, n = 10) {
     return str && str.length > n ? str.slice(0, n) + '…' : str;
 }
 
-function getNodeColor(acc) {
-    if (!acc) return '#6B7280';
-    if (acc.ringMemberships && acc.ringMemberships.length >= 2) return '#D946EF';
-    if (acc.suspicion_score >= 75) return '#EF4444';
-    if (acc.suspicion_score >= 50) return '#F97316';
-    if (acc.suspicion_score >= 25) return '#EAB308';
-    return '#6B7280';
+/** Node colour driven by Neo4j analytics */
+function getNodeColor(node, accountMap) {
+    if (!node) return '#6B7280';
+    // Hub node: bright cyan
+    if (node.isHub) return '#06B6D4';
+    // Suspicious overlap
+    const acc = accountMap?.[node.id];
+    if (acc) {
+        if (acc.suspicion_score >= 75) return '#EF4444';
+        if (acc.suspicion_score >= 50) return '#F97316';
+        if (acc.suspicion_score >= 25) return '#EAB308';
+    }
+    // Size by centrality
+    if (node.centralityScore >= 70) return '#8B5CF6';
+    if (node.centralityScore >= 40) return '#3B82F6';
+    return '#475569';
 }
 
-function getNodeSize(acc) {
-    if (!acc) return 30;
-    if (acc.ringMemberships && acc.ringMemberships.length >= 2) return 42;
-    if (acc.suspicion_score >= 75) return 40;
-    if (acc.suspicion_score >= 50) return 38;
-    if (acc.suspicion_score >= 25) return 35;
-    return 30;
+/** Node radius: base 18, scaled by degree centrality (18–52px) */
+function getNodeRadius(node) {
+    if (!node) return 18;
+    const base = 18;
+    const max = 52;
+    const ratio = Math.min(1, (node.centralityScore || 0) / 100);
+    return Math.round(base + (max - base) * ratio);
 }
 
-export default function GraphVisualization({ edges, nodeStats, suspiciousAccounts, fraudRings, onSelectAccount }) {
+/** Edge width scaled by transaction amount (1–6px) */
+function getEdgeWidth(amount, maxAmount) {
+    if (!amount || !maxAmount) return 1;
+    return Math.max(1, Math.min(6, (amount / maxAmount) * 6));
+}
+
+export default function GraphVisualization({
+    graphData,           // { nodes, edges, hubs, analytics } from Neo4j
+    suspiciousAccounts,
+    fraudRings,
+    onSelectAccount,
+}) {
     const containerRef = useRef(null);
     const cyRef = useRef(null);
-    const rafRef = useRef(null);   // ← track animation frame for cleanup
+    const rafRef = useRef(null);
     const [tooltip, setTooltip] = useState(null);
     const [isFocusMode, setIsFocusMode] = useState(false);
+    const [viewMode, setViewMode] = useState('network'); // 'network' | 'tree'
 
     const accountMap = {};
     for (const acc of suspiciousAccounts || []) accountMap[acc.account_id] = acc;
 
     const buildAndMount = useCallback(() => {
-        if (!containerRef.current || !edges) return;
+        if (!containerRef.current || !graphData?.nodes?.length) return;
 
-        // Cancel any running animation frame before rebuilding
+        // Cancel any running animation
         if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
         if (cyRef.current) { cyRef.current.destroy(); cyRef.current = null; }
 
-        // ─── Collect all unique node IDs from edges ───────────────────
-        const nodeIds = new Set();
-        for (const e of edges || []) {
-            nodeIds.add(String(e.sender_id));
-            nodeIds.add(String(e.receiver_id));
-        }
+        const { nodes, edges, analytics } = graphData;
+        const maxAmount = Math.max(...(edges || []).map((e) => e.amount || 0), 1);
 
-        // ─── Also include suspicious accounts not in edges ─────────────
-        for (const acc of suspiciousAccounts || []) {
-            nodeIds.add(String(acc.account_id));
-        }
+        const nodeMap = {};
+        for (const n of nodes) nodeMap[n.id] = n;
 
-        const suspiciousIds = new Set(Object.keys(accountMap));
-        const normalIds = [...nodeIds].filter(id => !suspiciousIds.has(id));
-        const fraudIds = [...suspiciousIds].filter(id => nodeIds.has(id));
+        const suspiciousIds = new Set((suspiciousAccounts || []).map((a) => a.account_id));
 
-        // ─── Virtual root + branch nodes ──────────────────────────────
-        const ROOT_ID = '__ROOT__';
-        const FRAUD_ID = '__FRAUD__';
-        const NORMAL_ID = '__NORMAL__';
-
-        const cyNodes = [];
-        const cyEdges = [];
-
-        // Root node
-        cyNodes.push({
+        // ─── Build Cytoscape elements ─────────────────────────────────
+        const cyNodes = nodes.map((n) => ({
             data: {
-                id: ROOT_ID,
-                label: 'THREAT\nVISION',
-                color: '#F59E0B',
-                size: 58,
-                borderWidth: 4,
-                shape: 'ellipse',
-                suspicion_score: 0,
-                ring_id: '',
-                detected_patterns: '',
-                txCount: nodeIds.size,
-                ringCount: 0,
+                id: n.id,
+                label: truncate(n.id),
+                color: getNodeColor(n, accountMap),
+                size: getNodeRadius(n),
+                borderWidth: suspiciousIds.has(n.id) ? 3 : (n.isHub ? 4 : 2),
+                // Analytics payload for tooltip
+                degree: n.degree,
+                inDegree: n.inDegree,
+                outDegree: n.outDegree,
+                centralityScore: n.centralityScore,
+                totalSent: n.totalSent,
+                totalReceived: n.totalReceived,
+                isHub: n.isHub,
+                suspicionScore: accountMap[n.id]?.suspicion_score ?? 0,
+                patterns: (accountMap[n.id]?.detected_patterns || []).join(', '),
             },
-            classes: 'root-node',
-        });
+            classes: [
+                suspiciousIds.has(n.id) ? 'suspicious' : 'normal',
+                n.isHub ? 'hub' : '',
+            ].filter(Boolean).join(' '),
+        }));
 
-        // Fraud branch hub
-        if (fraudIds.length > 0) {
-            cyNodes.push({
-                data: {
-                    id: FRAUD_ID,
-                    label: '⚠ FRAUD\n' + fraudIds.length + ' accounts',
-                    color: '#DC2626',
-                    size: 52,
-                    borderWidth: 4,
-                    shape: 'round-rectangle',
-                    suspicion_score: 100,
-                    ring_id: '',
-                    detected_patterns: '',
-                    txCount: fraudIds.length,
-                    ringCount: 0,
-                },
-                classes: 'branch-fraud',
-            });
-            cyEdges.push({
-                data: { id: `${ROOT_ID}__${FRAUD_ID}`, source: ROOT_ID, target: FRAUD_ID, edgeColor: '#DC2626', edgeWidth: 3, lineStyle: 'solid' },
-            });
-        }
-
-        // Non-fraud branch hub
-        if (normalIds.length > 0) {
-            cyNodes.push({
-                data: {
-                    id: NORMAL_ID,
-                    label: '✓ CLEAN\n' + normalIds.length + ' accounts',
-                    color: '#16A34A',
-                    size: 52,
-                    borderWidth: 4,
-                    shape: 'round-rectangle',
-                    suspicion_score: 0,
-                    ring_id: '',
-                    detected_patterns: '',
-                    txCount: normalIds.length,
-                    ringCount: 0,
-                },
-                classes: 'branch-normal',
-            });
-            cyEdges.push({
-                data: { id: `${ROOT_ID}__${NORMAL_ID}`, source: ROOT_ID, target: NORMAL_ID, edgeColor: '#16A34A', edgeWidth: 3, lineStyle: 'solid' },
-            });
-        }
-
-        // ─── Fraud account leaf nodes ──────────────────────────────────
-        for (const id of fraudIds) {
-            const acc = accountMap[id];
-            const stats = nodeStats?.[id];
-            const isMultiRing = acc?.ring_ids?.length >= 2;
-            cyNodes.push({
-                data: {
-                    id,
-                    label: truncate(id),
-                    color: getNodeColor(acc),
-                    size: getNodeSize(acc) * 1.2,
-                    borderWidth: 3,
-                    shape: isMultiRing ? 'diamond' : 'round-rectangle',
-                    suspicion_score: acc?.suspicion_score ?? 0,
-                    ring_id: acc?.ring_ids?.[0] ?? '',
-                    detected_patterns: acc ? (acc.detected_patterns || []).join(', ') : '',
-                    txCount: stats?.txCount ?? acc?.transaction_count ?? 0,
-                    ringCount: acc?.ring_ids?.length ?? 0,
-                },
-                classes: isMultiRing ? 'multi-ring' : 'suspicious',
-            });
-            cyEdges.push({
-                data: { id: `${FRAUD_ID}__${id}`, source: FRAUD_ID, target: id, edgeColor: '#EF4444', edgeWidth: 2, lineStyle: 'dashed' },
-                classes: 'suspicious-edge',
-            });
-        }
-
-        // ─── Normal account leaf nodes (cap at 300 to keep tree readable) ─
-        const normalToShow = normalIds.slice(0, 300);
-        for (const id of normalToShow) {
-            const stats = nodeStats?.[id];
-            cyNodes.push({
-                data: {
-                    id,
-                    label: truncate(id),
-                    color: '#6B7280',
-                    size: 30,
-                    borderWidth: 2,
-                    shape: 'rectangle',
-                    suspicion_score: 0,
-                    ring_id: '',
-                    detected_patterns: '',
-                    txCount: stats?.txCount ?? 0,
-                    ringCount: 0,
-                },
-                classes: 'normal',
-            });
-            cyEdges.push({
-                data: { id: `${NORMAL_ID}__${id}`, source: NORMAL_ID, target: id, edgeColor: '#475569', edgeWidth: 1, lineStyle: 'solid' },
-            });
-        }
+        const cyEdges = (edges || []).map((e, i) => ({
+            data: {
+                id: `e_${i}_${e.txId || i}`,
+                source: e.source,
+                target: e.target,
+                amount: e.amount,
+                edgeWidth: getEdgeWidth(e.amount, maxAmount),
+                edgeColor: suspiciousIds.has(e.source) || suspiciousIds.has(e.target)
+                    ? '#EF444466'
+                    : '#47556966',
+            },
+            classes: suspiciousIds.has(e.source) || suspiciousIds.has(e.target)
+                ? 'suspicious-edge'
+                : '',
+        }));
 
         // ─── Cytoscape instance ───────────────────────────────────────
         const cy = cytoscape({
@@ -193,61 +123,34 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                         'height': 'data(size)',
                         'label': 'data(label)',
                         'color': '#F1F5F9',
-                        'font-size': '10px',
+                        'font-size': '9px',
                         'font-weight': 'bold',
                         'font-family': 'IBM Plex Mono, monospace',
                         'text-valign': 'center',
                         'text-halign': 'center',
                         'text-wrap': 'wrap',
-                        'text-background-opacity': 0.7,
+                        'text-background-opacity': 0.8,
                         'text-background-color': '#020617',
                         'text-background-shape': 'round-rectangle',
                         'text-background-padding': 2,
                         'border-width': 'data(borderWidth)',
-                        'border-color': '#000000',
-                        'shape': 'data(shape)',
+                        'border-color': '#1E293B',
                     },
                 },
                 {
-                    selector: 'node.root-node',
+                    selector: 'node.suspicious',
                     style: {
-                        'background-color': '#F59E0B',
-                        'color': '#000',
-                        'font-size': '12px',
-                        'border-color': '#FCD34D',
-                        'border-width': 4,
-                    },
-                },
-                {
-                    selector: 'node.branch-fraud',
-                    style: {
-                        'background-color': '#991B1B',
-                        'font-size': '11px',
                         'border-color': '#EF4444',
+                        'border-style': 'solid',
                     },
                 },
                 {
-                    selector: 'node.branch-normal',
+                    selector: 'node.hub',
                     style: {
-                        'background-color': '#14532D',
-                        'font-size': '11px',
-                        'border-color': '#22C55E',
-                    },
-                },
-                {
-                    selector: 'node.multi-ring',
-                    style: {
-                        'border-color': '#F0ABFC',
+                        'border-color': '#06B6D4',
                         'border-width': 4,
+                        'border-style': 'double',
                     },
-                },
-                {
-                    selector: 'node.faded',
-                    style: { 'opacity': 0.1 },
-                },
-                {
-                    selector: 'node.hidden',
-                    style: { 'display': 'none' },
                 },
                 {
                     selector: 'node.highlighted',
@@ -258,6 +161,14 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                     },
                 },
                 {
+                    selector: 'node.faded',
+                    style: { 'opacity': 0.08 },
+                },
+                {
+                    selector: 'node.hidden',
+                    style: { 'display': 'none' },
+                },
+                {
                     selector: 'edge',
                     style: {
                         'line-color': 'data(edgeColor)',
@@ -265,20 +176,22 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                         'target-arrow-color': 'data(edgeColor)',
                         'target-arrow-shape': 'triangle',
                         'curve-style': 'bezier',
-                        'arrow-scale': 1.0,
-                        'line-style': 'data(lineStyle)',
+                        'arrow-scale': 0.8,
+                        'opacity': 0.7,
                     },
                 },
                 {
                     selector: 'edge.suspicious-edge',
                     style: {
+                        'line-style': 'dashed',
                         'line-dash-pattern': [6, 3],
                         'line-dash-offset': 0,
+                        'opacity': 1,
                     },
                 },
                 {
                     selector: 'edge.faded',
-                    style: { 'opacity': 0.05 },
+                    style: { 'opacity': 0.03 },
                 },
                 {
                     selector: 'edge.hidden',
@@ -286,23 +199,26 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                 },
             ],
             layout: {
-                name: 'breadthfirst',
-                directed: true,
-                roots: `#${ROOT_ID}`,
-                padding: 60,
-                spacingFactor: 1.6,
+                name: 'cose',               // Force-directed physics layout
                 animate: true,
-                animationDuration: 600,
-                avoidOverlap: true,
+                animationDuration: 800,
+                randomize: true,
+                idealEdgeLength: 120,
+                edgeElasticity: 0.45,
+                nodeRepulsion: 8000,
+                gravity: 0.25,
+                numIter: 1000,
+                padding: 50,
+                nodeDimensionsIncludeLabels: true,
             },
-            minZoom: 0.1,
-            maxZoom: 3,
+            minZoom: 0.05,
+            maxZoom: 4,
             wheelSensitivity: 0.3,
         });
 
         cyRef.current = cy;
 
-        // Marching ants animation on suspicious edges
+        // Marching ants on suspicious edges
         let offset = 0;
         function animateEdges() {
             offset -= 1;
@@ -322,24 +238,11 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
 
         // Hover tooltip
         cy.on('mouseover', 'node', (e) => {
-            const node = e.target;
-            const id = node.data('id');
-            if (id === ROOT_ID || id === FRAUD_ID || id === NORMAL_ID) return;
             containerRef.current.style.cursor = 'pointer';
-            const d = node.data();
-            const pos = node.renderedPosition();
-            setTooltip({
-                x: pos.x,
-                y: pos.y,
-                accountId: d.id,
-                score: d.suspicion_score,
-                patterns: d.detected_patterns,
-                ringId: d.ring_id,
-                txCount: d.txCount,
-                ringCount: d.ringCount,
-            });
+            const d = e.target.data();
+            const pos = e.target.renderedPosition();
+            setTooltip({ x: pos.x, y: pos.y, ...d });
         });
-
         cy.on('mouseout', 'node', () => {
             containerRef.current.style.cursor = 'default';
             setTooltip(null);
@@ -348,7 +251,6 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
         // Click node
         cy.on('tap', 'node', (e) => {
             const nodeId = e.target.data('id');
-            if (nodeId === ROOT_ID || nodeId === FRAUD_ID || nodeId === NORMAL_ID) return;
             const acc = accountMap[nodeId];
             cy.elements().removeClass('faded highlighted');
 
@@ -379,18 +281,16 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
             if (acc) onSelectAccount(acc);
         });
 
-        // Double click focus mode
+        // Double-click: focus mode
         cy.on('dblclick', 'node', (e) => {
-            const nodeId = e.target.data('id');
-            if (nodeId === ROOT_ID || nodeId === FRAUD_ID || nodeId === NORMAL_ID) return;
             const neighborhood = e.target.neighborhood().add(e.target);
             cy.elements().addClass('hidden');
             neighborhood.removeClass('hidden').addClass('highlighted');
-            cy.fit(neighborhood, 50);
+            cy.fit(neighborhood, 60);
             setIsFocusMode(true);
         });
 
-        // Click background → reset
+        // Background click → reset
         cy.on('tap', (e) => {
             if (e.target === cy) {
                 cy.elements().removeClass('faded highlighted');
@@ -398,7 +298,7 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
             }
         });
 
-    }, [edges, nodeStats, suspiciousAccounts, fraudRings, onSelectAccount]);
+    }, [graphData, suspiciousAccounts, fraudRings, onSelectAccount]);
 
     useEffect(() => {
         buildAndMount();
@@ -408,9 +308,9 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
         };
     }, [buildAndMount]);
 
-    const handleZoomIn = () => cyRef.current && cyRef.current.zoom(cyRef.current.zoom() + 0.2);
-    const handleZoomOut = () => cyRef.current && cyRef.current.zoom(cyRef.current.zoom() - 0.2);
-    const handleFit = () => cyRef.current && cyRef.current.fit(undefined, 50);
+    const handleZoomIn = () => cyRef.current?.zoom(cyRef.current.zoom() + 0.25);
+    const handleZoomOut = () => cyRef.current?.zoom(cyRef.current.zoom() - 0.25);
+    const handleFit = () => cyRef.current?.fit(undefined, 50);
     const handleReset = () => {
         if (cyRef.current) {
             cyRef.current.elements().removeClass('faded highlighted hidden');
@@ -419,16 +319,44 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
         }
     };
 
+    const noData = !graphData?.nodes?.length;
+
     return (
-        <div className="relative bg-slate-950/50 rounded-none border-2 border-slate-800 brutal-shadow overflow-hidden group" style={{ height: 750 }}>
-            <div ref={containerRef} style={{ width: '100%', height: '100%' }} className="bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px]" />
+        <div className="relative bg-slate-950/50 rounded-none border-2 border-slate-800 brutal-shadow overflow-hidden" style={{ height: 750 }}>
+            {/* Loading / empty state */}
+            {noData && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-slate-500 font-mono z-20">
+                    <span className="text-4xl">🕸</span>
+                    <span className="text-sm uppercase tracking-widest">Awaiting graph data from Neo4j…</span>
+                </div>
+            )}
+
+            {/* Cytoscape canvas */}
+            <div
+                ref={containerRef}
+                style={{ width: '100%', height: '100%' }}
+                className="bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px]"
+            />
+
+            {/* Top banner: Neo4j powered */}
+            {!noData && (
+                <div className="absolute top-3 left-3 flex items-center gap-2 bg-cyan-950/80 border border-cyan-700 px-3 py-1.5 text-[10px] font-bold font-mono text-cyan-300 uppercase tracking-widest z-10 backdrop-blur-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse inline-block" />
+                    Neo4j Graph Analytics
+                    {graphData?.analytics && (
+                        <span className="text-cyan-500 normal-case ml-1">
+                            {graphData.analytics.totalNodes}N · {graphData.analytics.totalEdges}E · {graphData.analytics.hubCount} hubs
+                        </span>
+                    )}
+                </div>
+            )}
 
             {/* Controls */}
             <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-                <button onClick={handleFit} className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Fit to View">⤢ FIT</button>
+                <button onClick={handleFit}    className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Fit">⤢ FIT</button>
                 <button onClick={handleZoomIn} className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Zoom In">+ IN</button>
-                <button onClick={handleZoomOut} className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Zoom Out">- OUT</button>
-                <button onClick={handleReset} className="neobutton bg-amber-900/50 text-amber-200 border-amber-800 hover:bg-amber-900 p-2 text-xs" title="Reset">↺ RST</button>
+                <button onClick={handleZoomOut}className="neobutton bg-slate-800 text-slate-200 border-slate-600 hover:bg-slate-700 p-2 text-xs" title="Zoom Out">- OUT</button>
+                <button onClick={handleReset}  className="neobutton bg-amber-900/50 text-amber-200 border-amber-800 hover:bg-amber-900 p-2 text-xs" title="Reset">↺ RST</button>
                 {isFocusMode && (
                     <div className="bg-red-900/80 text-red-100 text-[10px] px-2 py-1 border border-red-600 font-bold uppercase tracking-widest text-center animate-pulse">
                         Focus Mode
@@ -436,62 +364,55 @@ export default function GraphVisualization({ edges, nodeStats, suspiciousAccount
                 )}
             </div>
 
-            {/* Tooltip */}
+            {/* Hover tooltip */}
             {tooltip && (
                 <div
                     className="absolute z-20 pointer-events-none bg-slate-950 border-2 border-slate-100 p-0 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                     style={{
-                        left: Math.min(tooltip.x + 20, (containerRef.current?.offsetWidth ?? 0) - 240),
-                        top: Math.min(tooltip.y - 20, (containerRef.current?.offsetHeight ?? 0) - 200),
-                        width: 240,
+                        left: Math.min(tooltip.x + 20, (containerRef.current?.offsetWidth ?? 0) - 260),
+                        top:  Math.min(tooltip.y - 20, (containerRef.current?.offsetHeight ?? 0) - 220),
+                        width: 260,
                         fontFamily: 'IBM Plex Mono, monospace',
                     }}
                 >
                     <div className="bg-slate-100 text-slate-950 px-3 py-2 font-bold text-sm border-b-2 border-slate-100 flex justify-between items-center">
-                        <span className="truncate">{truncate(tooltip.accountId, 15)}</span>
-                        {tooltip.score >= 50 && <span className="text-red-600">⚠</span>}
+                        <span className="truncate">{truncate(tooltip.id, 18)}</span>
+                        {tooltip.suspicionScore >= 50 && <span className="text-red-600 ml-1">⚠</span>}
+                        {tooltip.isHub          && <span className="text-cyan-600 ml-1">⬡HUB</span>}
                     </div>
-                    <div className="p-3 space-y-2 text-xs text-slate-300">
-                        <div className="flex justify-between border-b border-slate-800 pb-1">
-                            <span className="text-slate-500 uppercase font-bold tracking-wider">Score</span>
-                            <span className={`font-bold ${tooltip.score >= 75 ? 'text-red-500' : (tooltip.score >= 50 ? 'text-orange-500' : 'text-slate-200')}`}>{tooltip.score}/100</span>
-                        </div>
-                        {tooltip.ringId && (
-                            <div className="flex justify-between border-b border-slate-800 pb-1">
-                                <span className="text-slate-500 uppercase font-bold tracking-wider">Ring ID</span>
-                                <span className="text-amber-400 font-bold">{tooltip.ringId}</span>
+                    <div className="p-3 space-y-1.5 text-xs text-slate-300">
+                        {[
+                            { label: 'Centrality Score', value: `${tooltip.centralityScore}/100`, color: tooltip.centralityScore >= 70 ? 'text-cyan-400' : 'text-slate-200' },
+                            { label: 'Degree (in/out)',  value: `${tooltip.degree} (${tooltip.inDegree}↓ ${tooltip.outDegree}↑)` },
+                            { label: 'Total Sent',      value: `$${(tooltip.totalSent || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}` },
+                            { label: 'Total Received',  value: `$${(tooltip.totalReceived || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}` },
+                            ...(tooltip.suspicionScore > 0 ? [{ label: 'Suspicion Score', value: `${tooltip.suspicionScore}/100`, color: 'text-red-400' }] : []),
+                            ...(tooltip.patterns ? [{ label: 'Patterns', value: tooltip.patterns, color: 'text-amber-400' }] : []),
+                        ].map(({ label, value, color }) => (
+                            <div key={label} className="flex justify-between border-b border-slate-800 pb-1">
+                                <span className="text-slate-500 uppercase text-[10px] tracking-wider">{label}</span>
+                                <span className={`font-bold ${color || 'text-slate-200'} text-right max-w-[140px] truncate`}>{value}</span>
                             </div>
-                        )}
-                        <div className="flex justify-between border-b border-slate-800 pb-1">
-                            <span className="text-slate-500 uppercase font-bold tracking-wider">Tx Count</span>
-                            <span className="font-bold">{tooltip.txCount}</span>
-                        </div>
-                        {tooltip.patterns && (
-                            <div className="pt-1">
-                                <span className="text-slate-500 uppercase font-bold tracking-wider block mb-1">Patterns</span>
-                                <span className="text-cyan-400 bg-cyan-950/30 px-1 py-0.5 border border-cyan-900/50 block w-full text-center">{tooltip.patterns}</span>
-                            </div>
-                        )}
+                        ))}
                     </div>
                 </div>
             )}
 
             {/* Legend */}
             <div className="absolute bottom-4 left-4 bg-slate-900/90 border-2 border-slate-800 p-3 z-10">
-                <div className="text-slate-500 text-[10px] uppercase font-bold mb-2 tracking-widest">Tree Legend</div>
-                <div className="flex flex-col gap-2 text-xs text-slate-300 font-mono">
+                <div className="text-slate-500 text-[10px] uppercase font-bold mb-2 tracking-widest">Legend</div>
+                <div className="flex flex-col gap-1.5 text-xs text-slate-300 font-mono">
                     {[
-                        { color: '#F59E0B', label: 'Root (ThreatVision)', shape: '●' },
-                        { color: '#DC2626', label: 'Fraud Branch', shape: '■' },
-                        { color: '#16A34A', label: 'Non-Fraud Branch', shape: '■' },
-                        { color: '#EF4444', label: 'Critical (≥75)', shape: '■' },
-                        { color: '#F97316', label: 'High (≥50)', shape: '■' },
-                        { color: '#EAB308', label: 'Medium (≥25)', shape: '■' },
-                        { color: '#D946EF', label: 'Multi-ring', shape: '◆' },
-                        { color: '#6B7280', label: 'Normal', shape: '▬' },
+                        { color: '#06B6D4', label: 'Hub (high centrality)', shape: '⬡' },
+                        { color: '#8B5CF6', label: 'High centrality ≥70', shape: '●' },
+                        { color: '#3B82F6', label: 'Med centrality ≥40',  shape: '●' },
+                        { color: '#EF4444', label: 'Critical suspect ≥75', shape: '■' },
+                        { color: '#F97316', label: 'High suspect ≥50',     shape: '■' },
+                        { color: '#EAB308', label: 'Med suspect ≥25',      shape: '■' },
+                        { color: '#475569', label: 'Normal account',        shape: '●' },
                     ].map((item) => (
                         <div key={item.label} className="flex items-center gap-2">
-                            <span style={{ color: item.color, fontSize: '14px' }}>{item.shape}</span>
+                            <span style={{ color: item.color, fontSize: '13px' }}>{item.shape}</span>
                             <span>{item.label}</span>
                         </div>
                     ))}

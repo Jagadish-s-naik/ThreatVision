@@ -7,6 +7,7 @@ import TemporalHeatmap from './components/TemporalHeatmap.jsx';
 import RiskExplanationPanel from './components/RiskExplanationPanel.jsx';
 import RingOverlapVisualization from './components/RingOverlapVisualization.jsx';
 import { analyzeCSV } from './api/analyzeApi.js';
+import { fetchGraphData, buildLocalGraphData } from './api/graphApi.js';
 import { downloadJSON } from './utils/jsonExporter.js';
 
 const TABS = [
@@ -20,8 +21,9 @@ const TABS = [
 export default function App() {
   // ─── State ───────────────────────────────────────────────────────────────
   const [analysisResults, setAnalysisResults] = useState(null);
-  const [transactions, setTransactions] = useState([]); // raw transaction rows for graph/heatmap
-  const [rawFile, setRawFile] = useState(null);         // original File object for re-upload after refresh
+  const [transactions, setTransactions] = useState([]);
+  const [graphData, setGraphData] = useState(null);   // Neo4j graph analytics
+  const [rawFile, setRawFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
@@ -62,7 +64,6 @@ export default function App() {
       delete result._transactions;
 
       // Normalize ring_ids: ensure every suspicious account has a ring_ids array
-      // (backend now sends it, but guard for older data or local fallback)
       for (const acc of result.suspicious_accounts || []) {
         if (!acc.ring_ids) {
           acc.ring_ids = acc.ring_id ? [acc.ring_id] : [];
@@ -72,7 +73,23 @@ export default function App() {
       setAnalysisResults(result);
       setTransactions(txRows);
 
-      // Persist to localStorage for refresh survival
+      // ── Fetch Neo4j graph analytics ──────────────────────────────────────
+      setLoadingMessage('Fetching Neo4j graph analytics...');
+      const neo4jGraph = await fetchGraphData();
+      if (neo4jGraph) {
+        // Enrich nodes with suspicion scores from analysis result
+        const accMap = {};
+        for (const acc of result.suspicious_accounts || []) accMap[acc.account_id] = acc;
+        for (const n of neo4jGraph.nodes) {
+          if (accMap[n.id]) n.suspicionScore = accMap[n.id].suspicion_score;
+        }
+        setGraphData(neo4jGraph);
+      } else {
+        // Fallback: build graph from local transactions
+        setGraphData(buildLocalGraphData(txRows, result.suspicious_accounts || []));
+      }
+
+      // Persist results
       try {
         localStorage.setItem('threat_vision_results', JSON.stringify(result));
         localStorage.setItem('threat_vision_transactions', JSON.stringify(txRows));
@@ -250,12 +267,11 @@ export default function App() {
           {/* Tab content area */}
           <div className="bg-slate-900 border-2 border-slate-800 p-1 brutal-shadow min-h-[600px] animate-fadeIn">
 
-            {/* Graph View — single tree: root → Fraud / Non-Fraud branches */}
+            {/* Graph View — Neo4j analytics-powered force-directed network */}
             {activeTab === 'graph' && (
               <div className="p-2">
                 <GraphVisualization
-                  edges={transactions.map(tx => ({ sender_id: tx.sender_id, receiver_id: tx.receiver_id, amount: tx.amount, timestamp: tx.timestamp, transaction_id: tx.transaction_id }))}
-                  nodeStats={nodeStats}
+                  graphData={graphData}
                   suspiciousAccounts={suspiciousAccounts}
                   fraudRings={fraudRings}
                   onSelectAccount={handleSelectAccount}
