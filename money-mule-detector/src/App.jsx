@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
   Network, 
   ShieldAlert, 
@@ -18,6 +18,7 @@ import FraudRingTable from './components/FraudRingTable.jsx';
 import TemporalHeatmap from './components/TemporalHeatmap.jsx';
 import RiskExplanationPanel from './components/RiskExplanationPanel.jsx';
 import RingOverlapVisualization from './components/RingOverlapVisualization.jsx';
+import { EncryptedText } from './components/ui/encrypted-text.jsx';
 import { analyzeCSV } from './api/analyzeApi.js';
 import { fetchGraphData, buildLocalGraphData } from './api/graphApi.js';
 import { downloadJSON } from './utils/jsonExporter.js';
@@ -217,13 +218,41 @@ export default function App() {
   // â”€â”€â”€ Show loading state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (isProcessing) {
     return (
-      <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center gap-6">
-        <div className="w-20 h-20 rounded-full border-4 border-brand-accent border-t-transparent animate-spin" />
-        <div className="text-center">
-          <p className="text-brand-accent font-bold text-xl font-mono tracking-wider animate-pulse">
-            âš¡ Processing via Neo4j Graph Database...
+      <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center gap-8"
+           style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(0,229,255,0.06) 0%, transparent 60%), #0a0e1a' }}>
+        {/* Spinner */}
+        <div style={{
+          width: 72, height: 72, borderRadius: '50%',
+          border: '3px solid rgba(0,229,255,0.15)',
+          borderTopColor: '#00e5ff',
+          animation: 'spin 1s linear infinite',
+          boxShadow: '0 0 20px rgba(0,229,255,0.25)',
+        }} />
+
+        {/* Tagline with EncryptedText */}
+        <div className="text-center px-8 max-w-xl">
+          <p style={{ fontSize: '22px', fontWeight: 700, color: 'white', letterSpacing: '0.01em', lineHeight: 1.4, marginBottom: 12 }}>
+            <EncryptedText
+              text="Every suspicious pattern has a story. We find it."
+              speed={35}
+              revealDelay={300}
+            />
           </p>
-          <p className="text-brand-muted text-sm mt-2 font-mono">{loadingMessage}</p>
+          <p style={{ fontSize: '13px', color: '#8892a4', fontFamily: 'monospace', letterSpacing: '0.06em' }}>
+            {loadingMessage}
+          </p>
+        </div>
+
+        {/* Subtle pulsing dots */}
+        <div style={{ display: 'flex', gap: 8, marginTop: -8 }}>
+          {[0, 1, 2].map(i => (
+            <span key={i} style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: '#00e5ff',
+              opacity: 0.5,
+              animation: `glowPulse 1.4s ease-in-out ${i * 0.2}s infinite`,
+            }} />
+          ))}
         </div>
       </div>
     );
