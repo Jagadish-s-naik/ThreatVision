@@ -125,19 +125,19 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
             if (intensity > 0.8 || count >= maxCount * 0.8) {
                 return {
                     background: '#ff3d00',
-                    boxShadow: '0 0 12px rgba(255, 61, 0, 1.0), 0 0 24px rgba(255, 61, 0, 0.6), 0 0 40px rgba(255, 61, 0, 0.3)',
+                    boxShadow: '0 0 6px rgba(255, 61, 0, 1), 0 0 14px rgba(255, 61, 0, 0.7), 0 0 28px rgba(255, 61, 0, 0.35)',
                     borderRadius: '3px'
                 };
-            } else if (intensity > 0.4) {
+            } else if (intensity > 0.4 || count > 1) {
                 return {
                     background: '#ff6b1a',
-                    boxShadow: '0 0 8px rgba(255, 107, 26, 0.8), 0 0 16px rgba(255, 107, 26, 0.4)',
+                    boxShadow: '0 0 6px rgba(255, 107, 26, 0.9), 0 0 12px rgba(255, 107, 26, 0.5)',
                     borderRadius: '3px'
                 };
             } else {
                 return {
-                    background: 'rgba(255, 107, 26, 0.4)',
-                    boxShadow: '0 0 4px rgba(255, 107, 26, 0.3)',
+                    background: 'rgba(255, 107, 26, 0.5)',
+                    boxShadow: '0 0 4px rgba(255, 107, 26, 0.4)',
                     borderRadius: '3px'
                 };
             }
@@ -146,10 +146,11 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
 
     return (
         <div style={{
-            background: 'rgba(255, 255, 255, 0.03)',
+            background: 'rgba(255, 255, 255, 0.025)',
             backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.07)',
-            borderTop: '1px solid rgba(0, 229, 255, 0.2)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(0, 229, 255, 0.25)',
+            borderTop: '1px solid rgba(0, 229, 255, 0.5)',
             borderRadius: '16px',
             padding: '24px 28px',
             width: 'fit-content',
@@ -157,14 +158,43 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
             maxWidth: '900px',
             marginLeft: 'auto',
             marginRight: 'auto',
-            boxShadow: '0 0 40px rgba(0, 229, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
-        }} className="relative z-50">
-            <div className="flex items-start justify-end mb-6">
+            boxShadow: '0 0 20px rgba(0, 229, 255, 0.12), 0 0 60px rgba(0, 229, 255, 0.06), 0 0 120px rgba(0, 229, 255, 0.03), inset 0 0 30px rgba(0, 229, 255, 0.02), 0 8px 40px rgba(0, 0, 0, 0.5)',
+            position: 'relative'
+        }} className="z-50">
+            {/* Inner glow to reinforce the lamp-to-card light flow */}
+            <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '60px',
+                background: 'linear-gradient(to bottom, rgba(0, 229, 255, 0.06) 0%, transparent 60px)',
+                borderRadius: '16px 16px 0 0',
+                pointerEvents: 'none'
+            }}></div>
+
+            <style>
+                {`
+                    @keyframes pulseBlueDot {
+                        0%, 100% { opacity: 1; transform: scale(1); }
+                        50% { opacity: 0.6; transform: scale(0.85); }
+                    }
+                `}
+            </style>
+
+            <div className="flex items-start justify-end mb-6 relative z-10">
                 <button
                     onClick={() => setShowNormal(!showNormal)}
                     className="flex items-center gap-[6px] rounded-[20px] border border-[rgba(0,229,255,0.3)] bg-[rgba(0,229,255,0.1)] px-[14px] py-[6px] text-[11px] font-semibold text-[#00e5ff] transition-all hover:bg-[rgba(0,229,255,0.18)] hover:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
                 >
-                    <div style={{ width: '8px', height: '8px', background: '#00e5ff', borderRadius: '50%', boxShadow: '0 0 6px rgba(0,229,255,0.8)' }}></div>
+                    <div style={{ 
+                        width: '8px', 
+                        height: '8px', 
+                        background: '#00e5ff', 
+                        borderRadius: '50%', 
+                        boxShadow: '0 0 8px rgba(0,229,255,1), 0 0 16px rgba(0,229,255,0.5)',
+                        animation: 'pulseBlueDot 2s ease-in-out infinite' 
+                    }}></div>
                     {showNormal ? 'SHOW SUSPICIOUS ONLY' : 'SHOW ALL TRAFFIC'}
                 </button>
             </div>
@@ -213,9 +243,33 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                                                         className={`transition-all hover:scale-125 hover:z-10 hover:border hover:border-white relative ${displayCount > 0 ? 'cursor-pointer' : 'cursor-default'}`}
                                                         onMouseEnter={(e) => {
                                                             const rect = e.currentTarget.getBoundingClientRect();
+                                                            let left = rect.left + 15;
+                                                            let top = rect.top - 15;
+                                                            let bottom = 'auto';
+                                                            let right = 'auto';
+
+                                                            // Flip horizontal if overflowing right edge
+                                                            if (left + 160 > window.innerWidth - 16) {
+                                                                left = 'auto';
+                                                                right = window.innerWidth - e.clientX + 8;
+                                                            }
+
+                                                            // Flip vertical if overflowing bottom edge  
+                                                            if (top + 100 > window.innerHeight - 16) {
+                                                                top = 'auto';
+                                                                bottom = window.innerHeight - e.clientY + 8;
+                                                            }
+
+                                                            // Keep inside left edge
+                                                            if (left !== 'auto' && left < 16) {
+                                                                left = 16;
+                                                            }
+
                                                             setTooltip({
-                                                                x: rect.left,
-                                                                y: rect.top,
+                                                                x: left,
+                                                                y: top,
+                                                                r: right,
+                                                                b: bottom,
                                                                 date: formatDateLabel(date),
                                                                 hour: h,
                                                                 count: suspCount,
@@ -256,26 +310,39 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                 </>
             )}
 
-            {/* Neo-Brutal Tooltip */}
+            {/* Glass Tooltip */}
             {tooltip && (
                 <div
-                    className="fixed z-50 pointer-events-none bg-slate-950 border-2 border-white p-0 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-xs text-slate-200"
-                    style={{ left: tooltip.x + 15, top: tooltip.y - 15, fontFamily: 'IBM Plex Mono, monospace', minWidth: 140 }}
+                    style={{ 
+                        left: tooltip.x, 
+                        top: tooltip.y, 
+                        right: tooltip.r,
+                        bottom: tooltip.b,
+                        background: 'rgba(10, 14, 26, 0.75)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+                        minWidth: '160px',
+                        zIndex: 9999,
+                        pointerEvents: 'none',
+                        position: 'fixed'
+                    }}
                 >
-                    <div className="bg-white text-black font-bold px-2 py-1 border-b-2 border-slate-200">
-                        {tooltip.date} <span className="text-slate-500">@ {tooltip.hour}:00</span>
+                    <div style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '11px', fontFamily: 'monospace', letterSpacing: '0.05em', marginBottom: '6px', borderBottom: '1px solid rgba(255, 255, 255, 0.07)', paddingBottom: '6px' }}>
+                        {tooltip.date} <span style={{ opacity: 0.7 }}>@ {tooltip.hour}:00</span>
                     </div>
-                    <div className="p-2 space-y-1">
-                        <div className="flex justify-between">
-                            <span className="text-red-400 font-bold">Suspicious</span>
-                            <span className="font-bold">{tooltip.count}</span>
+                    {showNormal && (
+                        <div style={{ marginBottom: '6px' }}>
+                            <div style={{ color: '#00e5ff', fontSize: '13px', fontWeight: 700, letterSpacing: '0.03em', textShadow: '0 0 8px rgba(0, 229, 255, 0.6)' }}>Normal</div>
+                            <div style={{ color: '#ffffff', fontSize: '20px', fontWeight: 800, lineHeight: 1, marginTop: '4px' }}>{tooltip.normCount}</div>
                         </div>
-                        {showNormal && (
-                            <div className="flex justify-between">
-                                <span className="text-blue-400 font-bold">Normal</span>
-                                <span className="font-bold">{tooltip.normCount}</span>
-                            </div>
-                        )}
+                    )}
+                    <div>
+                        <div style={{ color: '#ff6b1a', fontSize: '13px', fontWeight: 700, letterSpacing: '0.03em', textShadow: '0 0 8px rgba(255, 107, 26, 0.6)' }}>Suspicious</div>
+                        <div style={{ color: '#ffffff', fontSize: '20px', fontWeight: 800, lineHeight: 1, marginTop: '4px' }}>{tooltip.count}</div>
                     </div>
                 </div>
             )}
