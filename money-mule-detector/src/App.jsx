@@ -6,12 +6,14 @@ import {
   Layers, 
   FileJson, 
   Upload,
-  ActivitySquare
+  ActivitySquare,
+  Search,
+  Users,
+  AlertTriangle
 } from 'lucide-react';
 import CSVUploader from './components/CSVUploader.jsx';
 import GraphVisualization from './components/GraphVisualization.jsx';
 import FraudRingTable from './components/FraudRingTable.jsx';
-import SummaryPanel from './components/SummaryPanel.jsx';
 import TemporalHeatmap from './components/TemporalHeatmap.jsx';
 import RiskExplanationPanel from './components/RiskExplanationPanel.jsx';
 import RingOverlapVisualization from './components/RingOverlapVisualization.jsx';
@@ -266,8 +268,41 @@ export default function App() {
       <main className="flex-1 flex flex-col h-screen overflow-y-auto relative bg-[#13151A]">
         <div className="p-6 md:p-8 max-w-[1600px] mx-auto w-full flex-1 flex flex-col gap-6 animate-fadeIn">
           
-          {/* Header & KPIs (Replaces standalone SummaryPanel) */}
-          <SummaryPanel analysisResults={summaryPanelResults} onDownload={handleDownload} />
+          {/* Top Header Row matching dashboard reference */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
+            <div className="flex flex-col md:flex-row md:items-center gap-6 lg:gap-12">
+              <div>
+                <h2 className="text-3xl font-bold text-white tracking-tight">Threat Overview</h2>
+                <p className="text-brand-muted text-sm mt-1">Live Graph Analysis</p>
+              </div>
+              
+              <div className="hidden md:flex items-center gap-8">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white/5 border border-white/5 rounded-xl text-brand-accent">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                     <p className="text-white font-bold text-xl leading-none">{(summary.total_accounts_analyzed || 0).toLocaleString()}</p>
+                     <p className="text-brand-muted text-xs mt-1">Total Accounts</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-white/5 border border-white/5 rounded-xl text-brand-red">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                     <p className="text-white font-bold text-xl leading-none">{(summary.suspicious_accounts_flagged || 0).toLocaleString()}</p>
+                     <p className="text-brand-muted text-xs mt-1">Flagged Entities</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex bg-brand-card border border-brand-border rounded-full px-4 py-2 items-center gap-3 shadow-inner hidden lg:flex">
+               <Search className="w-4 h-4 text-brand-muted" />
+               <input className="bg-transparent border-none outline-none text-sm text-white placeholder-brand-muted w-48" placeholder="Search..." />
+            </div>
+          </div>
 
           {/* Error banner */}
           {error && (
@@ -277,29 +312,84 @@ export default function App() {
             </div>
           )}
 
-          {/* Active Widget Area */}
-          <div className="flex-1 bg-brand-card rounded-2xl border border-brand-border shadow-2xl overflow-hidden flex flex-col relative">
+          {/* Dynamic Board Area */}
+          {activeTab === 'graph' ? (
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-[600px] overflow-hidden">
+              {/* Main Graph Card (spanning 2 columns) */}
+              <div className="lg:col-span-2 bg-brand-card rounded-2xl border border-brand-border shadow-2xl flex flex-col relative overflow-hidden">
+                <div className="absolute top-5 left-5 z-10">
+                   <h3 className="text-lg font-bold text-white mb-1">Network Visualization</h3>
+                   <p className="text-brand-muted text-xs">Force-directed relational mapping</p>
+                </div>
+                <div className="flex-1 h-full w-full">
+                  <GraphVisualization
+                    graphData={graphData}
+                    suspiciousAccounts={suspiciousAccounts}
+                    fraudRings={fraudRings}
+                    onSelectAccount={handleSelectAccount}
+                  />
+                </div>
+              </div>
 
-            {/* Graph View — Neo4j analytics-powered force-directed network */}
-            {activeTab === 'graph' && (
-              <div className="p-2">
-                <GraphVisualization
-                  graphData={graphData}
-                  suspiciousAccounts={suspiciousAccounts}
+              {/* Right Sidebar Columns matching reference */}
+              <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto custom-scrollbar h-full">
+                 {/* Top Risk Accounts (like Referrals) */}
+                 <div className="bg-brand-card rounded-2xl p-6 border border-brand-border shadow-xl">
+                    <div className="flex items-center justify-between mb-6">
+                       <h3 className="text-base font-bold text-white">Top Risk Accounts</h3>
+                       <button className="text-brand-muted hover:text-white"><Layers className="w-4 h-4" /></button>
+                    </div>
+                    <div className="space-y-4">
+                       {suspiciousAccounts.slice(0, 4).map((acc, i) => (
+                         <div key={acc.account_id}>
+                            <div className="flex justify-between text-xs mb-1.5">
+                               <span className="text-white font-medium">{acc.account_id}</span>
+                               <span className="text-brand-muted">{acc.suspicion_score.toFixed(0)} score</span>
+                            </div>
+                            <div className="w-full bg-[#13151A] rounded-full h-1.5 overflow-hidden border border-brand-border">
+                               <div 
+                                  className={`h-full rounded-full ${i === 0 ? 'bg-brand-red' : i === 1 ? 'bg-orange-500' : 'bg-brand-accent'}`} 
+                                  style={{ width: `${Math.min(100, acc.suspicion_score)}%` }} 
+                               />
+                            </div>
+                         </div>
+                       ))}
+                       {suspiciousAccounts.length === 0 && <p className="text-xs text-brand-muted">No risky accounts detected.</p>}
+                    </div>
+                 </div>
+
+                 {/* Recent Alerts (like Your Heystack) */}
+                 <div className="bg-brand-card rounded-2xl p-6 border border-brand-border shadow-xl flex-1">
+                    <h3 className="text-base font-bold text-white mb-6">Recent Alerts</h3>
+                    <div className="space-y-5">
+                       {fraudRings.slice(0, 4).map((ring) => (
+                         <div key={ring.ring_id} className="flex gap-4 items-start">
+                            <div className="w-8 h-8 rounded-full bg-brand-red/10 border border-brand-red/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                               <ShieldAlert className="w-4 h-4 text-brand-red" />
+                            </div>
+                            <div>
+                               <p className="text-sm font-semibold text-white mb-1">Ring: {ring.ring_id}</p>
+                               <p className="text-xs text-brand-muted leading-relaxed">Detected {ring.member_accounts.length} linked accounts forming a {ring.pattern_type} pattern.</p>
+                            </div>
+                         </div>
+                       ))}
+                       {fraudRings.length === 0 && (
+                          <p className="text-xs text-brand-muted">No recent alerts found.</p>
+                       )}
+                    </div>
+                 </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 bg-brand-card rounded-2xl border border-brand-border shadow-2xl overflow-hidden flex flex-col relative min-h-[600px]">
+              {/* Fraud Rings Table */}
+              {activeTab === 'table' && (
+                <FraudRingTable
                   fraudRings={fraudRings}
+                  suspiciousAccounts={suspiciousAccounts}
                   onSelectAccount={handleSelectAccount}
                 />
-              </div>
-            )}
-
-            {/* Fraud Rings Table */}
-            {activeTab === 'table' && (
-              <FraudRingTable
-                fraudRings={fraudRings}
-                suspiciousAccounts={suspiciousAccounts}
-                onSelectAccount={handleSelectAccount}
-              />
-            )}
+              )}
 
             {/* Timeline Heatmap */}
             {activeTab === 'heatmap' && (
@@ -322,27 +412,28 @@ export default function App() {
               </div>
             )}
 
-            {/* JSON Export */}
-            {activeTab === 'json' && (
-              <div className="p-8 h-full flex flex-col">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-bold">JSON Data Export</h3>
-                  <button
-                    onClick={handleDownload}
-                    className="flex items-center gap-2 px-4 py-2 bg-brand-accent/20 text-brand-accent hover:bg-brand-accent hover:text-brand-bg rounded-lg transition-colors text-sm font-semibold"
+              {/* JSON Export */}
+              {activeTab === 'json' && (
+                <div className="p-8 h-full flex flex-col">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold">JSON Data Export</h3>
+                    <button
+                      onClick={handleDownload}
+                      className="flex items-center gap-2 px-4 py-2 bg-brand-accent/20 text-brand-accent hover:bg-brand-accent hover:text-brand-bg rounded-lg transition-colors text-sm font-semibold"
+                    >
+                      <Upload className="w-4 h-4 rotate-180" />
+                      Download JSON
+                    </button>
+                  </div>
+                  <pre
+                    className="bg-[#13151A] p-6 rounded-xl border border-brand-border text-brand-accent/80 font-mono text-sm overflow-auto flex-1 custom-scrollbar"
                   >
-                    <Upload className="w-4 h-4 rotate-180" />
-                    Download JSON
-                  </button>
+                    {JSON.stringify(analysisResults, null, 2)}
+                  </pre>
                 </div>
-                <pre
-                  className="bg-[#13151A] p-6 rounded-xl border border-brand-border text-brand-accent/80 font-mono text-sm overflow-auto flex-1 custom-scrollbar"
-                >
-                  {JSON.stringify(analysisResults, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Risk Explanation Panel */}
