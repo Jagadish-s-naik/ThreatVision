@@ -4,7 +4,7 @@
 https://threat-vision-five.vercel.app
 
 ## Problem Statement
-Graph-based money muling detection engine for RIFT 2026 Hackathon — 
+Graph-based money muling detection engine — 
 Graph Theory / Financial Crime Detection Track.
 
 ## Tech Stack
@@ -100,8 +100,6 @@ npm run dev
 - Shell detection minimum 2 transactions per shell node
 - Timestamps must be in `YYYY-MM-DD HH:MM:SS` format exactly
 
-## Team Members
-Jagadish S Naik<br>
-Ashwin Nethan<br>
-Prajna<br>
-Swara Hegde 
+## DEV  
+<strong>Jagadish S Naik</Strong><br>
+
