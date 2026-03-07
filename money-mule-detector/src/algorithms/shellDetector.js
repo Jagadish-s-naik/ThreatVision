@@ -1,83 +1,108 @@
 /**
  * shellDetector.js
- * Detects shell account chains (pass-through nodes) using BFS.
+ * Detects layered shell-account chains using DFS.
+ *
+ * Criteria for a shell chain:
+ *  - Chain length ≥ 4 nodes
+ *  - All INTERMEDIATE nodes have ≤ 3 total transactions (low-activity shells)
+ *  - Minimum amount flowing along the chain is > 5,000
+ *  - Each hop reduces the amount by ≤ 15% (typical layering — minimal skimming)
  */
 import { isLegitimateAccount } from './graphBuilder.js';
 
-function isShellNode(nodeId, nodeStats, graph, reverseGraph) {
-    const stats = nodeStats[nodeId];
-    if (!stats) return false;
-    if (isLegitimateAccount(nodeId, nodeStats)) return false;
-    if (stats.txCount < 2 || stats.txCount > 3) return false;
-    const hasIncoming = reverseGraph[nodeId] && reverseGraph[nodeId].length > 0;
-    const hasOutgoing = graph[nodeId] && graph[nodeId].length > 0;
-    return hasIncoming && hasOutgoing;
-}
-
-export function detectShellChains(graph, nodeStats) {
-    // Build reverse graph
-    const reverseGraph = {};
-    for (const nodeId of Object.keys(graph)) {
-        if (!reverseGraph[nodeId]) reverseGraph[nodeId] = [];
-        for (const neighbor of graph[nodeId]) {
-            if (!reverseGraph[neighbor]) reverseGraph[neighbor] = [];
-            reverseGraph[neighbor].push(nodeId);
-        }
+export function detectShellChains(transactions, nodeStats) {
+    // Build transaction-count map (for shell identification)
+    const txCount = {};
+    for (const t of transactions) {
+        txCount[t.sender_id]   = (txCount[t.sender_id]   || 0) + 1;
+        txCount[t.receiver_id] = (txCount[t.receiver_id] || 0) + 1;
     }
 
-    const chains = [];
+    // Build directed graph: nodeId → [{ to, amount, time }]
+    const graph = {};
+    for (const t of transactions) {
+        if (!graph[t.sender_id]) graph[t.sender_id] = [];
+        graph[t.sender_id].push({
+            to:     t.receiver_id,
+            amount: parseFloat(t.amount) || 0,
+            time:   t.timestamp,
+        });
+    }
 
-    for (const startNode of Object.keys(graph)) {
-        if (!graph[startNode]) continue;
+    const rings   = [];
+    const seenKey = new Set();
 
-        for (const firstNeighbor of graph[startNode]) {
-            if (!isShellNode(firstNeighbor, nodeStats, graph, reverseGraph)) continue;
+    /**
+     * Iterative DFS. Each stack frame carries:
+     *   path    – ordered list of account IDs visited so far
+     *   amounts – list of edge amounts along the path (length = path.length - 1)
+     */
+    function dfs(startNode, firstEdge) {
+        const stack = [{
+            path:    [startNode, firstEdge.to],
+            amounts: [firstEdge.amount],
+        }];
 
-            const queue = [{ chain: [startNode, firstNeighbor], currentNode: firstNeighbor }];
+        while (stack.length > 0) {
+            const { path, amounts } = stack.pop();
+            const current = path[path.length - 1];
 
-            while (queue.length > 0) {
-                const { chain, currentNode } = queue.shift();
-                const outgoing = graph[currentNode] || [];
+            // ── Evaluate if this path qualifies as a shell chain ──
+            if (path.length >= 4) {
+                const intermediates = path.slice(1, -1);
+                const allShell      = intermediates.every(acc => (txCount[acc] || 0) <= 3);
+                const minAmount     = Math.min(...amounts);
+                const isLargeAmount = minAmount > 5000;
 
-                for (const nextNode of outgoing) {
-                    if (chain.includes(nextNode)) continue;
+                let isLayering = true;
+                for (let i = 1; i < amounts.length; i++) {
+                    const reduction = (amounts[i - 1] - amounts[i]) / amounts[i - 1];
+                    if (reduction > 0.15) { isLayering = false; break; }
+                }
 
-                    if (isShellNode(nextNode, nodeStats, graph, reverseGraph)) {
-                        queue.push({ chain: [...chain, nextNode], currentNode: nextNode });
-                    } else {
-                        const fullChain = [...chain, nextNode];
-                        const shellCount = chain.length - 1;
-                        if (shellCount < 3) continue;
-
-                        const chainObj = {
-                            members: fullChain,
-                            pattern_type: 'shell',
+                if (allShell && isLargeAmount && isLayering) {
+                    const key = [...path].sort().join('|');
+                    if (!seenKey.has(key)) {
+                        seenKey.add(key);
+                        rings.push({
+                            members:           path,
+                            pattern_type:      'layered_shell_network',
                             detected_patterns: ['shell_chain'],
-                        };
-
-                        // Guard 1: skip pure linear chains
-                        const isLinear = chainObj.members.every(id => {
-                            const st = nodeStats[id];
-                            return st && st.txCount === 2 &&
-                                (st.uniqueReceivers?.size ?? 0) <= 1;
+                            chain_length:      path.length,
+                            risk_score:        Math.min(100, 85 + Math.min(10, path.length * 2)),
                         });
-                        if (isLinear) continue;
-
-                        // Guard 2: source must branch (send to 2+ receivers)
-                        const src = nodeStats[chainObj.members[0]];
-                        if (!src || (src.uniqueReceivers?.size ?? 0) < 2) continue;
-
-                        chains.push(chainObj); // ← only reaches here if both guards pass
                     }
+                    continue; // Don't extend further — we found a valid chain head
+                }
+            }
+
+            // ── Limit depth ──
+            if (path.length > 6) continue;
+
+            // ── Extend path ──
+            const neighbors = graph[current] || [];
+            for (const edge of neighbors) {
+                if (!path.includes(edge.to)) {
+                    stack.push({
+                        path:    [...path, edge.to],
+                        amounts: [...amounts, edge.amount],
+                    });
                 }
             }
         }
     }
 
-    // Deduplication
-    const seen = new Set();
-    return chains.filter(c => {
-        const k = [...c.members].sort().join('|');
-        return seen.has(k) ? false : (seen.add(k), true);
-    });
+    // Start DFS from every node with low total transaction count (potential shell origin)
+    for (const account of Object.keys(graph)) {
+        if (isLegitimateAccount(account, nodeStats)) continue;
+        if ((txCount[account] || 0) <= 4) {
+            for (const edge of graph[account]) {
+                if (edge.amount > 5000) {
+                    dfs(account, edge);
+                }
+            }
+        }
+    }
+
+    return rings;
 }
