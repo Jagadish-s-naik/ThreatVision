@@ -52,27 +52,47 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
 
     if (show.length === 0) {
         return (
-            <div className="bg-slate-900 border-2 border-slate-800 p-8 text-center text-slate-500 font-mono">
+            <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px border rgba(255, 255, 255, 0.05)',
+                borderRadius: '16px'
+            }} className="p-8 text-center text-slate-500 font-mono">
                 NO_OVERLAP_DATA
             </div>
         );
     }
 
     return (
-        <div className="bg-slate-900 border-2 border-slate-800 p-6 brutal-shadow flex flex-col md:flex-row gap-6">
+        <div style={{
+            background: 'rgba(255, 255, 255, 0.025)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '16px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+        }} className="p-6 flex flex-col md:flex-row gap-6 w-full relative z-10">
             <div className="flex-1">
-                <h3 className="text-xl font-extrabold text-slate-100 mb-1 uppercase tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
-                    Ring Overlap
-                </h3>
-                <p className="text-slate-500 text-xs font-mono mb-6">
-                    // ANALYZING_SHARED_ACCOUNTS_BETWEEN_RINGS
-                </p>
+                <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-lg font-bold text-white tracking-wide">Ring Overlap</h3>
+                    <div className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-[#00e5ff]/10 text-[#00e5ff] border border-[#00e5ff]/20">
+                        NETWORK ANALYSIS
+                    </div>
+                </div>
+                <p className="text-slate-400 text-xs mb-6">Visualizing shared nodes and connections between fraud rings.</p>
 
                 <svg
-                    width={600}
-                    height={450}
-                    style={{ background: '#020617', border: '2px solid #1e293b', display: 'block', maxWidth: '100%', boxShadow: '4px 4px 0px 0px #000' }}
+                    width="100%"
+                    height="100%"
                     viewBox="0 0 600 450"
+                    style={{ 
+                        background: 'rgba(0, 0, 0, 0.2)', 
+                        border: '1px solid rgba(255, 255, 255, 0.05)', 
+                        borderRadius: '12px', 
+                        display: 'block', 
+                        maxWidth: '100%', 
+                        maxHeight: '450px',
+                        boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)' 
+                    }}
                 >
                     {/* Connection lines */}
                     {connections.map((c, idx) => {
@@ -82,14 +102,15 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                                 <line
                                     x1={c.x1} y1={c.y1}
                                     x2={c.x2} y2={c.y2}
-                                    stroke={isHov ? '#ef4444' : '#475569'}
-                                    strokeWidth={isHov ? 3 : 1.5}
-                                    strokeDasharray="4,4"
-                                    opacity={isHov ? 1 : 0.3}
+                                    stroke={isHov ? '#00e5ff' : 'rgba(255, 255, 255, 0.15)'}
+                                    strokeWidth={isHov ? 2 : 1}
+                                    strokeDasharray={isHov ? "none" : "4,4"}
+                                    opacity={isHov ? 1 : 0.5}
+                                    style={isHov ? { filter: 'drop-shadow(0 0 6px rgba(0,229,255,0.8))' } : {}}
                                 />
                                 {/* Label for shared count */}
                                 {isHov && (
-                                    <rect x={(c.x1 + c.x2) / 2 - 10} y={(c.y1 + c.y2) / 2 - 8} width="20" height="16" fill="#000" />
+                                    <rect x={(c.x1 + c.x2) / 2 - 12} y={(c.y1 + c.y2) / 2 - 10} width="24" height="20" rx="4" fill="rgba(0, 229, 255, 0.15)" stroke="#00e5ff" strokeWidth="1" />
                                 )}
                                 {isHov && (
                                     <text x={(c.x1 + c.x2) / 2} y={(c.y1 + c.y2) / 2 + 4} textAnchor="middle" fill="#fff" fontSize="10" fontWeight="bold">
@@ -103,11 +124,14 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                     {/* Ring circles */}
                     {pos.map(({ ring, x, y, r }) => {
                         const typeColor = ring.pattern_type === 'cycle' ? '#fbbf24' // Amber
-                            : ring.pattern_type === 'smurfing' ? '#f97316' // Orange
-                                : '#c084fc'; // Purple
+                            : ring.pattern_type === 'smurfing' ? '#ff6b1a' // Orange
+                                : '#a855f7'; // Purple
 
                         const isHov = hoveredRing === ring.ring_id;
                         const isSel = selectedRing?.ring_id === ring.ring_id;
+
+                        // Create vivid glowing filter for hovered/selected nodes
+                        const glowStyle = isHov || isSel ? { filter: `drop-shadow(0 0 10px ${typeColor}) drop-shadow(0 0 20px ${typeColor})` } : {};
 
                         return (
                             <g
@@ -115,45 +139,51 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                                 onMouseEnter={() => setHoveredRing(ring.ring_id)}
                                 onMouseLeave={() => setHoveredRing(null)}
                                 onClick={() => setSelectedRing(ring)}
-                                style={{ cursor: 'pointer' }}
+                                style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
                             >
-                                {/* Hard Shadow (Ghost Node) */}
-                                <circle
-                                    cx={x + 4} cy={y + 4} r={r}
-                                    fill="#000"
-                                    opacity="0.5"
-                                />
-
-                                {/* Main Node */}
+                                {/* Main Node Glow */}
                                 <circle
                                     cx={x} cy={y} r={r}
-                                    fill={isHov || isSel ? typeColor : '#1e293b'}
-                                    stroke={typeColor}
-                                    strokeWidth={isHov || isSel ? 4 : 2}
+                                    fill={isHov || isSel ? `${typeColor}40` : 'rgba(255, 255, 255, 0.03)'}
+                                    stroke={isHov || isSel ? typeColor : 'rgba(255, 255, 255, 0.15)'}
+                                    strokeWidth={isHov || isSel ? 2 : 1}
+                                    style={glowStyle}
                                 />
+
+                                {/* Sub-ring (inner decorative circle) */}
+                                {(isHov || isSel) && (
+                                    <circle
+                                        cx={x} cy={y} r={r - 6}
+                                        fill="none"
+                                        stroke={typeColor}
+                                        strokeWidth="1"
+                                        strokeDasharray="2,2"
+                                        opacity="0.5"
+                                    />
+                                )}
 
                                 {/* Ring ID Label */}
                                 <text
                                     x={x} y={y - 4}
                                     textAnchor="middle"
                                     dominantBaseline="middle"
-                                    fontSize={10}
-                                    fill={isHov || isSel ? '#000' : '#fff'}
+                                    fontSize={isHov || isSel ? 11 : 10}
+                                    fill={isHov || isSel ? '#fff' : 'rgba(255, 255, 255, 0.7)'}
                                     fontWeight="bold"
-                                    fontFamily="IBM Plex Mono, monospace"
+                                    fontFamily="monospace"
                                     style={{ userSelect: 'none', pointerEvents: 'none' }}
                                 >
                                     {ring.ring_id}
                                 </text>
                                 <text
-                                    x={x} y={y + 8}
+                                    x={x} y={y + 10}
                                     textAnchor="middle"
                                     dominantBaseline="middle"
-                                    fontSize={8}
-                                    fill={isHov || isSel ? '#000' : '#94a3b8'}
-                                    fontWeight="bold"
-                                    fontFamily="IBM Plex Mono, monospace"
-                                    style={{ userSelect: 'none', pointerEvents: 'none' }}
+                                    fontSize={isHov || isSel ? 9 : 8}
+                                    fill={isHov || isSel ? typeColor : 'rgba(255, 255, 255, 0.4)'}
+                                    fontWeight="600"
+                                    fontFamily="monospace"
+                                    style={{ userSelect: 'none', pointerEvents: 'none', letterSpacing: '0.05em' }}
                                 >
                                     {ring.member_accounts.length} mbrs
                                 </text>
@@ -161,32 +191,48 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                         );
                     })}
                 </svg>
-                <p style={{ textAlign: 'center', fontSize: 10, color: '#64748b', marginTop: 12, fontFamily: 'IBM Plex Mono' }}>
-                    // SHOWING TOP {show.length} RINGS BY RISK SCORE
-                </p>
+                <div className="text-center mt-3 text-[10px] text-slate-500 font-mono">
+                    SHOWING TOP {show.length} RINGS BY RISK SCORE
+                </div>
             </div>
 
             {/* Info Panel for Selected Ring */}
             {selectedRing && (
-                <div className="w-full md:w-64 bg-slate-950 border-2 border-slate-700 p-4 brutal-shadow-sm animate-fadeIn">
-                    <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
-                        <h4 className="text-amber-400 font-bold">{selectedRing.ring_id}</h4>
-                        <button onClick={() => setSelectedRing(null)} className="text-slate-500 hover:text-white">✕</button>
+                <div style={{
+                    background: 'rgba(10, 14, 26, 0.6)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
+                }} className="w-full md:w-72 p-5 animate-fadeIn self-start">
+                    <div className="flex justify-between items-center mb-4 border-b border-[rgba(255,255,255,0.05)] pb-3">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-[#00e5ff] shadow-[0_0_8px_#00e5ff]"></div>
+                            <h4 className="text-white font-bold">{selectedRing.ring_id}</h4>
+                        </div>
+                        <button onClick={() => setSelectedRing(null)} className="text-slate-400 hover:text-white transition-colors">✕</button>
                     </div>
-                    <div className="space-y-3 text-xs font-mono">
+                    <div className="space-y-4 text-xs font-mono">
                         <div>
-                            <span className="text-slate-500 block">RISK SCORE</span>
-                            <span className="text-xl font-bold text-white">{selectedRing.risk_score}</span>
+                            <span className="text-slate-500 block text-[10px] mb-1">RISK SCORE</span>
+                            <span className="text-2xl font-bold bg-gradient-to-r from-rose-400 to-red-500 bg-clip-text text-transparent">
+                                {selectedRing.risk_score}
+                            </span>
                         </div>
                         <div>
-                            <span className="text-slate-500 block">TYPE</span>
-                            <span className="text-slate-300 uppercase">{selectedRing.pattern_type}</span>
+                            <span className="text-slate-500 block text-[10px] mb-1">PATTERN TYPE</span>
+                            <span className="text-slate-200 uppercase bg-[rgba(255,255,255,0.05)] px-2 py-1 rounded border border-[rgba(255,255,255,0.05)]">
+                                {selectedRing.pattern_type}
+                            </span>
                         </div>
                         <div>
-                            <span className="text-slate-500 block mb-1">MEMBERS ({selectedRing.member_accounts.length})</span>
-                            <div className="flex flex-wrap gap-1">
+                            <span className="text-slate-500 block mb-2 text-[10px]">MEMBERS ({selectedRing.member_accounts.length})</span>
+                            <div className="flex flex-wrap gap-1.5">
                                 {selectedRing.member_accounts.map(acc => (
-                                    <span key={acc} className="bg-slate-800 px-1 py-0.5 border border-slate-700 text-slate-300">{acc}</span>
+                                    <span key={acc} className="bg-[rgba(255,255,255,0.03)] px-1.5 py-0.5 rounded border border-[rgba(255,255,255,0.08)] text-slate-300">
+                                        {acc}
+                                    </span>
                                 ))}
                             </div>
                         </div>
