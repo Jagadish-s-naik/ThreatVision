@@ -19,6 +19,8 @@ import TemporalHeatmap from './components/TemporalHeatmap.jsx';
 import RiskExplanationPanel from './components/RiskExplanationPanel.jsx';
 import RingOverlapVisualization from './components/RingOverlapVisualization.jsx';
 import { EncryptedText } from './components/ui/encrypted-text.jsx';
+import { LampContainer } from './components/ui/lamp.jsx';
+import { motion } from 'framer-motion';
 import { analyzeCSV } from './api/analyzeApi.js';
 import { fetchGraphData, buildLocalGraphData } from './api/graphApi.js';
 import { downloadJSON } from './utils/jsonExporter.js';
@@ -564,17 +566,61 @@ export default function App() {
               )}
 
               {/* Timeline Heatmap */}
-              {activeTab === 'heatmap' && (
-                <div className="p-6">
-                  <TemporalHeatmap
-                    transactions={transactions}
-                    suspiciousAccountIds={suspiciousAccountIds}
-                  />
+                            {activeTab === 'heatmap' && (
+                <div className="flex flex-col min-h-[900px] w-full overflow-hidden bg-[#030303] relative border-2 border-slate-800 rounded-b-xl z-0">
+                  <LampContainer className="w-full h-full min-h-[900px]">
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                      width: '100%',
+                      padding: '0 40px 40px 40px',
+                      zIndex: 50,
+                      position: 'relative'
+                    }}>
+                      <motion.h1
+                        initial={{ opacity: 0.5, y: 100 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3, duration: 0.8, ease: "easeInOut" }}
+                        style={{
+                          fontSize: '32px',
+                          fontWeight: 800,
+                          color: '#ffffff',
+                          letterSpacing: '-0.02em',
+                          textAlign: 'center',
+                          marginBottom: '8px',
+                          marginTop: '24px'
+                        }}
+                      >
+                        Temporal Heatmap
+                      </motion.h1>
+                      <motion.p
+                        initial={{ opacity: 0.5, y: 100 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4, duration: 0.8, ease: "easeInOut" }}
+                        style={{
+                          fontSize: '13px',
+                          color: 'rgba(0, 229, 255, 0.7)',
+                          textAlign: 'center',
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                          marginBottom: '32px'
+                        }}
+                      >
+                        Suspicious Transaction Flow Over Time
+                      </motion.p>
+                      
+                      <div className="w-full max-w-6xl mx-auto">
+                        <TemporalHeatmap transactions={transactions} suspiciousAccountIds={suspiciousAccountIds} />
+                      </div>
+                    </div>
+                  </LampContainer>
                 </div>
               )}
 
               {/* Ring Overlap */}
-              {activeTab === 'overlap' && (
+{activeTab === 'overlap' && (
                 <div className="h-[800px] flex justify-center items-center bg-slate-950 border-2 border-slate-800">
                   <RingOverlapVisualization
                     fraudRings={fraudRings}

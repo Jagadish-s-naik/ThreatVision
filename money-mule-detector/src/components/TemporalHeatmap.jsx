@@ -104,46 +104,64 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
 
     const hours = Array.from({ length: 24 }, (_, i) => i);
 
-    // Neo-Brutal Styling & Gradient Logic
-    const getIntensityColor = (count, isNormal) => {
-        if (count === 0) return '#1e293b'; // Slate-800
+    // Neo-Brutal Styling & Gradient Logic -> Now Glow Styling
+    const getIntensityStyle = (count, isNormal) => {
+        if (count === 0) {
+            return {
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                borderRadius: '3px'
+            };
+        }
 
-        // Simple linear interpolation for opacity/brightness
-        // Suspicious: Amber (low) -> Red (high)
-        // Normal: Cyan (low) -> Blue (high)
-
-        const intensity = Math.min(1, Math.max(0.2, count / (maxCount || 10))); // Cap at maxCount or 10 for baseline
+        const intensity = Math.min(1, Math.max(0.2, count / (maxCount || 10)));
 
         if (isNormal) {
-            // Cyan to Blue: #22d3ee -> #2563eb
-            return `rgba(37, 99, 235, ${intensity})`;
+            return {
+                background: `rgba(37, 99, 235, ${intensity})`,
+                borderRadius: '3px'
+            };
         } else {
-            // Orange to Red: #f97316 -> #ef4444
-            // Using HSL for better gradient: Start 30 (orange), End 0 (red)
-            const hue = 30 - (intensity * 30);
-            const light = 60 - (intensity * 20); // Darker as it gets more intense
-            return `hsl(${hue}, 100%, ${light}%)`;
+            if (intensity > 0.8 || count >= maxCount * 0.8) {
+                return {
+                    background: '#ff3d00',
+                    boxShadow: '0 0 12px rgba(255, 61, 0, 1.0), 0 0 24px rgba(255, 61, 0, 0.6), 0 0 40px rgba(255, 61, 0, 0.3)',
+                    borderRadius: '3px'
+                };
+            } else if (intensity > 0.4) {
+                return {
+                    background: '#ff6b1a',
+                    boxShadow: '0 0 8px rgba(255, 107, 26, 0.8), 0 0 16px rgba(255, 107, 26, 0.4)',
+                    borderRadius: '3px'
+                };
+            } else {
+                return {
+                    background: 'rgba(255, 107, 26, 0.4)',
+                    boxShadow: '0 0 4px rgba(255, 107, 26, 0.3)',
+                    borderRadius: '3px'
+                };
+            }
         }
     };
 
     return (
-        <div className="bg-slate-900 rounded-none border-2 border-slate-700 p-6 brutal-shadow">
-            <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
-                <div>
-                    <h3 className="text-xl font-extrabold text-slate-100 mb-1 uppercase tracking-tight" style={{ fontFamily: 'Syne, sans-serif' }}>
-                        Temporal Heatmap
-                    </h3>
-                    <p className="text-slate-400 text-xs font-mono">
-                        // TRACKING_SUSPICIOUS_FLOWS_OVER_TIME
-                    </p>
-                </div>
+        <div style={{
+            background: 'rgba(255, 255, 255, 0.03)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255, 255, 255, 0.07)',
+            borderTop: '1px solid rgba(0, 229, 255, 0.2)',
+            borderRadius: '16px',
+            padding: '24px 28px',
+            width: '100%',
+            boxShadow: '0 0 40px rgba(0, 229, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
+        }} className="relative z-50">
+            <div className="flex items-start justify-end mb-6">
                 <button
                     onClick={() => setShowNormal(!showNormal)}
-                    className={`neobutton text-xs font-bold uppercase tracking-wider px-4 py-2 border-2 transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${showNormal
-                        ? 'bg-blue-600 border-blue-800 text-white brutal-shadow-sm'
-                        : 'bg-slate-800 border-slate-950 text-slate-300 hover:bg-slate-700 brutal-shadow'}`}
+                    className="flex items-center gap-[6px] rounded-[20px] border border-[rgba(0,229,255,0.3)] bg-[rgba(0,229,255,0.1)] px-[14px] py-[6px] text-[11px] font-semibold text-[#00e5ff] transition-all hover:bg-[rgba(0,229,255,0.18)] hover:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
                 >
-                    {showNormal ? '🔴 Show Suspicious Only' : '🔵 Show All Traffic'}
+                    <div style={{ width: '8px', height: '8px', background: '#00e5ff', borderRadius: '50%', boxShadow: '0 0 6px rgba(0,229,255,0.8)' }}></div>
+                    {showNormal ? 'SHOW SUSPICIOUS ONLY' : 'SHOW ALL TRAFFIC'}
                 </button>
             </div>
 
@@ -159,8 +177,7 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                                 {hours.map((h) => (
                                     <div
                                         key={h}
-                                        className="text-center text-slate-500 font-bold font-mono"
-                                        style={{ width: CELL_W + 2, fontSize: 9 }}
+                                        style={{ width: CELL_W + 2, color: 'rgba(0, 229, 255, 0.6)', fontSize: '10px', fontFamily: 'monospace', letterSpacing: '0.05em', textAlign: 'center' }}
                                     >
                                         {formatHourLabel(h)}
                                     </div>
@@ -173,8 +190,7 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                                     <div key={date} className="flex items-center">
                                         {/* Y-axis label */}
                                         <div
-                                            className="text-slate-500 font-bold text-right pr-3 shrink-0 uppercase tracking-tight"
-                                            style={{ width: 80, fontSize: 10, fontFamily: 'IBM Plex Mono, monospace' }}
+                                            style={{ width: 80, color: 'rgba(255, 255, 255, 0.5)', fontSize: '11px', fontFamily: 'monospace', minWidth: '44px', textAlign: 'right', paddingRight: '12px', flexShrink: 0 }}
                                         >
                                             {formatDateLabel(date)}
                                         </div>
@@ -184,12 +200,12 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                                                 const suspCount = (suspGrid[date] && suspGrid[date][h]) || 0;
                                                 const normCount = (normGrid[date] && normGrid[date][h]) || 0;
                                                 const displayCount = showNormal ? normCount : suspCount;
-                                                const bg = getIntensityColor(displayCount, showNormal);
+                                                const cellStyle = getIntensityStyle(displayCount, showNormal);
 
                                                 return (
                                                     <div
                                                         key={h}
-                                                        style={{ width: CELL_W, height: CELL_H, backgroundColor: bg }}
+                                                        style={{ width: CELL_W, height: CELL_H, boxSizing: 'border-box', ...cellStyle }}
                                                         className={`transition-all hover:scale-125 hover:z-10 hover:border hover:border-white relative ${displayCount > 0 ? 'cursor-pointer' : 'cursor-default'}`}
                                                         onMouseEnter={(e) => {
                                                             const rect = e.currentTarget.getBoundingClientRect();
@@ -214,15 +230,24 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                     </div>
 
                     {/* Peak summary */}
-                    <div className="mt-6 p-4 bg-slate-950 border-2 border-slate-800 brutal-shadow-sm">
-                        <div className="flex items-center gap-4 text-xs font-mono text-slate-300">
-                            {peakCell && (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-red-500 text-lg">🔥</span>
-                                    <span>PEAK_ACTIVITY: <span className="text-white font-bold">{peakCell.count} txns</span> at {formatDateLabel(peakCell.date)} @ {peakCell.hour}:00</span>
-                                </div>
-                            )}
-                        </div>
+                    <div style={{
+                        background: 'rgba(255, 107, 26, 0.08)',
+                        border: '1px solid rgba(255, 107, 26, 0.25)',
+                        borderRadius: '10px',
+                        padding: '12px 20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        marginTop: '24px'
+                    }}>
+                        {peakCell && (
+                            <>
+                                <div style={{ color: '#ff6b1a', fontSize: '16px', filter: 'drop-shadow(0 0 6px rgba(255,107,26,0.8))' }}>🔥</div>
+                                <div style={{ color: 'rgba(255, 107, 26, 0.7)', fontSize: '11px', fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.1em' }}>PEAK_ACTIVITY:</div>
+                                <div style={{ color: '#ffffff', fontSize: '13px', fontWeight: 600, fontFamily: 'monospace' }}>{peakCell.count} txns at {formatDateLabel(peakCell.date)} @ {peakCell.hour}:00</div>
+                            </>
+                        )}
                     </div>
                 </>
             )}
