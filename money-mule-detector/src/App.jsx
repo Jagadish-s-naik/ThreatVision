@@ -577,7 +577,8 @@ export default function App() {
                       width: '100%',
                       padding: '0 40px 40px 40px',
                       zIndex: 50,
-                      position: 'relative'
+                      position: 'relative',
+                      marginTop: '-24px'
                     }}>
                       <motion.h1
                         initial={{ opacity: 0.5, y: 100 }}
@@ -611,7 +612,15 @@ export default function App() {
                         Suspicious Transaction Flow Over Time
                       </motion.p>
                       
-                      <div className="w-full max-w-6xl mx-auto">
+                      <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
+                        paddingLeft: '40px',
+                        paddingRight: '40px'
+                      }}>
                         <TemporalHeatmap transactions={transactions} suspiciousAccountIds={suspiciousAccountIds} />
                       </div>
                     </div>

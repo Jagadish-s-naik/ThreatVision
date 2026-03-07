@@ -152,7 +152,11 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
             borderTop: '1px solid rgba(0, 229, 255, 0.2)',
             borderRadius: '16px',
             padding: '24px 28px',
-            width: '100%',
+            width: 'fit-content',
+            minWidth: '600px',
+            maxWidth: '900px',
+            marginLeft: 'auto',
+            marginRight: 'auto',
             boxShadow: '0 0 40px rgba(0, 229, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)'
         }} className="relative z-50">
             <div className="flex items-start justify-end mb-6">
@@ -170,8 +174,8 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
             ) : (
                 <>
                     {/* Heatmap grid */}
-                    <div className="overflow-x-auto pb-4">
-                        <div style={{ minWidth: 24 * (CELL_W + 2) + 80 }}>
+                    <div className="overflow-x-auto pb-4" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                        <div style={{ minWidth: 24 * (CELL_W + 2) + 80, marginLeft: 'auto', marginRight: 'auto' }}>
                             {/* X-axis */}
                             <div className="flex mb-2" style={{ marginLeft: 80 }}>
                                 {hours.map((h) => (
