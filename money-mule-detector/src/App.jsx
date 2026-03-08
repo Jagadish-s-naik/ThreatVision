@@ -641,22 +641,41 @@ export default function App() {
 
               {/* JSON Export */}
               {activeTab === 'json' && (
-                <div className="p-8 h-full flex flex-col">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold">JSON Data Export</h3>
+                <div className="h-full flex flex-col p-6 overflow-hidden">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-slate-900 border border-slate-700/50 p-6 rounded-2xl shadow-xl">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20 shadow-inner">
+                        <FileJson className="w-6 h-6 text-purple-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-white tracking-tight">Raw Data Export</h3>
+                        <p className="text-sm text-slate-400 mt-0.5">View and download the complete analysis results in JSON format.</p>
+                      </div>
+                    </div>
                     <button
                       onClick={handleDownload}
-                      className="flex items-center gap-2 px-4 py-2 bg-brand-accent/20 text-brand-accent hover:bg-brand-accent hover:text-brand-bg rounded-lg transition-colors text-sm font-semibold"
+                      className="group flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl transition-all shadow-lg hover:shadow-purple-500/25 border border-purple-400/20 font-semibold w-full md:w-auto"
                     >
-                      <Upload className="w-4 h-4 rotate-180" />
+                      <Upload className="w-5 h-5 group-hover:-translate-y-1 transition-transform rotate-180" />
                       Download JSON
                     </button>
                   </div>
-                  <pre
-                    className="bg-[#13151A] p-6 rounded-xl border border-brand-border text-brand-accent/80 font-mono text-sm overflow-auto flex-1 custom-scrollbar"
-                  >
-                    {JSON.stringify(analysisResults, null, 2)}
-                  </pre>
+                  
+                  <div className="flex-1 relative bg-[#0a0f18] rounded-2xl border border-slate-800 shadow-inner overflow-hidden flex flex-col">
+                    <div className="flex items-center gap-2 px-4 py-3 bg-slate-900/80 border-b border-slate-800 backdrop-blur-md">
+                      <div className="flex gap-2">
+                        <div className="w-3 h-3 rounded-full bg-rose-500/20 border border-rose-500/50"></div>
+                        <div className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/50"></div>
+                        <div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/50"></div>
+                      </div>
+                      <span className="text-xs text-slate-500 ml-3 font-mono">analysis_results.json</span>
+                    </div>
+                    <pre
+                      className="p-6 text-purple-200/80 font-mono text-sm overflow-auto flex-1 custom-scrollbar leading-relaxed"
+                    >
+                      {JSON.stringify(analysisResults, null, 2)}
+                    </pre>
+                  </div>
                 </div>
               )}
             </div>
