@@ -671,7 +671,7 @@ export default function App() {
                       <span className="text-xs text-slate-500 ml-3 font-mono">analysis_results.json</span>
                     </div>
                     <pre
-                      className="p-6 text-purple-200/80 font-mono text-sm overflow-auto flex-1 custom-scrollbar leading-relaxed"
+                      className="p-6 text-emerald-400/90 font-mono text-sm overflow-auto flex-1 custom-scrollbar leading-relaxed"
                     >
                       {JSON.stringify(analysisResults, null, 2)}
                     </pre>
