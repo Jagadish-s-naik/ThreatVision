@@ -36,7 +36,7 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                 ring,
                 x: CX + OR * Math.cos(a),
                 y: CY + OR * Math.sin(a),
-                r: Math.max(22, Math.min(55, 12 + ring.member_accounts.length * 2)), // Larger nodes
+                r: Math.max(32, Math.min(75, 18 + ring.member_accounts.length * 3.5)), // Larger nodes
             };
         }),
         [show]
@@ -143,6 +143,33 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                         boxShadow: 'inset 0 0 30px rgba(0,0,0,0.6)' 
                     }}
                 >
+                    <style>
+                        {`
+                            @keyframes dataFlow {
+                                from { stroke-dashoffset: 16; }
+                                to { stroke-dashoffset: 0; }
+                            }
+                            @keyframes slowSpin {
+                                from { transform: rotate(0deg); transform-origin: 300px 225px; }
+                                to { transform: rotate(360deg); transform-origin: 300px 225px; }
+                            }
+                            @keyframes pulseNode {
+                                0% { transform: scale(1); opacity: 0.4; }
+                                50% { transform: scale(1.2); opacity: 0.8; }
+                                100% { transform: scale(1); opacity: 0.4; }
+                            }
+                        `}
+                    </style>
+
+                    {/* Orbital Background Grid */}
+                    <g className="opacity-20 pointer-events-none" style={{ animation: 'slowSpin 60s linear infinite' }}>
+                        {[80, 160, 240].map(radius => (
+                            <circle key={radius} cx={CX} cy={CY} r={radius} fill="none" stroke="#00e5ff" strokeWidth="1" strokeDasharray="4 8" />
+                        ))}
+                    </g>
+                    {/* Crosshairs */}
+                    <path d={`M ${CX} 0 L ${CX} 450 M 0 ${CY} L 600 ${CY}`} stroke="rgba(0, 229, 255, 0.05)" strokeWidth="1" className="pointer-events-none" />
+
                     {/* Connection lines */}
                     {connections.map((c, idx) => {
                         const isHov = hoveredRing === c.ringA || hoveredRing === c.ringB;
@@ -152,10 +179,13 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                                     x1={c.x1} y1={c.y1}
                                     x2={c.x2} y2={c.y2}
                                     stroke={isHov ? '#00e5ff' : 'rgba(255, 255, 255, 0.15)'}
-                                    strokeWidth={isHov ? 2 : 1}
-                                    strokeDasharray={isHov ? "none" : "4,4"}
-                                    opacity={isHov ? 1 : 0.5}
-                                    style={isHov ? { filter: 'drop-shadow(0 0 6px rgba(0,229,255,0.8))' } : {}}
+                                    strokeWidth={isHov ? 2 : Math.max(1, c.count * 0.5)}
+                                    strokeDasharray={isHov ? "none" : "8,8"}
+                                    opacity={isHov ? 1 : 0.6}
+                                    style={{
+                                        filter: isHov ? 'drop-shadow(0 0 6px rgba(0,229,255,0.8))' : 'none',
+                                        animation: isHov ? 'none' : 'dataFlow 1s linear infinite'
+                                    }}
                                 />
                                 {/* Label for shared count */}
                                 {isHov && (
@@ -199,24 +229,35 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                                     style={glowStyle}
                                 />
 
+                                {/* Danger Pulse for High Risk Nodes */}
+                                {ring.risk_score >= 80 && !isHov && !isSel && (
+                                    <circle
+                                        cx={x} cy={y} r={r + 4}
+                                        fill="none"
+                                        stroke={typeColor}
+                                        strokeWidth="2"
+                                        style={{ transformOrigin: `${x}px ${y}px`, animation: 'pulseNode 2s ease-in-out infinite' }}
+                                    />
+                                )}
+
                                 {/* Sub-ring (inner decorative circle) */}
                                 {(isHov || isSel) && (
                                     <circle
                                         cx={x} cy={y} r={r - 6}
                                         fill="none"
                                         stroke={typeColor}
-                                        strokeWidth="1"
+                                        strokeWidth="1.5"
                                         strokeDasharray="2,2"
-                                        opacity="0.5"
+                                        opacity="0.8"
                                     />
                                 )}
 
                                 {/* Ring ID Label */}
                                 <text
-                                    x={x} y={y - 8}
+                                    x={x} y={y - 10}
                                     textAnchor="middle"
                                     dominantBaseline="middle"
-                                    fontSize={isHov || isSel ? 10 : 9}
+                                    fontSize={isHov || isSel ? 11 : 10}
                                     fill={isHov || isSel ? '#fff' : 'rgba(255, 255, 255, 0.8)'}
                                     fontWeight="bold"
                                     fontFamily="monospace"
@@ -228,8 +269,8 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                                     x={x} y={y + 6}
                                     textAnchor="middle"
                                     dominantBaseline="middle"
-                                    fontSize={isHov || isSel ? 10 : 9}
-                                    fill={isHov || isSel ? typeColor : 'rgba(255, 255, 255, 0.5)'}
+                                    fontSize={isHov || isSel ? 11 : 10}
+                                    fill={isHov || isSel ? typeColor : 'rgba(255, 255, 255, 0.6)'}
                                     fontWeight="600"
                                     fontFamily="monospace"
                                     style={{ userSelect: 'none', pointerEvents: 'none', letterSpacing: '0.05em' }}
@@ -237,10 +278,10 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                                     Risk: {ring.risk_score}
                                 </text>
                                 <text
-                                    x={x} y={y + 16}
+                                    x={x} y={y + 20}
                                     textAnchor="middle"
                                     dominantBaseline="middle"
-                                    fontSize={isHov || isSel ? 9 : 8}
+                                    fontSize={isHov || isSel ? 10 : 9}
                                     fill={isHov || isSel ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.3)'}
                                     fontWeight="500"
                                     fontFamily="monospace"
