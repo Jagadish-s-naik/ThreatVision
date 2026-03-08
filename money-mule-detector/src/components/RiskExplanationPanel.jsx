@@ -96,14 +96,6 @@ function generateNarrative(account, nodeStats, transactions, fraudRings) {
     breakdown += parts.join(', ') + `. Final score: ${account.suspicion_score}/100.`;
     paragraphs.push(breakdown);
 
-    // Ring context
-    const ring = fraudRings?.find((r) => r.ring_id === account.ring_id);
-    if (ring) {
-        paragraphs.push(
-            `This account is a member of ${ring.ring_id} (${ring.pattern_type} ring) containing ${(ring.member_accounts || []).length} accounts. Ring risk score: ${ring.risk_score}/100.`
-        );
-    }
-
     if (ringMemberships.length > 1) {
         paragraphs.push(
             `⚠ This account appears in ${ringMemberships.length} different fraud rings (${ringMemberships.join(', ')}), indicating it may be a central node in multiple overlapping criminal networks.`
@@ -167,9 +159,12 @@ export default function RiskExplanationPanel({ account, nodeStats, transactions,
             >
                 {/* Header */}
                 <div className="sticky top-0 bg-slate-900 border-b border-slate-700 px-5 py-4 flex items-center justify-between z-10">
-                    <h2 className="text-base font-bold text-amber-400" style={{ fontFamily: 'Syne, sans-serif' }}>
-                        🔍 Risk Analysis: {account.account_id}
-                    </h2>
+                    <div>
+                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Primary Suspect Analysis</div>
+                        <h2 className="text-lg font-bold text-white flex items-center gap-2" style={{ fontFamily: 'Syne, sans-serif' }}>
+                            {account.account_id}
+                        </h2>
+                    </div>
                     <button
                         onClick={onClose}
                         className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 text-lg transition-colors"
@@ -178,9 +173,31 @@ export default function RiskExplanationPanel({ account, nodeStats, transactions,
                     </button>
                 </div>
 
-                <div className="px-5 py-5 space-y-5">
-                    {/* Score badge */}
-                    <ScoreBadge score={account.suspicion_score} />
+                <div className="px-5 py-6 space-y-6">
+                    {/* Score badge & Ring Context */}
+                    <div className="flex flex-col gap-4">
+                        <ScoreBadge score={account.suspicion_score} />
+                        
+                        {(() => {
+                            const ring = fraudRings?.find((r) => r.ring_id === account.ring_id);
+                            if (!ring) return null;
+                            const prefix = ring.pattern_type.substring(0, 3).toUpperCase();
+                            const topAccount = account.account_id;
+                            const shortAcc = topAccount.length > 8 ? topAccount.substring(0,8) + '...' : topAccount;
+                            
+                            return (
+                                <div className="bg-slate-800/80 border border-slate-700 rounded-lg p-3 flex flex-col gap-1 mt-2">
+                                    <div className="text-[10px] uppercase tracking-widest text-[#00e5ff] font-bold">Ring Context</div>
+                                    <div className="text-sm text-slate-300">
+                                        Primary suspect driving <span className="text-white font-bold">{prefix} : {shortAcc}</span>.
+                                    </div>
+                                    <div className="text-xs text-slate-400 mt-1">
+                                        This is a <span className="text-amber-400">{ring.pattern_type}</span> network containing {ring.member_accounts?.length || 0} linked nodes with a collective risk score of {ring.risk_score.toFixed(1)}.
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
 
                     {/* Detected patterns */}
                     <div className="flex flex-wrap gap-2">
@@ -215,11 +232,11 @@ export default function RiskExplanationPanel({ account, nodeStats, transactions,
                                 { label: 'First Seen', value: firstSeen },
                                 { label: 'Last Seen', value: lastSeen },
                                 { label: 'Active Period', value: `${activeDays} days` },
-                                { label: 'Ring ID', value: account.ring_id || '—' },
+                                { label: 'Assigned Ring', value: account.ring_id || '—' },
                             ].map(({ label, value }) => (
-                                <div key={label} className="bg-slate-800 rounded-lg px-3 py-2">
-                                    <div className="text-slate-500 mb-0.5">{label}</div>
-                                    <div className="text-slate-200 font-mono font-semibold truncate">{value}</div>
+                                <div key={label} className="bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2">
+                                    <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-0.5">{label}</div>
+                                    <div className="text-[#00e5ff] font-mono text-sm truncate">{value}</div>
                                 </div>
                             ))}
                         </div>

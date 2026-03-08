@@ -1,15 +1,29 @@
 import React, { useMemo, useState } from 'react';
+import { Layers, Activity, Users, Link } from 'lucide-react';
 
 export default function RingOverlapVisualization({ fraudRings = [], suspiciousAccounts = [] }) {
     const [hoveredRing, setHoveredRing] = useState(null);
     const [selectedRing, setSelectedRing] = useState(null); // Track selected ring for details
 
-    // Limit to top 15 rings by risk_score
     const show = useMemo(
         () => [...fraudRings]
             .sort((a, b) => b.risk_score - a.risk_score)
-            .slice(0, 15),
-        [fraudRings]
+            .slice(0, 15)
+            .map(ring => {
+                const members = ring.member_accounts.map(accId => 
+                    suspiciousAccounts.find(sa => sa.account_id === accId) || { account_id: accId, suspicion_score: 0 }
+                ).sort((a,b) => b.suspicion_score - a.suspicion_score);
+
+                const topAccount = members.length > 0 ? members[0].account_id : 'Unknown';
+                const shortAcc = topAccount.length > 8 ? topAccount.substring(0,8) + '...' : topAccount;
+                const prefix = ring.pattern_type.substring(0, 3).toUpperCase();
+                
+                return {
+                    ...ring,
+                    displayName: `${prefix} : ${shortAcc}`
+                };
+            }),
+        [fraudRings, suspiciousAccounts]
     );
 
     // Calculate orbital positions — spread evenly around center
@@ -42,13 +56,47 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                         x2: pos[j].x, y2: pos[j].y,
                         count: shared.length,
                         ringA: pos[i].ring.ring_id,
-                        ringB: pos[j].ring.ring_id
+                        ringB: pos[j].ring.ring_id,
+                        ringAName: pos[i].ring.displayName,
+                        ringBName: pos[j].ring.displayName
                     });
                 }
             }
         }
         return conns;
     }, [pos]);
+
+    const overlapStats = useMemo(() => {
+        let maxShared = 0;
+        let maxPair = null;
+
+        connections.forEach(c => {
+            if (c.count > maxShared) {
+                maxShared = c.count;
+                maxPair = [c.ringAName, c.ringBName];
+            }
+        });
+
+        const accountRingMap = {};
+        show.forEach(ring => {
+            ring.member_accounts.forEach(acc => {
+                if (!accountRingMap[acc]) accountRingMap[acc] = 0;
+                accountRingMap[acc]++;
+            });
+        });
+        
+        const superConnectors = Object.entries(accountRingMap)
+            .filter(([_, count]) => count > 1)
+            .sort((a, b) => b[1] - a[1]);
+
+        return {
+            totalConnections: connections.length,
+            totalSharedAccounts: superConnectors.length,
+            maxShared,
+            maxPair,
+            topConnector: superConnectors.length > 0 ? superConnectors[0] : null
+        };
+    }, [connections, show]);
 
     if (show.length === 0) {
         return (
@@ -64,12 +112,13 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
 
     return (
         <div style={{
-            background: 'rgba(255, 255, 255, 0.025)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'linear-gradient(180deg, rgba(15, 21, 32, 0.8) 0%, rgba(10, 14, 26, 0.9) 100%)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            borderTop: '1px solid rgba(0, 229, 255, 0.3)',
             borderRadius: '16px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 20px rgba(0, 229, 255, 0.05)'
         }} className="p-6 flex flex-col md:flex-row gap-6 w-full relative z-10">
             <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
@@ -85,13 +134,13 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                     height="100%"
                     viewBox="0 0 600 450"
                     style={{ 
-                        background: 'rgba(0, 0, 0, 0.2)', 
+                        background: 'radial-gradient(circle at 50% 50%, rgba(0, 229, 255, 0.03) 0%, transparent 70%), rgba(10, 14, 26, 0.4)', 
                         border: '1px solid rgba(255, 255, 255, 0.05)', 
                         borderRadius: '12px', 
                         display: 'block', 
                         maxWidth: '100%', 
                         maxHeight: '450px',
-                        boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)' 
+                        boxShadow: 'inset 0 0 30px rgba(0,0,0,0.6)' 
                     }}
                 >
                     {/* Connection lines */}
@@ -164,35 +213,81 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
 
                                 {/* Ring ID Label */}
                                 <text
-                                    x={x} y={y - 4}
+                                    x={x} y={y - 8}
                                     textAnchor="middle"
                                     dominantBaseline="middle"
-                                    fontSize={isHov || isSel ? 11 : 10}
-                                    fill={isHov || isSel ? '#fff' : 'rgba(255, 255, 255, 0.7)'}
+                                    fontSize={isHov || isSel ? 10 : 9}
+                                    fill={isHov || isSel ? '#fff' : 'rgba(255, 255, 255, 0.8)'}
                                     fontWeight="bold"
                                     fontFamily="monospace"
                                     style={{ userSelect: 'none', pointerEvents: 'none' }}
                                 >
-                                    {ring.ring_id}
+                                    {ring.displayName}
                                 </text>
                                 <text
-                                    x={x} y={y + 10}
+                                    x={x} y={y + 6}
                                     textAnchor="middle"
                                     dominantBaseline="middle"
-                                    fontSize={isHov || isSel ? 9 : 8}
-                                    fill={isHov || isSel ? typeColor : 'rgba(255, 255, 255, 0.4)'}
+                                    fontSize={isHov || isSel ? 10 : 9}
+                                    fill={isHov || isSel ? typeColor : 'rgba(255, 255, 255, 0.5)'}
                                     fontWeight="600"
                                     fontFamily="monospace"
                                     style={{ userSelect: 'none', pointerEvents: 'none', letterSpacing: '0.05em' }}
                                 >
-                                    {ring.member_accounts.length} mbrs
+                                    Risk: {ring.risk_score}
+                                </text>
+                                <text
+                                    x={x} y={y + 16}
+                                    textAnchor="middle"
+                                    dominantBaseline="middle"
+                                    fontSize={isHov || isSel ? 9 : 8}
+                                    fill={isHov || isSel ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.3)'}
+                                    fontWeight="500"
+                                    fontFamily="monospace"
+                                    style={{ userSelect: 'none', pointerEvents: 'none', letterSpacing: '0.02em' }}
+                                >
+                                    ({ring.member_accounts.length} mbrs)
                                 </text>
                             </g>
                         );
                     })}
                 </svg>
-                <div className="text-center mt-3 text-[10px] text-slate-500 font-mono">
-                    SHOWING TOP {show.length} RINGS BY RISK SCORE
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                    <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-xl p-4 flex flex-col justify-center">
+                        <div className="flex items-center gap-2 mb-2 text-slate-400">
+                            <Layers className="w-4 h-4 text-[#00e5ff]" />
+                            <span className="text-[10px] font-bold tracking-wider uppercase">Active Overlaps</span>
+                        </div>
+                        <div className="text-2xl font-bold text-white tracking-tight">{overlapStats.totalConnections} <span className="text-sm font-normal text-slate-500">Pairs</span></div>
+                    </div>
+                    
+                    <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-xl p-4 flex flex-col justify-center">
+                        <div className="flex items-center gap-2 mb-2 text-slate-400">
+                            <Users className="w-4 h-4 text-[#a855f7]" />
+                            <span className="text-[10px] font-bold tracking-wider uppercase">Shared Entities</span>
+                        </div>
+                        <div className="text-2xl font-bold text-white tracking-tight">{overlapStats.totalSharedAccounts} <span className="text-sm font-normal text-slate-500">Accounts</span></div>
+                    </div>
+
+                    <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-xl p-4 flex flex-col justify-center">
+                        <div className="flex items-center gap-2 mb-2 text-slate-400">
+                            <Link className="w-4 h-4 text-[#ff4d6d]" />
+                            <span className="text-[10px] font-bold tracking-wider uppercase">Deepest Overlap</span>
+                        </div>
+                        <div className="text-2xl font-bold text-white tracking-tight">{overlapStats.maxShared} <span className="text-sm font-normal text-slate-500">Nodes</span></div>
+                        <div className="text-[9px] text-slate-500 mt-1">{overlapStats.maxPair ? `${overlapStats.maxPair[0]} & ${overlapStats.maxPair[1]}` : 'N/A'}</div>
+                    </div>
+
+                    <div className="bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] rounded-xl p-4 flex flex-col justify-center">
+                        <div className="flex items-center gap-2 mb-2 text-slate-400">
+                            <Activity className="w-4 h-4 text-[#f97316]" />
+                            <span className="text-[10px] font-bold tracking-wider uppercase">Top Connector</span>
+                        </div>
+                        <div className="text-sm font-bold text-white tracking-tight truncate" title={overlapStats.topConnector ? overlapStats.topConnector[0] : 'N/A'}>
+                            {overlapStats.topConnector ? overlapStats.topConnector[0] : 'None'}
+                        </div>
+                        <div className="text-[9px] text-slate-500 mt-1">{overlapStats.topConnector ? `Associated with ${overlapStats.topConnector[1]} rings` : 'N/A'}</div>
+                    </div>
                 </div>
             </div>
 
@@ -209,7 +304,7 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                     <div className="flex justify-between items-center mb-4 border-b border-[rgba(255,255,255,0.05)] pb-3">
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-[#00e5ff] shadow-[0_0_8px_#00e5ff]"></div>
-                            <h4 className="text-white font-bold">{selectedRing.ring_id}</h4>
+                            <h4 className="text-white font-bold">{selectedRing.displayName}</h4>
                         </div>
                         <button onClick={() => setSelectedRing(null)} className="text-slate-400 hover:text-white transition-colors">✕</button>
                     </div>

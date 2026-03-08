@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { ShieldAlert, Activity, DollarSign } from 'lucide-react';
 
 const PAGE_SIZE = 10;
 
@@ -30,7 +31,36 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelec
     }, [suspiciousAccounts]);
 
     const sorted = useMemo(() => {
-        const arr = [...(fraudRings || [])];
+        let arr = [...(fraudRings || [])].map(ring => {
+            const members = ring.member_accounts || [];
+            
+            // Calculate best member for naming
+            const accScores = members.map(id => accountMap[id] || { account_id: id, suspicion_score: 0 })
+                                     .sort((a,b) => b.suspicion_score - a.suspicion_score);
+            const topAccount = accScores.length > 0 ? accScores[0].account_id : 'Unknown';
+            const shortAcc = topAccount.length > 8 ? topAccount.substring(0,8) + '...' : topAccount;
+            const prefix = ring.pattern_type.substring(0, 3).toUpperCase();
+            
+            // Calculate volume and transaction counts
+            let totalTx = 0;
+            let totalVolume = 0;
+            members.forEach(id => {
+                const acc = accountMap[id];
+                if (acc) {
+                    totalTx += (acc.transaction_count || 0);
+                    // Use the max of sent/received or sum depending on pattern, simplest is passing through volume
+                    totalVolume += Math.max(acc.total_sent || 0, acc.total_received || 0);
+                }
+            });
+
+            return {
+                ...ring,
+                displayName: `${prefix} : ${shortAcc}`,
+                total_tx: totalTx,
+                total_volume: totalVolume
+            };
+        });
+
         arr.sort((a, b) => {
             let av = sortKey === 'member_count' ? a.member_accounts.length : a[sortKey];
             let bv = sortKey === 'member_count' ? b.member_accounts.length : b[sortKey];
@@ -41,7 +71,7 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelec
             return 0;
         });
         return arr;
-    }, [fraudRings, sortKey, sortAsc]);
+    }, [fraudRings, accountMap, sortKey, sortAsc]);
 
     const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
     const pageData = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -86,16 +116,38 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelec
     }
 
     return (
-        <div className="bg-slate-900 rounded-none border-2 border-slate-700 overflow-hidden brutal-shadow">
+        <div className="bg-slate-900 rounded-none border-2 border-slate-700 flex flex-col overflow-hidden brutal-shadow">
+            {/* Header Area */}
+            <div className="p-6 border-b-2 border-slate-700 bg-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <div className="flex items-center gap-3 mb-1">
+                        <div className="w-8 h-8 rounded bg-rose-500/20 flex items-center justify-center border border-rose-500/50">
+                            <ShieldAlert className="w-4 h-4 text-rose-400" />
+                        </div>
+                        <h3 className="text-xl font-bold tracking-tight text-white">Detected Fraud Rings</h3>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20">HIGH PRIORITY</span>
+                    </div>
+                    <p className="text-sm text-slate-400 pl-11">Review prioritized networks of suspicious accounts. Click any ring to analyze its primary suspect in detail.</p>
+                </div>
+                <div className="flex items-center gap-4 text-slate-400 text-sm font-mono bg-slate-900/50 px-4 py-2 rounded-lg border border-slate-700/50">
+                    <div className="flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-[#00e5ff]" />
+                        <span>{fraudRings.length} Rings</span>
+                    </div>
+                </div>
+            </div>
+
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-slate-300" style={{ fontFamily: 'IBM Plex Mono, monospace' }}>
                     <thead>
-                        <tr className="border-b-2 border-slate-700 bg-slate-800 text-slate-300 text-xs uppercase tracking-widest font-bold">
-                            <th className="px-4 py-4 text-left border-r border-slate-700"><SortBtn col="ring_id" label="Ring ID" /></th>
+                        <tr className="border-b-2 border-slate-700 bg-slate-800 text-slate-400 text-xs uppercase tracking-widest font-bold">
+                            <th className="px-4 py-4 text-left border-r border-slate-700"><SortBtn col="ring_id" label="Ring Identity" /></th>
                             <th className="px-4 py-4 text-left border-r border-slate-700"><SortBtn col="pattern_type" label="Pattern" /></th>
-                            <th className="px-4 py-4 text-right border-r border-slate-700"><SortBtn col="member_count" label="Members" /></th>
+                            <th className="px-4 py-4 text-right border-r border-slate-700"><SortBtn col="member_count" label="Nodes" /></th>
+                            <th className="px-4 py-4 text-right border-r border-slate-700"><SortBtn col="total_tx" label="Total Tx" /></th>
+                            <th className="px-4 py-4 text-right border-r border-slate-700"><SortBtn col="total_volume" label="Volume Est." /></th>
                             <th className="px-4 py-4 text-right border-r border-slate-700"><SortBtn col="risk_score" label="Risk Score" /></th>
-                            <th className="px-4 py-4 text-left">Member Accounts</th>
+                            <th className="px-4 py-4 text-left">Primary Members</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -106,24 +158,30 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelec
                             return (
                                 <tr
                                     key={ring.ring_id}
-                                    className={`border-b border-slate-700 hover:bg-slate-800/50 cursor-pointer transition-colors ${getRowStyle(ring.risk_score)}`}
+                                    className={`border-b border-slate-700 hover:bg-slate-800/50 cursor-pointer transition-colors ${getRowStyle(ring.risk_score)} group`}
                                     onClick={() => handleRowClick(ring)}
                                 >
-                                    <td className="px-4 py-3 font-bold text-amber-500 border-r border-slate-700/50">{ring.ring_id}</td>
-                                    <td className="px-4 py-3 border-r border-slate-700/50">
-                                        <span className={`px-2 py-1 text-xs font-bold uppercase tracking-wider border ${getPatternBadgeColor(ring.pattern_type)}`}>
+                                    <td className="px-4 py-4 font-bold text-white border-r border-slate-700/50 group-hover:text-[#00e5ff] transition-colors">{ring.displayName || ring.ring_id}</td>
+                                    <td className="px-4 py-4 border-r border-slate-700/50">
+                                        <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider border rounded ${getPatternBadgeColor(ring.pattern_type)}`}>
                                             {ring.pattern_type}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-right border-r border-slate-700/50">{members.length}</td>
-                                    <td className="px-4 py-3 text-right border-r border-slate-700/50">
-                                        <span className={`font-bold text-base ${ring.risk_score >= 80 ? 'text-red-500' : ring.risk_score >= 60 ? 'text-orange-500' : ring.risk_score >= 40 ? 'text-yellow-500' : 'text-slate-400'}`}>
+                                    <td className="px-4 py-4 text-right border-r border-slate-700/50 font-semibold">{members.length}</td>
+                                    <td className="px-4 py-4 text-right border-r border-slate-700/50 text-slate-400">{ring.total_tx.toLocaleString()}</td>
+                                    <td className="px-4 py-4 text-right border-r border-slate-700/50 text-emerald-400 bg-emerald-900/10">${(ring.total_volume).toLocaleString('en-US', {maximumFractionDigits:0})}</td>
+                                    <td className="px-4 py-4 text-right border-r border-slate-700/50">
+                                        <span className={`font-bold text-base ${ring.risk_score >= 80 ? 'text-rose-500' : ring.risk_score >= 60 ? 'text-orange-500' : ring.risk_score >= 40 ? 'text-yellow-500' : 'text-slate-400'}`}>
                                             {ring.risk_score.toFixed(1)}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-slate-400 text-xs font-mono">
-                                        {shown.join(', ')}
-                                        {extra > 0 && <span className="text-amber-500 font-bold ml-1">+{extra} more</span>}
+                                    <td className="px-4 py-4 text-slate-400 text-xs font-mono">
+                                        <div className="flex flex-wrap gap-1">
+                                            {shown.map(m => (
+                                                <span key={m} className="bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700/50 truncate max-w-[120px]" title={m}>{m}</span>
+                                            ))}
+                                            {extra > 0 && <span className="bg-slate-800 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/30">+{extra}</span>}
+                                        </div>
                                     </td>
                                 </tr>
                             );
