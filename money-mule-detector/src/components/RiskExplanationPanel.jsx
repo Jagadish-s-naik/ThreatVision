@@ -50,7 +50,6 @@ function generateNarrative(account, nodeStats, transactions, fraudRings) {
         }
         if (pattern === 'fan_in') {
             const senders = (typeof stats.uniqueSenders === 'number') ? stats.uniqueSenders : (stats.uniqueSenders?.size || 0);
-            const windowMs = 72 * 60 * 60 * 1000;
             paragraphs.push(
                 `This account received funds from ${senders} unique senders within a 72-hour window totalling ${fmtCurrency(stats.totalReceived)} in suspicious inflows. This fan-in aggregation pattern is consistent with smurfing — breaking large sums into smaller deposits across many accounts to avoid reporting thresholds.`
             );

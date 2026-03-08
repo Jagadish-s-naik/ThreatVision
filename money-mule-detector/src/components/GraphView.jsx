@@ -14,12 +14,6 @@ export default function GraphView({ suspiciousAccounts = [], fraudRings = [], al
         [suspiciousAccounts]
     );
 
-    const accountMap = useMemo(() => {
-        const m = {};
-        for (const acc of suspiciousAccounts) m[acc.account_id] = acc;
-        return m;
-    }, [suspiciousAccounts]);
-
     // Cross-ring account detection
     const ringMembership = useMemo(() => {
         const rm = {};
@@ -226,12 +220,6 @@ export default function GraphView({ suspiciousAccounts = [], fraudRings = [], al
     const fraudEdgeCount = allTransactions.filter(
         (tx) => suspiciousIds.has(tx.sender_id) && suspiciousIds.has(tx.receiver_id)
     ).length;
-    const cleanEdgeCount = allTransactions.filter((tx) => {
-        const allAcc = new Set();
-        for (const t of allTransactions) { allAcc.add(t.sender_id); allAcc.add(t.receiver_id); }
-        const cleanSet = new Set([...allAcc].filter((id) => !suspiciousIds.has(id)));
-        return cleanSet.has(tx.sender_id) && cleanSet.has(tx.receiver_id);
-    }).length;
 
     return (
         <div className="flex flex-col gap-3">

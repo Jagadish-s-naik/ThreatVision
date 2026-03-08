@@ -20,10 +20,10 @@ import RiskExplanationPanel from './components/RiskExplanationPanel.jsx';
 import RingOverlapVisualization from './components/RingOverlapVisualization.jsx';
 import { EncryptedText } from './components/ui/encrypted-text.jsx';
 import { LampContainer } from './components/ui/lamp.jsx';
-import { motion } from 'framer-motion';
 import { analyzeCSV } from './api/analyzeApi.js';
 import { fetchGraphData, buildLocalGraphData } from './api/graphApi.js';
-import { downloadJSON } from './utils/jsonExporter.js';
+// eslint-disable-next-line no-unused-vars
+import { motion, AnimatePresence } from 'framer-motion';
 
 const TABS = [
   { id: 'graph', label: 'Graph View', icon: Network },
@@ -38,7 +38,7 @@ export default function App() {
   const [analysisResults, setAnalysisResults] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [graphData, setGraphData] = useState(null);   // Neo4j graph analytics
-  const [rawFile, setRawFile] = useState(null);
+  const [, setRawFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
@@ -192,16 +192,7 @@ export default function App() {
     };
   }
 
-  // Build analysisResults-compatible shape for SummaryPanel
-  const summaryPanelResults = analysisResults
-    ? {
-      suspiciousAccounts,
-      fraudRings,
-      transactions,
-      summary,
-      nodeStats,
-    }
-    : null;
+  // Build analysisResults-compatible shape for SummaryPanel (can be used later)
 
   // â”€â”€â”€ Show CSV uploader if no results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!analysisResults && !isProcessing) {

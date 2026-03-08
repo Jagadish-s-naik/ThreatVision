@@ -70,7 +70,7 @@ export async function analyzeLocally(file) {
     if (missing.length) throw new Error(`Missing required columns: ${missing.join(', ')}`);
 
     // ── 1. Build graph ───────────────────────────────────────────────────────
-    const { graph, reverseGraph, nodeStats, allNodes, edges } = buildGraph(rows);
+    const { graph, nodeStats, allNodes } = buildGraph(rows);
     const totalNodes = allNodes.size;
 
     // ── 2. Detect cycles ─────────────────────────────────────────────────────
@@ -180,7 +180,6 @@ export async function analyzeLocally(file) {
     }
 
     // Remove accounts not linked to any ring after filtering
-    const linkedRingIds = new Set(fraud_rings.flatMap(r => [r.ring_id]));
     const accountsInRings = new Set(fraud_rings.flatMap(r => r.member_accounts));
     const filteredAccounts = suspicious_accounts.filter(a => accountsInRings.has(a.account_id));
 

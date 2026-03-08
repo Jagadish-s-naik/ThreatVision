@@ -22,13 +22,6 @@ const BLUE_SCALE = [
     { min: 21, max: Infinity, bg: '#1E3A8A' },
 ];
 
-function getColor(count, scale) {
-    for (const s of [...scale].reverse()) {
-        if (count >= s.min) return s.bg;
-    }
-    return scale[0].bg;
-}
-
 function formatDateLabel(dateStr) {
     const [year, month, day] = dateStr.split('-').map(Number);
     const d = new Date(year, month - 1, day);
@@ -47,7 +40,7 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
     const [showNormal, setShowNormal] = useState(false);
     const [tooltip, setTooltip] = useState(null);
 
-    const { suspGrid, normGrid, dates, peakCell, peakDay, maxCount } = useMemo(() => {
+    const { suspGrid, normGrid, dates, peakCell, maxCount } = useMemo(() => {
         if (!transactions || transactions.length === 0) return { suspGrid: {}, normGrid: {}, dates: [], peakCell: null, peakDay: null, maxCount: 0 };
 
         const suspGrid = {};
@@ -83,7 +76,6 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
 
         // Peak cell: highest count in suspGrid
         let peakCell = null, peakCellCount = 0;
-        let peakDay = null, peakDayCount = 0;
 
         for (const [date, hours] of Object.entries(suspGrid)) {
             let dayTotal = 0;
@@ -94,13 +86,9 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                     peakCell = { date, hour: parseInt(hour), count };
                 }
             }
-            if (dayTotal > peakDayCount) {
-                peakDayCount = dayTotal;
-                peakDay = { date, count: dayTotal };
-            }
         }
 
-        return { suspGrid, normGrid, dates, peakCell, peakDay, maxCount: maxVal };
+        return { suspGrid, normGrid, dates, peakCell, maxCount: maxVal };
     }, [transactions, suspiciousAccountIds]);
 
     const hours = Array.from({ length: 24 }, (_, i) => i);
@@ -267,7 +255,6 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                                                         style={{ width: CELL_W, height: CELL_H, boxSizing: 'border-box', ...cellStyle }}
                                                         className={`transition-all hover:scale-125 hover:z-10 hover:border hover:border-white relative ${displayCount > 0 ? 'cursor-pointer' : 'cursor-default'}`}
                                                         onMouseEnter={(e) => {
-                                                            const rect = e.currentTarget.getBoundingClientRect();
                                                             handleCellMouseMove(e, {
                                                                 date: formatDateLabel(date),
                                                                 hour: h,

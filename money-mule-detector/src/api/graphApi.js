@@ -33,7 +33,7 @@ export async function fetchGraphData() {
  * @param {Array} suspiciousAccounts - from analysis result
  * @returns {{ nodes, edges, hubs, analytics }}
  */
-export function buildLocalGraphData(transactions, suspiciousAccounts) {
+export function buildLocalGraphData(transactions) {
     const nodeMap = {};
     const edgeList = [];
 

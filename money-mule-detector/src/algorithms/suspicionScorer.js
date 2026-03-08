@@ -28,7 +28,6 @@
 
 import {
     isPayrollPattern,
-    isMerchantDisbursement,
     isPassthroughAgent,
 } from './smurfingDetector.js';
 

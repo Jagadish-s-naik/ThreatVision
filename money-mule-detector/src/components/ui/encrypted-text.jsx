@@ -24,7 +24,6 @@ export function EncryptedText({
   );
   const revealedRef  = useRef(0);   // how many chars are permanently revealed
   const frameRef     = useRef(null);
-  const startedRef   = useRef(false);
 
   useEffect(() => {
     let revealIdx = 0;

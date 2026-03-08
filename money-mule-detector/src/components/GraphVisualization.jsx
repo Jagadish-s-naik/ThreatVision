@@ -50,19 +50,18 @@ export default function GraphVisualization({
     const rafRef = useRef(null);
     const [tooltip, setTooltip] = useState(null);
     const [isFocusMode, setIsFocusMode] = useState(false);
-    const [viewMode, setViewMode] = useState('network'); // 'network' | 'tree'
-
-    const accountMap = {};
-    for (const acc of suspiciousAccounts || []) accountMap[acc.account_id] = acc;
 
     const buildAndMount = useCallback(() => {
+        const accountMap = {};
+        for (const acc of suspiciousAccounts || []) accountMap[acc.account_id] = acc;
+
         if (!containerRef.current || !graphData?.nodes?.length) return;
 
         // Cancel any running animation
         if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
         if (cyRef.current) { cyRef.current.destroy(); cyRef.current = null; }
 
-        const { nodes, edges, analytics } = graphData;
+        const { nodes, edges } = graphData;
         const maxAmount = Math.max(...(edges || []).map((e) => e.amount || 0), 1);
 
         const nodeMap = {};
@@ -442,8 +441,8 @@ export default function GraphVisualization({
                 <div
                     className="absolute z-20 pointer-events-none backdrop-blur-xl bg-slate-900/80 border border-slate-700/50 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-200 ease-out"
                     style={{
-                        left: Math.min(tooltip.x + 20, (containerRef.current?.offsetWidth ?? 0) - 280),
-                        top:  Math.min(tooltip.y - 20, (containerRef.current?.offsetHeight ?? 0) - 240),
+                        left: tooltip.x + 20,
+                        top: tooltip.y - 20,
                         width: 280,
                     }}
                 >

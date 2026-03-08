@@ -1,6 +1,7 @@
 import React from 'react';
 import { Users, AlertTriangle, Layers, Clock } from 'lucide-react';
 
+// eslint-disable-next-line no-unused-vars
 function StatCard({ label, value, icon: Icon, accentClass, trend }) {
     return (
         <div className="bg-brand-card border border-brand-border rounded-2xl p-5 flex items-start gap-4 hover:border-brand-border/80 transition-colors relative overflow-hidden group">

@@ -1,0 +1,1 @@
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\TemporalHeatmap.jsx:92 no-unused-vars 'peakDay' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u.

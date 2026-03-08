@@ -97,7 +97,7 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelec
         if (best) onSelectAccount(best);
     };
 
-    const SortBtn = ({ col, label }) => (
+    const renderSortBtn = (col, label) => (
         <button
             className="flex items-center gap-1 hover:text-amber-400 transition-colors"
             onClick={() => handleSort(col)}
@@ -141,12 +141,12 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelec
                 <table className="w-full text-sm text-slate-300" style={{ fontFamily: 'IBM Plex Mono, monospace' }}>
                     <thead>
                         <tr className="border-b-2 border-slate-700 bg-slate-800 text-slate-400 text-xs uppercase tracking-widest font-bold">
-                            <th className="px-4 py-4 text-left border-r border-slate-700"><SortBtn col="ring_id" label="Ring Identity" /></th>
-                            <th className="px-4 py-4 text-left border-r border-slate-700"><SortBtn col="pattern_type" label="Pattern" /></th>
-                            <th className="px-4 py-4 text-right border-r border-slate-700"><SortBtn col="member_count" label="Nodes" /></th>
-                            <th className="px-4 py-4 text-right border-r border-slate-700"><SortBtn col="total_tx" label="Total Tx" /></th>
-                            <th className="px-4 py-4 text-right border-r border-slate-700"><SortBtn col="total_volume" label="Volume Est." /></th>
-                            <th className="px-4 py-4 text-right border-r border-slate-700"><SortBtn col="risk_score" label="Risk Score" /></th>
+                            <th className="px-4 py-4 text-left border-r border-slate-700">{renderSortBtn("ring_id", "Ring Identity")}</th>
+                            <th className="px-4 py-4 text-left border-r border-slate-700">{renderSortBtn("pattern_type", "Pattern")}</th>
+                            <th className="px-4 py-4 text-right border-r border-slate-700">{renderSortBtn("member_count", "Nodes")}</th>
+                            <th className="px-4 py-4 text-right border-r border-slate-700">{renderSortBtn("total_tx", "Total Tx")}</th>
+                            <th className="px-4 py-4 text-right border-r border-slate-700">{renderSortBtn("total_volume", "Volume Est.")}</th>
+                            <th className="px-4 py-4 text-right border-r border-slate-700">{renderSortBtn("risk_score", "Risk Score")}</th>
                             <th className="px-4 py-4 text-left">Primary Members</th>
                         </tr>
                     </thead>

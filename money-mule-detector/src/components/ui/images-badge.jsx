@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 
 export function ImagesBadge({ text, images }) {

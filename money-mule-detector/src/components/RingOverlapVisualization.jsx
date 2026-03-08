@@ -86,7 +86,7 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
         });
         
         const superConnectors = Object.entries(accountRingMap)
-            .filter(([_, count]) => count > 1)
+            .filter(([accountId, count]) => count > 1 && accountId)
             .sort((a, b) => b[1] - a[1]);
 
         return {

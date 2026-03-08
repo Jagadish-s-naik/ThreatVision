@@ -75,6 +75,7 @@ export function RiskScoreTrendChart({ data }) {
 
 /* ━━━ ROW 1: Flagged Entities by Ring ━━━ */
 export function FlaggedEntitiesChart({ fraudRings }) {
+  // eslint-disable-next-line no-unused-vars
   const safeRings = fraudRings || [];
 
   const chartData = [

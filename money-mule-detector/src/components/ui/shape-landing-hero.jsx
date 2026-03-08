@@ -1,5 +1,5 @@
+// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
-import { Circle } from "lucide-react";
 import React from "react";
 import { cn } from "../../lib/utils";
 
@@ -62,23 +62,7 @@ function ElegantShape({
     );
 }
 
-function HeroGeometric({
-    badge = "Design Collective",
-    title1 = "Elevate Your Digital Vision",
-    title2 = "Crafting Exceptional Websites",
-}) {
-    const fadeUpVariants = {
-        hidden: { opacity: 0, y: 30 },
-        visible: (i) => ({
-            opacity: 1,
-            y: 0,
-            transition: {
-                duration: 1,
-                delay: 0.5 + i * 0.2,
-                ease: [0.25, 0.4, 0.25, 1],
-            },
-        }),
-    };
+function HeroGeometric() {
 
     return (
         <div className="relative h-full w-full flex items-center justify-center overflow-hidden bg-[#030303]">
