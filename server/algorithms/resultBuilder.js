@@ -16,7 +16,6 @@
  */
 
 const SCORE_THRESHOLD_RING     = 40;
-const SCORE_THRESHOLD_TOP_RISK = 50;
 
 /**
  * Calculate a score for a single account based on which patterns it's been
