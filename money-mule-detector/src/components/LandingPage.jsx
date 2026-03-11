@@ -172,33 +172,63 @@ const FeaturesSection = () => {
   const features = [
     {
       title: "Circular Flow Detection",
-      src: "https://images.unsplash.com/photo-1510511459019-5efa3cae1bce?q=80&w=2070&auto=format&fit=crop",
-      desc: "Detect repeated loops of funds between accounts to highlight layering schemes.",
+      src: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=2034&auto=format&fit=crop",
+      desc: "Detect repeated loops of funds between the same group of accounts to highlight potential layering schemes.",
+      bullets: [
+        "Continuous cycle graph tracking",
+        "Layering phase identification",
+        "Risk scoring based on velocity"
+      ]
     },
     {
       title: "Central Hub Identification",
-      src: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=2070&auto=format&fit=crop",
-      desc: "Automatically flag central hub accounts that distribute large sums into networks.",
+      src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
+      desc: "Automatically flag central hub accounts that receive many medium-value payments and redistribute large sums back into the network.",
+      bullets: [
+        "Fan-in / Fan-out anomaly detection",
+        "Accumulation threshold alerts",
+        "Historical beneficiary matching"
+      ]
     },
     {
       title: "Shell Entity Tracing",
-      src: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop",
-      desc: "Track flows through shell-style accounts used to obscure the final beneficiary.",
+      src: "https://images.unsplash.com/photo-1614064641913-6b7140f0909e?q=80&w=2070&auto=format&fit=crop",
+      desc: "Track flows through shell-style accounts used to obscure the final beneficiary. Our ML models learn the hallmarks of synthetic identities.",
+      bullets: [
+        "Synthetic identity detection",
+        "Offshore hopping alerts",
+        "Multi-hop beneficiary tracing"
+      ]
     },
     {
       title: "Anomaly Scoring",
-      src: "https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?q=80&w=2070&auto=format&fit=crop",
-      desc: "Score unusual payment behavior for merchants, highlighting suspicious spikes.",
+      src: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop",
+      desc: "Score unusual payment behavior for merchants and corporates, highlighting suspicious spikes or sudden out-of-character transaction volumes.",
+      bullets: [
+        "Dynamic behavioral baselines",
+        "Sudden spike visualization",
+        "Expected-vs-actual variance"
+      ]
     },
     {
       title: "Fee Monitoring",
-      src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
-      desc: "Monitor structured payments like fees to detect misuse of refund flows.",
+      src: "https://images.unsplash.com/photo-1580519542036-ed47f3e42b29?q=80&w=2070&auto=format&fit=crop",
+      desc: "Monitor structured payments like tuition fees to detect misuse of refund flows that are frequently exploited as cash-out channels.",
+      bullets: [
+        "Refund pattern heuristics",
+        "Structuring detection",
+        "Cross-border fee flags"
+      ]
     },
     {
       title: "Micro-Spend Signals",
-      src: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=2034&auto=format&fit=crop",
-      desc: "Enrich risk scoring using small merchants to profile and distinguish mule accounts.",
+      src: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=2070&auto=format&fit=crop",
+      desc: "Enrich risk scoring using small merchants to profile mule accounts and distinguish normal consumer behavior from organized fraud rings.",
+      bullets: [
+        "Lifestyle marker indexing",
+        "Legitimate behavior profiling",
+        "False-positive reduction AI"
+      ]
     }
   ];
 
