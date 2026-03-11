@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import PricingSection6 from './ui/pricing-section-4.jsx';
 import { FocusCards } from './ui/focus-cards.jsx';
+import HoverFooter from './ui/hover-footer.jsx';
 
 const CheckIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -393,35 +394,6 @@ const CallToActionSection = ({ onGetStarted }) => {
   );
 };
 
-const Footer = () => {
-   return (
-     <footer className="bg-[#0a0c10] border-t border-white/5 pt-16 pb-8 relative z-10">
-       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-8 mb-12">
-             <div className="flex items-center gap-2">
-                <Shield className="w-8 h-8 text-teal-400" />
-                <span className="text-2xl font-bold text-white tracking-tight">Threat<span className="text-teal-400">Vision</span></span>
-             </div>
-             <div className="flex flex-wrap justify-center gap-8">
-                <a href="#" className="text-slate-400 hover:text-white transition-colors font-medium">Docs</a>
-                <a href="#" className="text-slate-400 hover:text-white transition-colors font-medium">Status</a>
-                <a href="#" className="text-slate-400 hover:text-white transition-colors font-medium">Security</a>
-                <a href="#" className="text-slate-400 hover:text-white transition-colors font-medium">Compliance</a>
-                <a href="#contact" className="text-slate-400 hover:text-white transition-colors font-medium">Contact</a>
-             </div>
-          </div>
-          <div className="text-center md:text-left border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-             <p className="text-slate-500 text-sm">© {new Date().getFullYear()} ThreatVision. All rights reserved.</p>
-             <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer font-bold">X</div>
-                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer font-bold">in</div>
-             </div>
-          </div>
-       </div>
-     </footer>
-   )
-};
-
 export default function LandingPage({ onGetStarted }) {
   return (
     <div className="h-screen overflow-y-auto bg-[#030303] text-slate-200 font-sans overflow-x-hidden selection:bg-teal-500/30">
@@ -432,7 +404,7 @@ export default function LandingPage({ onGetStarted }) {
       <PricingSection6 />
       <ContactSection />
       <CallToActionSection onGetStarted={onGetStarted} />
-      <Footer />
+      <HoverFooter />
     </div>
   );
 }
