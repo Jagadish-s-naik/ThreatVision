@@ -205,7 +205,7 @@ export default function App() {
 
     return (
       <>
-        <CSVUploader onFileSelected={handleFileUpload} isProcessing={false} />
+        <CSVUploader onFileSelected={handleFileUpload} isProcessing={false} onBack={() => setShowLanding(true)} />
         {error && (
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-red-900/80 border border-red-600 text-red-200 rounded-xl px-5 py-3 text-sm shadow-xl max-w-lg text-center z-50">
             {error}

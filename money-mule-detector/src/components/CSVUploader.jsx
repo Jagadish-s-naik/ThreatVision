@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { parseCSV } from '../utils/csvParser.js';
 import MatrixLoader from './MatrixLoader.jsx';
 import { HeroGeometric } from './ui/shape-landing-hero.jsx';
@@ -6,7 +7,7 @@ import { ImagesBadge } from './ui/images-badge.jsx';
 
 // onFileSelected(file) — passes the raw File object to App.jsx for backend upload
 // onAnalysisComplete retained for backward compat (legacy frontend mode)
-export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProcessing }) {
+export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProcessing, onBack }) {
     // Use onFileSelected if available, fallback to legacy onAnalysisComplete
     const handleFile = onFileSelected || onAnalysisComplete;
     const [isDragging, setIsDragging] = useState(false);
@@ -81,6 +82,16 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
                     title2="With Graph Theory"
                 />
             </div>
+
+            {onBack && (
+                <button
+                    onClick={onBack}
+                    className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-[#0a0c10]/80 hover:bg-[#1f2937]/80 border border-white/10 rounded-full text-white/70 hover:text-white transition-all backdrop-blur-md hover:scale-105"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span className="text-sm font-medium">Back to Home</span>
+                </button>
+            )}
 
             {/* Foreground Content (Uploader) */}
             <div className="relative z-10 w-full max-w-2xl px-4 flex flex-col items-center">
