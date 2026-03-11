@@ -42,7 +42,6 @@ const Navbar = ({ onGetStarted }) => {
         <div className="hidden md:flex items-center gap-8">
           <button onClick={() => scrollTo('features')} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Features</button>
           <button onClick={() => scrollTo('how-it-works')} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">How it Works</button>
-          <button onClick={() => scrollTo('patterns')} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Patterns</button>
           <button onClick={() => scrollTo('pricing')} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Pricing</button>
           <button onClick={() => scrollTo('contact')} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Contact</button>
           <button onClick={onGetStarted} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Login</button>
@@ -62,7 +61,6 @@ const Navbar = ({ onGetStarted }) => {
         <div className="md:hidden absolute top-full left-0 right-0 bg-[#0f1115] border-b border-white/10 p-4 flex flex-col gap-4 shadow-xl">
           <button onClick={() => scrollTo('features')} className="text-left font-medium py-2 text-slate-300 mt-2">Features</button>
           <button onClick={() => scrollTo('how-it-works')} className="text-left font-medium py-2 text-slate-300">How it Works</button>
-          <button onClick={() => scrollTo('patterns')} className="text-left font-medium py-2 text-slate-300">Patterns</button>
           <button onClick={() => scrollTo('pricing')} className="text-left font-medium py-2 text-slate-300">Pricing</button>
           <button onClick={() => scrollTo('contact')} className="text-left font-medium py-2 text-slate-300">Contact</button>
           <button onClick={onGetStarted} className="text-left font-medium py-2 text-slate-300">Login</button>
@@ -289,94 +287,7 @@ const HowItWorksSection = () => {
   );
 };
 
-const TransactionPatternsSection = () => {
-  return (
-    <section id="patterns" className="py-24 bg-[#0a0c10] border-t border-white/5 relative z-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl lg:text-5xl font-bold tracking-tight text-white mb-6">
-            See <span className="text-indigo-400">hidden patterns</span> in your data
-          </h2>
-          <p className="text-slate-400 text-lg">
-            Our visualization tools make it easy to spot shell chains, circular flows, and anomalous hubs at a glance.
-          </p>
-        </div>
 
-        <div className="flex justify-center items-center">
-          <div className="bg-[#030303] border border-white/10 rounded-2xl p-8 aspect-square md:aspect-video lg:aspect-square relative overflow-hidden flex items-center justify-center shadow-xl group hover:border-indigo-500/30 transition-colors w-full max-w-2xl">
-             <div className="relative w-full h-full min-h-[400px] flex items-center justify-center">
-              {/* Radar Rings */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-[100%] h-[100%] border border-teal-500/10 rounded-full absolute animate-[ping_4s_cubic-bezier(0,0,0.2,1)_infinite]" />
-                <div className="w-[80%] h-[80%] border border-teal-500/20 rounded-full absolute animate-[spin_15s_linear_infinite] border-dashed" />
-                <div className="w-[60%] h-[60%] border border-indigo-500/20 rounded-full absolute animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]" style={{animationDelay: '1s'}} />
-                <div className="w-[40%] h-[40%] border border-teal-500/40 rounded-full absolute animate-[spin_10s_linear_infinite_reverse] border-dashed" />
-              </div>
-
-              {/* Data Nodes */}
-              <div className="absolute w-12 h-12 bg-[#0f1115] border-2 border-teal-500 rounded-full flex items-center justify-center z-10 shadow-[0_0_15px_rgba(20,184,166,0.3)] top-[10%] left-[20%]">
-                <Database className="w-5 h-5 text-teal-400 animate-pulse" />
-              </div>
-
-              <div className="absolute w-14 h-14 bg-[#0f1115] border-2 border-indigo-500 rounded-full flex items-center justify-center z-10 shadow-[0_0_20px_rgba(99,102,241,0.3)] bottom-[10%] right-[20%]">
-                <Users className="w-6 h-6 text-indigo-400 animate-bounce" />
-              </div>
-
-              <div className="absolute w-10 h-10 bg-[#0f1115] border-2 border-amber-500 rounded-full flex items-center justify-center z-10 shadow-[0_0_15px_rgba(245,158,11,0.3)] top-[25%] right-[15%]">
-                <Shield className="w-4 h-4 text-amber-400 animate-pulse" />
-              </div>
-
-              <div className="absolute w-16 h-16 bg-[#0f1115] border-2 border-rose-500 rounded-full flex items-center justify-center z-20 shadow-[0_0_30px_rgba(244,63,94,0.6)] bottom-[25%] left-[10%]">
-                <AlertTriangle className="w-8 h-8 text-rose-400 animate-pulse" />
-                <div className="absolute inset-0 rounded-full border-4 border-rose-500/30 animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
-                <div className="absolute -bottom-6 whitespace-nowrap text-[10px] text-rose-400 font-mono bg-rose-950/50 px-2 py-0.5 rounded border border-rose-500/30">THREAT_DETECTED</div>
-              </div>
-
-              {/* Central AI Engine Node */}
-              <div className="w-24 h-24 bg-gradient-to-br from-[#0f1115] to-[#1a1d24] border-2 border-teal-400 rounded-full flex items-center justify-center z-30 shadow-[0_0_40px_rgba(20,184,166,0.4)] relative group-hover:shadow-[0_0_60px_rgba(20,184,166,0.6)] transition-shadow duration-500">
-                <Activity className="w-12 h-12 text-teal-300 animate-pulse" />
-                <div className="absolute -bottom-8 text-center text-xs text-teal-400 font-mono font-bold tracking-widest uppercase bg-[#030303] px-3 py-1 rounded-full border border-teal-500/30">AI_CORE</div>
-              </div>
-
-              {/* Connecting Lines */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-                <defs>
-                  <linearGradient id="g-teal" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="rgba(20,184,166,0.8)" />
-                    <stop offset="100%" stopColor="rgba(20,184,166,0.1)" />
-                  </linearGradient>
-                  <linearGradient id="g-indigo" x1="100%" y1="100%" x2="0%" y2="0%">
-                    <stop offset="0%" stopColor="rgba(99,102,241,0.8)" />
-                    <stop offset="100%" stopColor="rgba(20,184,166,0.1)" />
-                  </linearGradient>
-                  <linearGradient id="g-amber" x1="100%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="rgba(245,158,11,0.8)" />
-                    <stop offset="100%" stopColor="rgba(20,184,166,0.1)" />
-                  </linearGradient>
-                  <linearGradient id="g-rose" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="rgba(244,63,94,1)" />
-                    <stop offset="100%" stopColor="rgba(20,184,166,0.2)" />
-                  </linearGradient>
-                </defs>
-                
-                {/* top-left to center */}
-                <line x1="25%" y1="20%" x2="50%" y2="50%" stroke="url(#g-teal)" strokeWidth="2" strokeDasharray="6,6" className="animate-[dash_3s_linear_infinite]" />
-                {/* bottom-right to center */}
-                <line x1="75%" y1="85%" x2="50%" y2="50%" stroke="url(#g-indigo)" strokeWidth="2" strokeDasharray="6,6" className="animate-[dash_4s_linear_infinite]" />
-                {/* top-right to center */}
-                <line x1="80%" y1="35%" x2="50%" y2="50%" stroke="url(#g-amber)" strokeWidth="2" strokeDasharray="6,6" className="animate-[dash_2s_linear_infinite]" />
-                {/* bottom-left to center */}
-                <line x1="15%" y1="70%" x2="50%" y2="50%" stroke="url(#g-rose)" strokeWidth="3" strokeDasharray="8,8" className="animate-[dash_1s_linear_infinite_reverse]" />
-                
-                <style>{`@keyframes dash { from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; } }`}</style>
-              </svg>
-             </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
 
 const PricingSection = () => {
   return (
@@ -517,7 +428,6 @@ export default function LandingPage({ onGetStarted }) {
       <HeroSection onGetStarted={onGetStarted} />
       <FeaturesSection />
       <HowItWorksSection />
-      <TransactionPatternsSection />
       <PricingSection />
       <ContactSection />
       <CallToActionSection onGetStarted={onGetStarted} />
