@@ -142,20 +142,7 @@ const HeroSection = ({ onGetStarted }) => {
               </div>
 
               <div className="flex-1 relative border border-white/5 rounded-xl bg-[#030303] overflow-hidden flex items-center justify-center">
-                <Network className="w-32 h-32 text-indigo-500/20 absolute opacity-50 animate-pulse" />
-                <div className="w-10 h-10 rounded-full bg-rose-500/20 border border-rose-500 absolute top-1/4 left-1/3 flex items-center justify-center shadow-[0_0_15px_rgba(244,63,94,0.4)] z-10 transition-transform duration-300 hover:scale-125">
-                  <Shield className="w-4 h-4 text-rose-400" />
-                </div>
-                <div className="w-8 h-8 rounded-full bg-teal-500/20 border border-teal-500 absolute bottom-1/3 right-1/4 flex items-center justify-center z-10 transition-transform duration-300 hover:scale-125">
-                  <Users className="w-3 h-3 text-teal-400" />
-                </div>
-                <div className="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500 absolute top-1/2 left-2/3 -translate-y-1/2 flex items-center justify-center z-10 transition-transform duration-300 hover:scale-125">
-                  <AlertTriangle className="w-5 h-5 text-amber-400" />
-                </div>
-                <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                   <line x1="33%" y1="25%" x2="66%" y2="50%" stroke="rgba(255,255,255,0.1)" strokeWidth="2" strokeDasharray="4 4" className="animate-pulse" />
-                   <line x1="75%" y1="66%" x2="66%" y2="50%" stroke="rgba(255,255,255,0.1)" strokeWidth="2" />
-                </svg>
+                <img src="/hero-image.png" alt="Money Mule Detection Network" className="object-cover w-full h-full opacity-80 hover:opacity-100 transition-opacity duration-500" />
               </div>
             </div>
           </div>
