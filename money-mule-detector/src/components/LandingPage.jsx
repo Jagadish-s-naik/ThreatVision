@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, Shield, Activity, Database, 
   Zap, Menu, X, Network, Link2, 
-  AlertTriangle, Users, BookOpen
+  AlertTriangle, Users, BookOpen, Mail
 } from 'lucide-react';
 import PricingSection6 from './ui/pricing-section-4.jsx';
 import { FocusCards } from './ui/focus-cards.jsx';
@@ -192,7 +192,7 @@ const FeaturesSection = () => {
     },
     {
       title: "Shell Entity Tracing",
-      src: "https://images.unsplash.com/photo-1614064641913-6b7140f0909e?q=80&w=2070&auto=format&fit=crop",
+      src: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop",
       desc: "Track flows through shell-style accounts used to obscure the final beneficiary. Our ML models learn the hallmarks of synthetic identities.",
       bullets: [
         "Synthetic identity detection",
@@ -212,7 +212,7 @@ const FeaturesSection = () => {
     },
     {
       title: "Fee Monitoring",
-      src: "https://images.unsplash.com/photo-1580519542036-ed47f3e42b29?q=80&w=2070&auto=format&fit=crop",
+      src: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?q=80&w=2070&auto=format&fit=crop",
       desc: "Monitor structured payments like tuition fees to detect misuse of refund flows that are frequently exploited as cash-out channels.",
       bullets: [
         "Refund pattern heuristics",
@@ -303,33 +303,85 @@ const HowItWorksSection = () => {
 
 const ContactSection = () => {
     return (
-      <section id="contact" className="py-24 bg-[#0a0c10] border-t border-white/5 relative z-10">
-        <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10">
-               <h2 className="text-3xl font-bold text-white mb-4">Get in touch</h2>
-               <p className="text-slate-400">Have questions about deployment? Our engineers are ready to help.</p>
+      <section id="contact" className="py-24 bg-[#0a0c10] border-t border-white/5 relative z-10 w-full overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid lg:grid-cols-2 gap-16 lg:gap-8 items-start">
+               
+               {/* Left Column */}
+               <div className="flex flex-col relative z-10 pt-4">
+                  <div className="w-14 h-14 rounded-2xl bg-[#030303] border border-white/10 flex items-center justify-center mb-8 relative group shadow-lg">
+                     {/* Glow effect */}
+                     <div className="absolute inset-0 bg-teal-500/20 blur-xl group-hover:bg-teal-500/30 transition-colors rounded-2xl" />
+                     <div className="absolute bottom-0 w-8 h-[2px] bg-gradient-to-r from-transparent via-teal-500 to-transparent shadow-[0_0_10px_rgba(45,212,191,0.5)]" />
+                     <Mail className="w-6 h-6 text-teal-400 relative z-10" />
+                  </div>
+                  
+                  <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6 tracking-tight">Contact us</h2>
+                  <p className="text-slate-400 text-lg mb-12 max-w-md">
+                     We are always looking for ways to improve our products and services. Contact us and let us know how we can help you.
+                  </p>
+                  
+                  <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-200 mb-16 px-1">
+                     <span>contact@threatvision.ai</span>
+                     <span className="text-slate-600 font-black">•</span>
+                     <span>+1 (800) 123 XX21</span>
+                     <span className="text-slate-600 font-black">•</span>
+                     <span>support@threatvision.ai</span>
+                  </div>
+
+                  {/* World Map abstract UI */}
+                  <div className="relative w-full max-w-md h-48 opacity-60 select-none pointer-events-none mt-auto">
+                     <img src="https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg" className="absolute inset-0 w-full h-full object-contain opacity-20 invert" alt="World Map" />
+                     
+                     {/* Location Marker to India */}
+                     <div className="absolute top-[46%] left-[71%] flex flex-col items-center z-20">
+                        <div className="px-3 py-1 bg-[#0a0c10]/90 backdrop-blur shadow-[0_0_15px_rgba(45,212,191,0.1)] rounded-lg text-xs font-semibold text-teal-50 border border-teal-500/20 mb-1 whitespace-nowrap">
+                           We are here
+                        </div>
+                        <div className="w-[1px] h-10 bg-gradient-to-b from-teal-500/50 to-transparent" />
+                        <div className="w-8 h-8 bg-teal-500/10 rounded-full flex items-center justify-center absolute bottom-[-16px] border border-teal-500/20 shadow-[0_0_15px_rgba(45,212,191,0.2)]">
+                           <div className="w-2 h-2 bg-teal-400 rounded-full shadow-[0_0_8px_rgba(45,212,191,0.8)]" />
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Right Column / Form Container */}
+               <div className="relative rounded-3xl bg-[#0f1115] border border-white/5 p-8 md:p-10 shadow-2xl xl:ml-8">
+                  {/* CSS Grid Background */}
+                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTAgMGg0MHY0MEgweiIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0wIDAuNWg0ME0wIDEwLjVoNDBNMCAyMC41aDQwTTAgMzAuNWg0ME0wLjUgMHY0ME0xMC41IDB2NDBNMjAuNSAwdjQwTTMwLjUgMHY0MCIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDIpIiBzdHJva2Utd2lkdGg9IjEiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom_right,white,transparent,transparent)] opacity-100 rounded-3xl" />
+                  
+                  {/* Scattered darker grid blocks (abstract design) */}
+                  <div className="absolute top-10 right-10 w-10 h-10 bg-white/[0.02]" />
+                  <div className="absolute top-20 right-20 w-10 h-10 bg-white/[0.02]" />
+                  <div className="absolute top-10 right-20 w-10 h-20 bg-white/[0.02]" />
+
+                  {/* Form */}
+                  <form className="relative z-10 space-y-5" onSubmit={e=>e.preventDefault()}>
+                     <div>
+                        <label className="block text-sm font-semibold text-slate-200 mb-2">Full name</label>
+                        <input type="text" className="w-full bg-[#1a1c23] border border-transparent rounded-xl px-4 py-3.5 text-slate-300 focus:outline-none focus:border-white/10 focus:bg-[#20232b] transition-colors placeholder:text-slate-600 shadow-inner" placeholder="Manu Arora" />
+                     </div>
+                     <div>
+                        <label className="block text-sm font-semibold text-slate-200 mb-2">Email Address</label>
+                        <input type="email" className="w-full bg-[#1a1c23] border border-transparent rounded-xl px-4 py-3.5 text-slate-300 focus:outline-none focus:border-white/10 focus:bg-[#20232b] transition-colors placeholder:text-slate-600 shadow-inner" placeholder="support@aceternity.com" />
+                     </div>
+                     <div>
+                        <label className="block text-sm font-semibold text-slate-200 mb-2">Company</label>
+                        <input type="text" className="w-full bg-[#1a1c23] border border-transparent rounded-xl px-4 py-3.5 text-slate-300 focus:outline-none focus:border-white/10 focus:bg-[#20232b] transition-colors placeholder:text-slate-600 shadow-inner" placeholder="Aceternity Labs LLC" />
+                     </div>
+                     <div>
+                        <label className="block text-sm font-semibold text-slate-200 mb-2">Message</label>
+                        <textarea rows="4" className="w-full bg-[#1a1c23] border border-transparent rounded-xl px-4 py-3.5 text-slate-300 focus:outline-none focus:border-white/10 focus:bg-[#20232b] transition-colors resize-none placeholder:text-slate-600 shadow-inner" placeholder="Type your message here" />
+                     </div>
+                     <div className="pt-2">
+                        <button className="px-6 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-lg font-medium text-sm transition-colors border border-transparent hover:border-white/10">
+                            Submit
+                        </button>
+                     </div>
+                  </form>
+               </div>
             </div>
-            <form className="space-y-4" onSubmit={e=>e.preventDefault()}>
-               <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">Name</label>
-                    <input type="text" className="w-full bg-[#030303] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-teal-500 transition-colors" placeholder="John Doe" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-400 mb-2">Company</label>
-                    <input type="text" className="w-full bg-[#030303] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-teal-500 transition-colors" placeholder="Acme Corp" />
-                  </div>
-               </div>
-               <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Work Email</label>
-                  <input type="email" className="w-full bg-[#030303] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-teal-500 transition-colors" placeholder="john@acme.com" />
-               </div>
-               <div>
-                  <label className="block text-sm font-medium text-slate-400 mb-2">Message</label>
-                  <textarea rows="4" className="w-full bg-[#030303] border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-teal-500 transition-colors" placeholder="How can we help?" />
-               </div>
-               <button className="w-full py-4 bg-teal-400 hover:bg-teal-300 text-[#030303] rounded-xl font-bold text-lg transition-all hover:shadow-[0_0_15px_rgba(45,212,191,0.4)] mt-2 hover:-translate-y-0.5">Send Message</button>
-            </form>
         </div>
       </section>
     );
