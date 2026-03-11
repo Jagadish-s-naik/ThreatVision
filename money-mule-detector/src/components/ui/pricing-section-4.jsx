@@ -11,60 +11,45 @@ import { motion } from "framer-motion";
 const plans = [
   {
     name: "Starter",
-    description:
-      "Great for small businesses and startups looking to get started with AI",
-    price: 12,
-    yearlyPrice: 99,
-    buttonText: "Get started",
+    description: "For small teams and startups.",
+    price: 499,
+    yearlyPrice: 4990,
+    buttonText: "Start Trial",
     buttonVariant: "outline",
     includes: [
-      "Free includes:",
-      "Unlimted Cards",
-      "Custom background & stickers",
-      "2-factor authentication",
-      "Free includes:",
-      "Unlimted Cards",
-      "Custom background & stickers",
-      "2-factor authentication",
+      "Core features:",
+      "Up to 100k tx/month",
+      "Basic pattern detection",
+      "Email support",
     ],
   },
   {
-    name: "Business",
-    description:
-      "Best value for growing businesses that need more advanced features",
-    price: 48,
-    yearlyPrice: 399,
-    buttonText: "Get started",
+    name: "Professional",
+    description: "For growing fintechs.",
+    price: 1299,
+    yearlyPrice: 12990,
+    buttonText: "Get Started",
     buttonVariant: "default",
     popular: true,
     includes: [
       "Everything in Starter, plus:",
-      "Advanced checklists",
-      "Custom fields",
-      "Servedless functions",
-      "Everything in Starter, plus:",
-      "Advanced checklists",
-      "Custom fields",
-      "Servedless functions",
+      "Up to 1M tx/month",
+      "Advanced ML scoring",
+      "API Access",
     ],
   },
   {
     name: "Enterprise",
-    description:
-      "Advanced plan with enhanced security and unlimited access for large teams",
-    price: 96,
-    yearlyPrice: 899,
-    buttonText: "Get started",
+    description: "For large institutions.",
+    price: "Custom",
+    yearlyPrice: "Custom",
+    buttonText: "Contact Sales",
     buttonVariant: "outline",
     includes: [
-      "Everything in Business, plus:",
-      "Multi-board management",
-      "Multi-board guest",
-      "Attachment permissions",
-      "Everything in Business, plus:",
-      "Multi-board management",
-      "Multi-board guest",
-      "Attachment permissions",
+      "Everything in Professional, plus:",
+      "Unlimited volume",
+      "Custom models",
+      "24/7 Phone SLA",
     ],
   },
 ];
@@ -266,19 +251,25 @@ export default function PricingSection6() {
                   <h3 className="text-3xl mb-2">{plan.name}</h3>
                 </div>
                 <div className="flex items-baseline">
-                  <span className="text-4xl font-semibold ">
-                    $
-                    <NumberFlow
-                      format={{
-                        currency: "USD",
-                      }}
-                      value={isYearly ? plan.yearlyPrice : plan.price}
-                      className="text-4xl font-semibold"
-                    />
-                  </span>
-                  <span className="text-gray-300 ml-1">
-                    /{isYearly ? "year" : "month"}
-                  </span>
+                  {typeof plan.price === "number" ? (
+                    <>
+                      <span className="text-4xl font-semibold ">
+                        $
+                        <NumberFlow
+                          format={{
+                            currency: "USD",
+                          }}
+                          value={isYearly ? plan.yearlyPrice : plan.price}
+                          className="text-4xl font-semibold inline-block"
+                        />
+                      </span>
+                      <span className="text-gray-300 ml-1">
+                        /{isYearly ? "year" : "month"}
+                      </span>
+                    </>
+                  ) : (
+                      <span className="text-4xl font-semibold">{plan.price}</span>
+                  )}
                 </div>
                 <p className="text-sm text-gray-300 mb-4">{plan.description}</p>
               </CardHeader>
