@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, Shield, Activity, Database, 
   Zap, Menu, X, Network, Link2, 
-  AlertTriangle, Users, BookOpen, Mail
+  AlertTriangle, Users, BookOpen, Mail,
+  Home, Info, Tag, LogIn, HelpCircle
 } from 'lucide-react';
 import PricingSection6 from './ui/pricing-section-4.jsx';
 import { FocusCards } from './ui/focus-cards.jsx';
 import HoverFooter from './ui/hover-footer.jsx';
+import { ExpandableTabs } from './ui/expandable-tabs.jsx';
 
 const CheckIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -16,7 +18,6 @@ const CheckIcon = ({ className }) => (
 
 const Navbar = ({ onGetStarted }) => {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -25,51 +26,64 @@ const Navbar = ({ onGetStarted }) => {
   }, []);
 
   const scrollTo = (id) => {
-    setMobileMenuOpen(false);
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
+  const navTabs = [
+    { title: "Home", icon: Home, href: "#" },
+    { title: "Features", icon: Info, href: "#features" },
+    { title: "How it Works", icon: HelpCircle, href: "#how-it-works" },
+    { title: "Pricing", icon: Tag, href: "#pricing" },
+    { title: "Contact", icon: Mail, href: "#contact" },
+    { type: "separator" },
+    { title: "Login", icon: LogIn, href: "#" },
+  ];
+
+  // Using a custom onChange handler to catch clicks and scroll
+  const handleTabChange = (index) => {
+    if (index === null) return;
+    const tab = navTabs[index];
+    if (tab && tab.href && tab.href.startsWith('#') && tab.href !== '#') {
+       scrollTo(tab.href.substring(1));
+    } else if (tab && (tab.title === "Login" || tab.title === "Home")) {
+       if (tab.title === "Login") {
+          onGetStarted();
+       } else if (tab.title === "Home") {
+          window.scrollTo({top: 0, behavior: 'smooth'});
+       }
+    }
+  };
+
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#030303]/80 backdrop-blur-md border-b border-white/5 py-3' : 'bg-transparent py-5'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
-          <Shield className="w-8 h-8 text-teal-400" />
-          <span className="text-xl font-bold tracking-tight text-white">
-            Threat<span className="text-teal-400">Vision</span>
-          </span>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#030303]/70 backdrop-blur-md border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
+        <div className="flex items-center gap-2 cursor-pointer w-full md:w-auto justify-between md:justify-start" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
+          <div className="flex items-center gap-2">
+             <Shield className="w-8 h-8 text-teal-400" />
+             <span className="text-xl font-bold tracking-tight text-white">
+               Threat<span className="text-teal-400">Vision</span>
+             </span>
+          </div>
+          <button onClick={onGetStarted} className="md:hidden px-4 py-1.5 text-xs font-semibold text-[#030303] bg-teal-400 hover:bg-teal-300 rounded-lg transition-all shadow-[0_0_10px_rgba(45,212,191,0.3)]">
+            Start
+          </button>
         </div>
 
-        <div className="hidden md:flex items-center gap-8">
-          <button onClick={() => scrollTo('features')} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Features</button>
-          <button onClick={() => scrollTo('how-it-works')} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">How it Works</button>
-          <button onClick={() => scrollTo('pricing')} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Pricing</button>
-          <button onClick={() => scrollTo('contact')} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Contact</button>
-          <button onClick={onGetStarted} className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Login</button>
-          <button onClick={onGetStarted} className="px-5 py-2 text-sm font-semibold text-[#030303] bg-teal-400 hover:bg-teal-300 rounded-full transition-all duration-300 hover:shadow-[0_0_15px_rgba(45,212,191,0.4)] hover:scale-105">
+        {/* Central Animated Tabs */}
+        <div className="w-full md:w-auto flex justify-center mt-2 md:mt-0">
+           <ExpandableTabs tabs={navTabs} onChange={handleTabChange} activeColor="text-teal-400" className="border-teal-500/20 shadow-[0_0_20px_rgba(20,184,166,0.1)] py-1" />
+        </div>
+
+        {/* Right CTA */}
+        <div className="hidden md:flex items-center">
+          <button onClick={onGetStarted} className="px-6 py-2.5 text-sm font-semibold text-[#030303] bg-teal-400 hover:bg-teal-300 rounded-full transition-all duration-300 hover:shadow-[0_0_20px_rgba(45,212,191,0.5)] hover:scale-105">
             Get Started
           </button>
         </div>
-
-        <div className="md:hidden">
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-300">
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
       </div>
-
-      {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-[#0f1115] border-b border-white/10 p-4 flex flex-col gap-4 shadow-xl">
-          <button onClick={() => scrollTo('features')} className="text-left font-medium py-2 text-slate-300 mt-2">Features</button>
-          <button onClick={() => scrollTo('how-it-works')} className="text-left font-medium py-2 text-slate-300">How it Works</button>
-          <button onClick={() => scrollTo('pricing')} className="text-left font-medium py-2 text-slate-300">Pricing</button>
-          <button onClick={() => scrollTo('contact')} className="text-left font-medium py-2 text-slate-300">Contact</button>
-          <button onClick={onGetStarted} className="text-left font-medium py-2 text-slate-300">Login</button>
-          <button onClick={onGetStarted} className="py-3 text-center font-semibold text-[#030303] bg-teal-400 rounded-xl mb-2">Get Started</button>
-        </div>
-      )}
     </nav>
   );
 };
