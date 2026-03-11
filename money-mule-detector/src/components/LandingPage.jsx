@@ -5,6 +5,7 @@ import {
   AlertTriangle, Users, BookOpen
 } from 'lucide-react';
 import PricingSection6 from './ui/pricing-section-4.jsx';
+import { FocusCards } from './ui/focus-cards.jsx';
 
 const CheckIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -171,70 +172,49 @@ const FeaturesSection = () => {
   const features = [
     {
       title: "Circular Flow Detection",
-      icon: <Activity className="w-6 h-6 text-teal-400" />,
-      desc: "Detect repeated loops of funds between the same group of accounts (e.g., ACC_Nathaniel_Frost, ACC_Yemi_Adeyinka, ACC_Lila_Marchetti) to highlight potential layering schemes.",
-      pill: "Graph Analytics"
+      src: "https://images.unsplash.com/photo-1510511459019-5efa3cae1bce?q=80&w=2070&auto=format&fit=crop",
+      desc: "Detect repeated loops of funds between accounts to highlight layering schemes.",
     },
     {
       title: "Central Hub Identification",
-      icon: <Network className="w-6 h-6 text-indigo-400" />,
-      desc: "Automatically flag central hub accounts like ACC_Central_Hub_Boris that receive many medium-value payments and redistribute large sums back into the network.",
-      pill: "Real-time"
+      src: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=2070&auto=format&fit=crop",
+      desc: "Automatically flag central hub accounts that distribute large sums into networks.",
     },
     {
       title: "Shell Entity Tracing",
-      icon: <Link2 className="w-6 h-6 text-rose-400" />,
-      desc: "Track flows through shell-style accounts (e.g., ACC_Shell_Renata) used to obscure the final beneficiary (ACC_Final_Recvr_Dubois).",
-      pill: "ML-Powered"
+      src: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop",
+      desc: "Track flows through shell-style accounts used to obscure the final beneficiary.",
     },
     {
-      title: "Merchant & Payroll Anomaly Scoring",
-      icon: <Database className="w-6 h-6 text-amber-400" />,
-      desc: "Score unusual payment behavior for merchants and corporates (e.g., ACC_Megastore_Corp), highlighting suspicious spikes or patterns.",
-      pill: "Behavioral"
+      title: "Anomaly Scoring",
+      src: "https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?q=80&w=2070&auto=format&fit=crop",
+      desc: "Score unusual payment behavior for merchants, highlighting suspicious spikes.",
     },
     {
-      title: "Education & Fee Monitoring",
-      icon: <BookOpen className="w-6 h-6 text-blue-400" />,
-      desc: "Monitor structured payments like ACC_University_Fees to detect misuse of tuition or refund flows used as cash-out channels.",
-      pill: "Heuristics"
+      title: "Fee Monitoring",
+      src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
+      desc: "Monitor structured payments like fees to detect misuse of refund flows.",
     },
     {
-      title: "Lifestyle & Micro-Spend Signals",
-      icon: <Zap className="w-6 h-6 text-green-400" />,
-      desc: "Enrich risk scoring using small merchants to profile mule accounts and distinguish normal consumer behavior from fraud rings.",
-      pill: "AI-Powered"
+      title: "Micro-Spend Signals",
+      src: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=2034&auto=format&fit=crop",
+      desc: "Enrich risk scoring using small merchants to profile and distinguish mule accounts.",
     }
   ];
 
   return (
-    <section id="features" className="py-24 bg-[#0a0c10] border-t border-white/5 relative z-10">
+    <section id="features" className="py-24 bg-[#0a0c10] border-t border-white/5 relative z-10 w-full overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl lg:text-5xl font-bold tracking-tight text-white mb-6">
             Intelligence built for <span className="text-teal-400">complex networks</span>
           </h2>
-          <p className="text-slate-400 text-lg">
-            Our detection engine goes beyond simple rule-based alerts, analyzing the complete topology of your financial data.
+          <p className="text-slate-400 text-lg mb-10">
+            Our detection engine analyzes the complete topology of your financial data in real-time. Hover over the cards to learn more.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, idx) => (
-            <div key={idx} className="group bg-[#030303] border border-white/5 rounded-2xl p-6 hover:bg-white/[0.04] hover:border-teal-500/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(45,212,191,0.1)]">
-              <div className="flex justify-between items-start mb-4">
-                <div className="w-12 h-12 rounded-xl bg-white/[0.05] flex items-center justify-center border border-white/10 group-hover:scale-110 transition-transform duration-300">
-                  {feature.icon}
-                </div>
-                <span className="px-3 py-1 text-xs font-semibold rounded-full bg-white/[0.05] text-slate-300 border border-white/5 group-hover:bg-teal-500/10 group-hover:text-teal-400 group-hover:border-teal-500/20 transition-colors">
-                  {feature.pill}
-                </span>
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">{feature.desc}</p>
-            </div>
-          ))}
-        </div>
+        <FocusCards cards={features} />
       </div>
     </section>
   );
