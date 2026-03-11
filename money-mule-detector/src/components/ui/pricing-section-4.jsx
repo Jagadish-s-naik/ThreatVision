@@ -12,8 +12,8 @@ const plans = [
   {
     name: "Starter",
     description: "For small teams and startups.",
-    price: 499,
-    yearlyPrice: 4990,
+    price: 399,
+    yearlyPrice: 3990,
     buttonText: "Start Trial",
     buttonVariant: "outline",
     includes: [
@@ -26,8 +26,8 @@ const plans = [
   {
     name: "Professional",
     description: "For growing fintechs.",
-    price: 1299,
-    yearlyPrice: 12990,
+    price: 999,
+    yearlyPrice: 9990,
     buttonText: "Get Started",
     buttonVariant: "default",
     popular: true,
