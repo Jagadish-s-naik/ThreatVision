@@ -141,8 +141,22 @@ const HeroSection = ({ onGetStarted }) => {
                 </div>
               </div>
 
-              <div className="flex-1 relative border border-white/5 rounded-xl bg-[#030303] overflow-hidden flex items-center justify-center">
-                <img src="/hero-image.png" alt="Money Mule Detection Network" className="object-cover w-full h-full opacity-80 hover:opacity-100 transition-opacity duration-500" />
+              <div className="flex-1 relative border border-white/5 rounded-xl bg-[#030303] overflow-hidden flex items-center justify-center group cursor-pointer">
+                {/* Default Image: Cybercrime laptop */}
+                <img 
+                  src="/cyber-crime.jpg" 
+                  alt="Cybercrime Investigation" 
+                  className="absolute inset-0 object-cover w-full h-full opacity-80 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:opacity-0 group-hover:scale-105" 
+                />
+                
+                {/* Hover Image: ThreatVision Protection */}
+                <img 
+                  src="/cyber-shield.jpg" 
+                  alt="ThreatVision Protection" 
+                  className="absolute inset-0 object-cover w-full h-full opacity-0 scale-95 transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:opacity-100 group-hover:scale-100" 
+                />
+                
+                <div className="absolute inset-0 bg-gradient-to-t from-[#030303]/80 via-transparent to-transparent pointer-events-none" />
               </div>
             </div>
           </div>
