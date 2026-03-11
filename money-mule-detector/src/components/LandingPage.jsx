@@ -4,6 +4,7 @@ import {
   Zap, Menu, X, Network, Link2, 
   AlertTriangle, Users, BookOpen
 } from 'lucide-react';
+import PricingSection6 from './ui/pricing-section-4.jsx';
 
 const CheckIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -290,55 +291,6 @@ const HowItWorksSection = () => {
 
 
 
-const PricingSection = () => {
-  return (
-    <section id="pricing" className="py-24 bg-[#030303] relative z-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl lg:text-5xl font-bold tracking-tight text-white mb-6">Simple, transparent <span className="text-teal-400">pricing</span></h2>
-          <p className="text-slate-400 text-lg">Scale your fraud detection effortlessly.</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-8 items-center">
-           <div className="bg-[#0f1115] border border-white/10 rounded-2xl p-8 hover:border-teal-500/50 transition-colors">
-              <h3 className="text-xl font-bold text-white mb-2">Starter</h3>
-              <p className="text-slate-400 text-sm mb-6">For small teams and startups.</p>
-              <p className="text-4xl font-bold text-white mb-6">$499<span className="text-lg text-slate-500 font-normal">/mo</span></p>
-              <button className="w-full py-3 mb-6 bg-white/5 hover:bg-white/10 text-white rounded-xl font-semibold transition-colors border border-white/10">Start Trial</button>
-              <ul className="space-y-3 text-sm text-slate-300">
-                 <li className="flex gap-2 items-center"><CheckIcon className="w-4 h-4 text-teal-400" /> Up to 100k tx/month</li>
-                 <li className="flex gap-2 items-center"><CheckIcon className="w-4 h-4 text-teal-400" /> Basic pattern detection</li>
-                 <li className="flex gap-2 items-center"><CheckIcon className="w-4 h-4 text-teal-400" /> Email support</li>
-              </ul>
-           </div>
-           <div className="bg-gradient-to-b from-[#0f1115] to-[#0f1115] border-2 border-teal-500 rounded-2xl p-8 relative shadow-[0_0_30px_rgba(20,184,166,0.1)] md:-translate-y-4">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-teal-500 text-[#030303] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Most Popular</div>
-              <h3 className="text-xl font-bold text-white mb-2">Professional</h3>
-              <p className="text-slate-400 text-sm mb-6">For growing fintechs.</p>
-              <p className="text-4xl font-bold text-white mb-6">$1,299<span className="text-lg text-slate-500 font-normal">/mo</span></p>
-              <button className="w-full py-3 mb-6 bg-teal-400 hover:bg-teal-300 text-[#030303] rounded-xl font-semibold transition-all hover:shadow-[0_0_15px_rgba(45,212,191,0.4)] hover:-translate-y-1">Get Started</button>
-              <ul className="space-y-3 text-sm text-slate-300">
-                 <li className="flex gap-2 items-center"><CheckIcon className="w-4 h-4 text-teal-400" /> Up to 1M tx/month</li>
-                 <li className="flex gap-2 items-center"><CheckIcon className="w-4 h-4 text-teal-400" /> Advanced ML scoring</li>
-                 <li className="flex gap-2 items-center"><CheckIcon className="w-4 h-4 text-teal-400" /> API Access</li>
-              </ul>
-           </div>
-           <div className="bg-[#0f1115] border border-white/10 rounded-2xl p-8 hover:border-indigo-500/50 transition-colors">
-               <h3 className="text-xl font-bold text-white mb-2">Enterprise</h3>
-              <p className="text-slate-400 text-sm mb-6">For large institutions.</p>
-              <p className="text-4xl font-bold text-white mb-6">Custom</p>
-              <button className="w-full py-3 mb-6 bg-white/5 hover:bg-white/10 text-white rounded-xl font-semibold transition-colors border border-white/10">Contact Sales</button>
-              <ul className="space-y-3 text-sm text-slate-300">
-                 <li className="flex gap-2 items-center"><CheckIcon className="w-4 h-4 text-teal-400" /> Unlimited volume</li>
-                 <li className="flex gap-2 items-center"><CheckIcon className="w-4 h-4 text-teal-400" /> Custom models</li>
-                 <li className="flex gap-2 items-center"><CheckIcon className="w-4 h-4 text-teal-400" /> 24/7 Phone SLA</li>
-              </ul>
-           </div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
 const ContactSection = () => {
     return (
       <section id="contact" className="py-24 bg-[#0a0c10] border-t border-white/5 relative z-10">
@@ -429,7 +381,7 @@ export default function LandingPage({ onGetStarted }) {
       <HeroSection onGetStarted={onGetStarted} />
       <FeaturesSection />
       <HowItWorksSection />
-      <PricingSection />
+      <PricingSection6 />
       <ContactSection />
       <CallToActionSection onGetStarted={onGetStarted} />
       <Footer />
