@@ -90,7 +90,7 @@ const PricingSwitch = ({ onSwitch }) => {
           {selected === "0" && (
             <motion.span
               layoutId={"switch"}
-              className="absolute top-0 left-0 h-10 w-full rounded-full border-4 shadow-sm shadow-blue-600 border-blue-600 bg-gradient-to-t from-blue-500 to-blue-600"
+              className="absolute top-0 left-0 h-10 w-full rounded-full border-4 shadow-sm shadow-teal-500/50 border-teal-500 bg-gradient-to-t from-teal-400 to-teal-500"
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
             />
           )}
@@ -172,9 +172,10 @@ export default function PricingSection6() {
           <div
             className="absolute left-[-568px] right-[-568px] top-0 h-[2053px] flex-none rounded-full"
             style={{
-              border: "200px solid #3131f5",
+              border: "200px solid #14b8a6",
               filter: "blur(92px)",
               WebkitFilter: "blur(92px)",
+              opacity: 0.3,
             }}
             data-border="true"
             data-framer-name="Ellipse 1"
@@ -182,9 +183,10 @@ export default function PricingSection6() {
           <div
             className="absolute left-[-568px] right-[-568px] top-0 h-[2053px] flex-none rounded-full"
             style={{
-              border: "200px solid #3131f5",
+              border: "200px solid #14b8a6",
               filter: "blur(92px)",
               WebkitFilter: "blur(92px)",
+              opacity: 0.3,
             }}
             data-border="true"
             data-framer-name="Ellipse 2"
@@ -236,9 +238,9 @@ export default function PricingSection6() {
         className="absolute top-0 left-[10%] right-[10%] w-[80%] h-full z-0"
         style={{
           backgroundImage: `
-        radial-gradient(circle at center, #206ce8 0%, transparent 70%)
+        radial-gradient(circle at center, #6366f1 0%, transparent 70%)
       `,
-          opacity: 0.6,
+          opacity: 0.2,
           mixBlendMode: "multiply",
         }}
       />
@@ -255,8 +257,8 @@ export default function PricingSection6() {
             <Card
               className={`relative text-white border-neutral-800 ${
                 plan.popular
-                  ? "bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 shadow-[0px_-13px_300px_0px_#0900ff] z-20"
-                  : "bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-900 z-10"
+                  ? "bg-gradient-to-r from-[#0f1115] via-[#0a0c10] to-[#0f1115] shadow-[0_0_30px_rgba(20,184,166,0.1)] border-teal-500 z-20"
+                  : "bg-gradient-to-r from-[#0f1115] via-[#0a0c10] to-[#0f1115] z-10"
               }`}
             >
               <CardHeader className="text-left ">
@@ -283,11 +285,11 @@ export default function PricingSection6() {
 
               <CardContent className="pt-0">
                 <button
-                  className={`w-full mb-6 p-4 text-xl rounded-xl ${
+                  className={`w-full mb-6 p-4 text-xl rounded-xl font-semibold transition-all ${
                     plan.popular
-                      ? "bg-gradient-to-t from-blue-500 to-blue-600  shadow-lg shadow-blue-800 border border-blue-500 text-white"
+                      ? "bg-teal-400 hover:bg-teal-300 shadow-[0_0_15px_rgba(45,212,191,0.4)] hover:-translate-y-1 text-[#030303]"
                       : plan.buttonVariant === "outline"
-                        ? "bg-gradient-to-t from-neutral-950 to-neutral-600  shadow-lg shadow-neutral-900 border border-neutral-800 text-white"
+                        ? "bg-white/5 hover:bg-white/10 border border-white/10 text-white"
                         : ""
                   }`}
                 >
