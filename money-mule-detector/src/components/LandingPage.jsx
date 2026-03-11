@@ -33,10 +33,10 @@ const Navbar = ({ onGetStarted }) => {
   };
 
   const navTabs = [
-    { title: "Home", icon: Home, href: "#" },
+    { title: "Home", icon: Home, href: "#home" },
     { title: "Features", icon: Info, href: "#features" },
     { title: "How it Works", icon: HelpCircle, href: "#how-it-works" },
-    { title: "Pricing", icon: Tag, href: "#pricing" },
+    { title: "Prices", icon: Tag, href: "#pricing" },
     { title: "Contact", icon: Mail, href: "#contact" },
     { type: "separator" },
     { title: "Login", icon: LogIn, href: "#" },
@@ -90,7 +90,7 @@ const Navbar = ({ onGetStarted }) => {
 
 const HeroSection = ({ onGetStarted }) => {
   return (
-    <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section id="home" className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-teal-500/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none" />
 

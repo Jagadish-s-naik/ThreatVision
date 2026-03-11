@@ -129,6 +129,7 @@ export default function PricingSection6() {
 
   return (
     <div
+      id="pricing"
       className=" min-h-screen pt-24 pb-12 mx-auto relative bg-[#030303] overflow-x-hidden"
       ref={pricingRef}
     >
