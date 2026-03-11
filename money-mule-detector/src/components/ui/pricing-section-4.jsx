@@ -144,14 +144,14 @@ export default function PricingSection6() {
 
   return (
     <div
-      className=" min-h-screen  mx-auto relative bg-black overflow-x-hidden"
+      className=" min-h-screen pt-24 pb-12 mx-auto relative bg-[#030303] overflow-x-hidden"
       ref={pricingRef}
     >
       <TimelineContent
         animationNum={4}
         timelineRef={pricingRef}
         customVariants={revealVariants}
-        className="absolute top-0  h-96 w-screen overflow-hidden [mask-image:radial-gradient(50%_50%,white,transparent)] "
+        className="absolute top-0 h-96 w-screen overflow-hidden [mask-image:radial-gradient(50%_50%,white,transparent)] pointer-events-none"
       >
         <div className="absolute bottom-0 left-0 right-0 top-0 bg-[linear-gradient(to_right,#ffffff2c_1px,transparent_1px),linear-gradient(to_bottom,#3a3a3a01_1px,transparent_1px)] bg-[size:70px_80px] "></div>
         <SparklesComp
@@ -166,7 +166,7 @@ export default function PricingSection6() {
         animationNum={5}
         timelineRef={pricingRef}
         customVariants={revealVariants}
-        className="absolute left-0 top-[-114px] w-full h-[113.625vh] flex flex-col items-start justify-start content-start flex-none flex-nowrap gap-2.5 overflow-hidden p-0 z-0"
+        className="absolute left-0 top-0 w-full h-full flex flex-col items-start justify-start content-start flex-none flex-nowrap gap-2.5 overflow-hidden p-0 z-0 pointer-events-none [mask-image:linear-gradient(to_bottom,transparent_0%,black_20%,black_80%,transparent_100%)]"
       >
         <div className="framer-1i5axl2">
           <div
@@ -235,7 +235,7 @@ export default function PricingSection6() {
       </article>
 
       <div
-        className="absolute top-0 left-[10%] right-[10%] w-[80%] h-full z-0"
+        className="absolute top-[10%] left-[10%] right-[10%] w-[80%] h-[80%] z-0 pointer-events-none"
         style={{
           backgroundImage: `
         radial-gradient(circle at center, #6366f1 0%, transparent 70%)
