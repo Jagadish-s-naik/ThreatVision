@@ -24,6 +24,7 @@ import { analyzeCSV } from './api/analyzeApi.js';
 import { fetchGraphData, buildLocalGraphData } from './api/graphApi.js';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
+import LandingPage from './components/LandingPage.jsx';
 
 const TABS = [
   { id: 'graph', label: 'Graph View', icon: Network },
@@ -45,6 +46,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('graph');
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [showLanding, setShowLanding] = useState(true);
 
   // â”€â”€â”€ Persistence: restore results on refresh â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
@@ -53,6 +55,7 @@ export default function App() {
       const savedTx = localStorage.getItem('threat_vision_transactions');
       const savedGraph = localStorage.getItem('threat_vision_graph');
       if (saved && savedTx) {
+        setShowLanding(false);
         const parsedResults = JSON.parse(saved);
         const parsedTx = JSON.parse(savedTx);
         setAnalysisResults(parsedResults);
@@ -196,6 +199,10 @@ export default function App() {
 
   // â”€â”€â”€ Show CSV uploader if no results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!analysisResults && !isProcessing) {
+    if (showLanding) {
+      return <LandingPage onGetStarted={() => setShowLanding(false)} />;
+    }
+
     return (
       <>
         <CSVUploader onFileSelected={handleFileUpload} isProcessing={false} />
