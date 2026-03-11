@@ -329,21 +329,7 @@ const ContactSection = () => {
                      <span>support@threatvision.ai</span>
                   </div>
 
-                  {/* World Map abstract UI */}
-                  <div className="relative w-full max-w-md h-48 opacity-60 select-none pointer-events-none mt-auto">
-                     <img src="https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg" className="absolute inset-0 w-full h-full object-contain opacity-20 invert" alt="World Map" />
-                     
-                     {/* Location Marker to India */}
-                     <div className="absolute top-[46%] left-[71%] flex flex-col items-center z-20">
-                        <div className="px-3 py-1 bg-[#0a0c10]/90 backdrop-blur shadow-[0_0_15px_rgba(45,212,191,0.1)] rounded-lg text-xs font-semibold text-teal-50 border border-teal-500/20 mb-1 whitespace-nowrap">
-                           We are here
-                        </div>
-                        <div className="w-[1px] h-10 bg-gradient-to-b from-teal-500/50 to-transparent" />
-                        <div className="w-8 h-8 bg-teal-500/10 rounded-full flex items-center justify-center absolute bottom-[-16px] border border-teal-500/20 shadow-[0_0_15px_rgba(45,212,191,0.2)]">
-                           <div className="w-2 h-2 bg-teal-400 rounded-full shadow-[0_0_8px_rgba(45,212,191,0.8)]" />
-                        </div>
-                     </div>
-                  </div>
+                  {/* The contact details end here, map was removed as requested */}
                </div>
 
                {/* Right Column / Form Container */}
