@@ -9,6 +9,7 @@ import PricingSection6 from './ui/pricing-section-4.jsx';
 import { FocusCards } from './ui/focus-cards.jsx';
 import HoverFooter from './ui/hover-footer.jsx';
 import { ExpandableTabs } from './ui/expandable-tabs.jsx';
+import { HyperText } from './ui/hyper-text.jsx';
 
 const CheckIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -290,8 +291,10 @@ const HowItWorksSection = () => {
   return (
     <section id="how-it-works" className="py-24 bg-[#030303] relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl lg:text-5xl font-bold tracking-tight text-white mb-16 text-center">
-          How <span className="text-teal-400">ThreatVision</span> works
+        <h2 className="text-3xl lg:text-5xl font-bold tracking-tight text-white mb-16 text-center flex flex-wrap items-center justify-center gap-x-2">
+          <HyperText as="span" className="text-white text-3xl lg:text-5xl" startOnView={true}>How</HyperText>
+          <HyperText as="span" className="text-teal-400 text-3xl lg:text-5xl" startOnView={true}>ThreatVision</HyperText>
+          <HyperText as="span" className="text-white text-3xl lg:text-5xl" startOnView={true}>works</HyperText>
         </h2>
 
         <div className="flex flex-col md:flex-row gap-8 relative">
