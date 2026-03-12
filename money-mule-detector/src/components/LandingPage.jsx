@@ -10,6 +10,7 @@ import { FocusCards } from './ui/focus-cards.jsx';
 import HoverFooter from './ui/hover-footer.jsx';
 import { ExpandableTabs } from './ui/expandable-tabs.jsx';
 import { HyperText } from './ui/hyper-text.jsx';
+import { TypingAnimation } from './ui/typing-animation.jsx';
 
 const CheckIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -103,7 +104,7 @@ const HeroSection = ({ onGetStarted }) => {
           </div>
           <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-white mb-6 leading-tight">
             See through the <br/><span className="bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-indigo-400">noise.</span><br/>
-            Detect fraud before it happens.
+            <TypingAnimation duration={50} delay={500}>Detect fraud before it happens.</TypingAnimation>
           </h1>
           <p className="text-lg text-slate-400 mb-8 leading-relaxed max-w-xl">
             AI-powered transaction intelligence that uncovers hidden money-laundering rings, mule networks, and suspicious payment patterns in real time.
