@@ -431,16 +431,19 @@ const ContactSection = () => {
 const CallToActionSection = ({ onGetStarted }) => {
   return (
     <section className="py-24 bg-[#030303] relative px-4 sm:px-6 z-10 overflow-hidden">
-      {/* Background Sparkles */}
-      <div className="absolute inset-0 z-0">
+      {/* Background Grid Pattern */}
+      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none bg-[linear-gradient(to_right,#ffffff10_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:70px_80px] [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)]" />
+
+      {/* Background Sparkles with Radial Mask */}
+      <div className="absolute inset-0 z-0 [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)]">
         <Sparkles
           id="cta-sparkles"
           background="transparent"
           minSize={0.4}
           maxSize={1}
-          particleDensity={40}
+          particleDensity={30}
           className="w-full h-full"
-          particleColor="#2dd4bf"
+          particleColor="#FFFFFF"
         />
       </div>
 
