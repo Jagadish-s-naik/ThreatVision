@@ -10,6 +10,7 @@ import {
   Twitter,
   Globe,
   Shield,
+  Github,
 } from "lucide-react";
 
 export const TextHoverEffect = ({
@@ -191,9 +192,21 @@ export function HoverFooter() {
 
   // Social media icons
   const socialLinks = [
-    { icon: <Linkedin size={20} />, label: "LinkedIn", href: "#" },
-    { icon: <Twitter size={20} />, label: "Twitter", href: "#" },
-    { icon: <Globe size={20} />, label: "Website", href: "#" },
+    { 
+      icon: <Linkedin size={24} />, 
+      label: "LinkedIn", 
+      href: "https://www.linkedin.com/in/jagadishnaik" 
+    },
+    { 
+      icon: <Github size={24} />, 
+      label: "GitHub", 
+      href: "https://github.com/Jagadish-s-naik/ThreatVision" 
+    },
+    { 
+      icon: <Twitter size={24} />, 
+      label: "Twitter", 
+      href: "#" 
+    },
   ];
 
   return (
@@ -273,6 +286,8 @@ export function HoverFooter() {
                 key={label}
                 href={href}
                 aria-label={label}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="hover:text-teal-400 transition-colors"
               >
                 {icon}
