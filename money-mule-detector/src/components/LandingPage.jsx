@@ -12,6 +12,7 @@ import HoverFooter from './ui/hover-footer.jsx';
 import { ExpandableTabs } from './ui/expandable-tabs.jsx';
 import { HyperText } from './ui/hyper-text.jsx';
 import { TypingAnimation } from './ui/typing-animation.jsx';
+import { Sparkles } from './ui/sparkles.jsx';
 
 const CheckIcon = ({ className }) => (
   <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -429,20 +430,80 @@ const ContactSection = () => {
 
 const CallToActionSection = ({ onGetStarted }) => {
   return (
-    <section className="py-24 bg-[#030303] relative px-4 sm:px-6 z-10">
-      <div className="max-w-5xl mx-auto bg-gradient-to-r from-teal-900/40 to-indigo-900/40 border border-teal-500/30 rounded-3xl p-10 md:p-16 text-center shadow-[0_0_50px_rgba(20,184,166,0.15)] relative overflow-hidden group">
-         <div className="absolute inset-0 bg-teal-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-         <div className="relative z-10">
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Ready to see ThreatVision on your data?</h2>
-            <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
+    <section className="py-24 bg-[#030303] relative px-4 sm:px-6 z-10 overflow-hidden">
+      {/* Background Sparkles */}
+      <div className="absolute inset-0 z-0">
+        <Sparkles
+          id="cta-sparkles"
+          background="transparent"
+          minSize={0.4}
+          maxSize={1}
+          particleDensity={40}
+          className="w-full h-full"
+          particleColor="#2dd4bf"
+        />
+      </div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
+        className="max-w-5xl mx-auto bg-[#0a0c10]/80 backdrop-blur-xl border border-teal-500/20 rounded-[2.5rem] p-10 md:p-20 text-center shadow-[0_0_80px_rgba(20,184,166,0.1)] relative overflow-hidden group"
+      >
+         {/* Animated Gradient Beam */}
+         <motion.div
+           animate={{
+             x: ["-100%", "100%"],
+           }}
+           transition={{
+             duration: 10,
+             repeat: Infinity,
+             ease: "linear",
+           }}
+           className="absolute top-0 left-0 w-1/2 h-full bg-gradient-to-r from-transparent via-teal-500/10 to-transparent skew-x-12 pointer-events-none"
+         />
+
+         <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 via-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+         
+         <div className="relative z-10 flex flex-col items-center">
+            <h2 className="text-4xl md:text-6xl font-bold text-white mb-8 tracking-tight max-w-3xl">
+              <HyperText>Ready to see ThreatVision on your data?</HyperText>
+            </h2>
+            <p className="text-lg md:text-xl text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed">
               Spin up a sandbox, stream a test CSV, and watch suspicious patterns light up in seconds.
             </p>
-            <button onClick={onGetStarted} className="px-10 py-5 bg-teal-400 hover:bg-teal-300 text-[#030303] text-lg font-bold rounded-xl transition-all hover:scale-105 hover:shadow-[0_0_25px_rgba(45,212,191,0.5)]">
-               Get Started in 5 Minutes
-            </button>
-            <p className="mt-6 text-sm text-slate-400 font-medium">Built for banks, fintechs, and payment processors.</p>
+            
+            <motion.button 
+              onClick={onGetStarted} 
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              className="group/btn relative px-12 py-6 bg-teal-400 text-[#030303] text-xl font-bold rounded-2xl transition-all shadow-[0_0_30px_rgba(45,212,191,0.3)] hover:shadow-[0_0_50px_rgba(45,212,191,0.5)] overflow-hidden"
+            >
+               {/* Button Shine Effect */}
+               <motion.div
+                 initial={{ x: "-100%" }}
+                 whileHover={{ x: "100%" }}
+                 transition={{ duration: 0.6, ease: "easeInOut" }}
+                 className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12"
+               />
+               <span className="relative z-10 flex items-center gap-2">
+                 Get Started in 5 Minutes
+                 <ArrowRight className="w-6 h-6 group-hover/btn:translate-x-1 transition-transform" />
+               </span>
+            </motion.button>
+            
+            <motion.div 
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ delay: 1, duration: 1 }}
+              className="mt-8 flex items-center gap-2 text-sm text-slate-500 font-medium"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
+              Built for banks, fintechs, and payment processors.
+            </motion.div>
          </div>
-      </div>
+      </motion.div>
     </section>
   );
 };
