@@ -200,6 +200,26 @@ const FeaturesSection = () => {
       ]
     },
     {
+      title: "Mule Network Discovery",
+      src: "https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=2070&auto=format&fit=crop",
+      desc: "Identify networks of accounts controlled by a single entity, even when spread across different branches or regions.",
+      bullets: [
+        "Automated community detection",
+        "Synthetic identity flagging",
+        "Cross-account behavior matching"
+      ]
+    },
+    {
+      title: "Real-time Risk Scoring",
+      src: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2015&auto=format&fit=crop",
+      desc: "Instantaneously evaluate the risk of any new transaction based on historical context and global patterns.",
+      bullets: [
+        "Sub-second latency processing",
+        "Customizable risk thresholds",
+        "Detailed evidence trails"
+      ]
+    },
+    {
       title: "Central Hub Identification",
       src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
       desc: "Automatically flag central hub accounts that receive many medium-value payments and redistribute large sums back into the network.",
@@ -292,7 +312,7 @@ const HowItWorksSection = () => {
   ];
 
   return (
-    <section id="how-it-works" className="py-24 bg-[#030303] relative z-10">
+    <section id="how-it-works" className="py-24 bg-transparent relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-3xl lg:text-5xl font-bold tracking-tight text-white mb-16 text-center flex flex-wrap items-center justify-center gap-x-2">
           <HyperText as="span" className="text-white text-3xl lg:text-5xl" startOnView={true}>How</HyperText>
@@ -358,7 +378,7 @@ const HowItWorksSection = () => {
 
 const ContactSection = () => {
     return (
-      <section id="contact" className="py-24 bg-[#0a0c10] border-t border-white/5 relative z-10 w-full overflow-hidden">
+      <section id="contact" className="py-24 bg-transparent border-t border-white/5 relative z-10 w-full overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-16 lg:gap-8 items-start">
                
@@ -430,22 +450,11 @@ const ContactSection = () => {
 
 const CallToActionSection = ({ onGetStarted }) => {
   return (
-    <section className="py-24 bg-[#030303] relative px-4 sm:px-6 z-10 overflow-hidden">
-      {/* Background Grid Pattern */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none bg-[linear-gradient(to_right,#ffffff10_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:70px_80px] [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)]" />
+    <section className="py-24 bg-transparent relative px-4 sm:px-6 z-10 overflow-hidden border-t border-white/5">
+      {/* Ambient Background Glows - Synced with Hero */}
+      <div className="absolute top-1/2 left-1/4 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-      {/* Background Sparkles with Radial Mask */}
-      <div className="absolute inset-0 z-0 [mask-image:radial-gradient(ellipse_at_center,white,transparent_80%)]">
-        <Sparkles
-          id="cta-sparkles"
-          background="transparent"
-          minSize={0.4}
-          maxSize={1}
-          particleDensity={30}
-          className="w-full h-full"
-          particleColor="#FFFFFF"
-        />
-      </div>
 
       <motion.div 
         initial={{ opacity: 0, y: 40 }}
@@ -513,15 +522,32 @@ const CallToActionSection = ({ onGetStarted }) => {
 
 export default function LandingPage({ onGetStarted }) {
   return (
-    <div className="h-screen overflow-y-auto bg-[#030303] text-slate-200 font-sans overflow-x-hidden selection:bg-teal-500/30">
-      <Navbar onGetStarted={onGetStarted} />
-      <HeroSection onGetStarted={onGetStarted} />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <PricingSection6 />
-      <ContactSection />
-      <CallToActionSection onGetStarted={onGetStarted} />
-      <HoverFooter />
+    <div className="h-screen overflow-y-auto bg-[#030303] text-slate-200 font-sans overflow-x-hidden selection:bg-teal-500/30 relative">
+      {/* Global Background Elements */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <Sparkles
+          id="global-sparkles"
+          background="transparent"
+          minSize={0.4}
+          maxSize={1}
+          density={800}
+          className="w-full h-full opacity-40"
+          color="#FFFFFF"
+          speed={0.3}
+        />
+        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#ffffff2c_1px,transparent_1px),linear-gradient(to_bottom,#ffffff2c_1px,transparent_1px)] bg-[size:70px_80px]" />
+      </div>
+
+      <div className="relative z-10">
+        <Navbar onGetStarted={onGetStarted} />
+        <HeroSection onGetStarted={onGetStarted} />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <PricingSection6 />
+        <ContactSection />
+        <CallToActionSection onGetStarted={onGetStarted} />
+        <HoverFooter />
+      </div>
     </div>
   );
 }

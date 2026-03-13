@@ -130,7 +130,7 @@ export default function PricingSection6() {
   return (
     <div
       id="pricing"
-      className=" min-h-screen pt-24 pb-12 mx-auto relative bg-[#030303] overflow-x-hidden"
+      className=" min-h-screen pt-24 pb-12 mx-auto relative bg-transparent overflow-x-hidden"
       ref={pricingRef}
     >
       <TimelineContent
@@ -140,13 +140,7 @@ export default function PricingSection6() {
         className="absolute top-0 h-96 w-screen overflow-hidden [mask-image:radial-gradient(50%_50%,white,transparent)] pointer-events-none"
       >
         <div className="absolute bottom-0 left-0 right-0 top-0 bg-[linear-gradient(to_right,#ffffff2c_1px,transparent_1px),linear-gradient(to_bottom,#3a3a3a01_1px,transparent_1px)] bg-[size:70px_80px] "></div>
-        <SparklesComp
-          density={1800}
-          direction="bottom"
-          speed={1}
-          color="#FFFFFF"
-          className="absolute inset-x-0 bottom-0 h-full w-full [mask-image:radial-gradient(50%_50%,white,transparent_85%)]"
-        />
+        {/* Local sparkles removed for global consistency */}
       </TimelineContent>
       <TimelineContent
         animationNum={5}
