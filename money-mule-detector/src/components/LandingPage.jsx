@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { 
   ArrowRight, Shield, Activity, Database, 
   Zap, Menu, X, Network, Link2, 
@@ -299,18 +300,52 @@ const HowItWorksSection = () => {
         </h2>
 
         <div className="flex flex-col md:flex-row gap-8 relative">
-          <div className="hidden md:block absolute top-[40px] left-1/6 w-2/3 h-0.5 bg-gradient-to-r from-teal-500/20 via-indigo-500/50 to-rose-500/20 z-0" />
+          {/* Animated Connection Line */}
+          <div className="hidden md:block absolute top-[40px] left-[15%] right-[15%] h-[2px] z-0 overflow-hidden">
+             <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 via-indigo-500/20 to-rose-500/10" />
+             <motion.div 
+               className="absolute inset-x-0 h-full bg-gradient-to-r from-transparent via-teal-400 to-transparent w-full"
+               animate={{ x: ["-100%", "100%"] }}
+               transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+               style={{ width: "50%" }}
+             />
+          </div>
           
           {steps.map((step, idx) => (
-            <div key={idx} className="flex-1 relative z-10 flex flex-col items-center text-center">
-              <div className="w-20 h-20 rounded-2xl bg-[#0f1115] border border-white/10 flex items-center justify-center mb-6 shadow-xl relative overflow-hidden group hover:-translate-y-2 transition-transform duration-300">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                {step.icon}
-                <div className="absolute -top-2 -right-2 text-4xl font-black text-white/[0.03] select-none">{step.num}</div>
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed max-w-sm">{step.desc}</p>
-            </div>
+            <motion.div 
+              key={idx} 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: idx * 0.2, ease: "easeOut" }}
+              className="flex-1 relative z-10 flex flex-col items-center text-center"
+            >
+              <motion.div 
+                className="w-20 h-20 rounded-2xl bg-[#0f1115] border border-white/10 flex items-center justify-center mb-6 shadow-xl relative overflow-hidden group transition-all duration-300"
+                whileHover={{ y: -5, borderColor: "rgba(45, 212, 191, 0.5)", scale: 1.05 }}
+              >
+                {/* Dynamic Aura */}
+                <div className={`absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity bg-teal-500 blur-xl" />
+                
+                <div className="relative z-10">
+                  {step.icon}
+                </div>
+                <div className="absolute -top-2 -right-2 text-4xl font-black text-white/[0.03] select-none group-hover:text-white/[0.08] transition-colors">{step.num}</div>
+                
+                {/* Animated Ring on Hover */}
+                <motion.div 
+                  className="absolute inset-0 border border-teal-500/50 rounded-2xl opacity-0"
+                  whileHover={{ opacity: 1, scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+              </motion.div>
+              
+              <h3 className="text-xl font-bold text-white mb-3 group-hover:text-teal-400 transition-colors">{step.title}</h3>
+              <p className="text-slate-400 text-sm leading-relaxed max-w-sm px-4 md:px-0">
+                {step.desc}
+              </p>
+            </motion.div>
           ))}
         </div>
       </div>
