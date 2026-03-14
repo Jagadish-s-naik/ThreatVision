@@ -5,6 +5,7 @@ import MatrixLoader from './MatrixLoader.jsx';
 import { HeroGeometric } from './ui/shape-landing-hero.jsx';
 import { ImagesBadge } from './ui/images-badge.jsx';
 import { Sparkles } from './ui/sparkles.jsx';
+import './CSVUploader.css';
 
 // onFileSelected(file) — passes the raw File object to App.jsx for backend upload
 // onAnalysisComplete retained for backward compat (legacy frontend mode)
@@ -134,74 +135,75 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
                     <p className="text-base md:text-xl text-white/40 mb-8 leading-relaxed font-light tracking-wide max-w-xl mx-auto">
                         Analyze transaction networks to identify shell chains and smurfing patterns in real-time.
                     </p>
-                </div>
+                </div>                {/* Upload zone container */}
+                <div className="relative w-full group premium-border-host">
+                    {/* Pulsing Aura */}
+                    <div className="uploader-glow" />
+                    
+                    <div
+                        className={`premium-border-container ${isDragging ? 'is-dragging' : ''} ${fileName ? 'active-border' : ''}`}
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onClick={() => !isProcessing && fileInputRef.current?.click()}
+                    >
+                        <div className="premium-inner-content p-12 cursor-pointer relative overflow-hidden">
+                            {/* Corner accents - kept for extra detail but made more subtle */}
+                            <div className="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-teal-500/20 group-hover:border-teal-400 transitions-colors"></div>
+                            <div className="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-teal-500/20 group-hover:border-teal-400 transitions-colors"></div>
+                            <div className="absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 border-teal-500/20 group-hover:border-teal-400 transitions-colors"></div>
+                            <div className="absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 border-teal-500/20 group-hover:border-teal-400 transitions-colors"></div>
 
-                {/* Upload zone */}
-                <div
-                    className={`w-full border-2 border-dashed neocard p-12 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 backdrop-blur-xl shadow-2xl relative overflow-hidden group
-          ${isDragging
-                            ? 'border-teal-400 bg-teal-900/40 scale-[1.02] brutal-shadow-teal'
-                            : 'border-slate-600 bg-slate-900/60 hover:border-teal-500 hover:bg-slate-900/80 hover:brutal-shadow-sm'
-                        }`}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onClick={() => !isProcessing && fileInputRef.current?.click()}
-                >
-                    {/* Corner accents */}
-                    <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-teal-500/50 group-hover:border-teal-400 transition-colors"></div>
-                    <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-teal-500/50 group-hover:border-teal-400 transition-colors"></div>
-                    <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-teal-500/50 group-hover:border-teal-400 transition-colors"></div>
-                    <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-teal-500/50 group-hover:border-teal-400 transition-colors"></div>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".csv"
+                                className="hidden"
+                                onChange={handleFileChange}
+                                disabled={isProcessing}
+                            />
 
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".csv"
-                        className="hidden"
-                        onChange={handleFileChange}
-                        disabled={isProcessing}
-                    />
-
-                    {isProcessing ? (
-                        <div className="flex flex-col items-center gap-4">
-                            <MatrixLoader />
-                            <p className="text-emerald-400 font-semibold text-lg animate-pulse mt-4 font-mono tracking-wide">
-                                :: DECRYPTING_MATRIX ::
-                            </p>
-                            <p className="text-slate-400 text-xs uppercase tracking-widest">Running graph algorithms...</p>
-                        </div>
-                    ) : (
-                        <>
-                            {fileName && rowCount !== null ? (
-                                <div className="text-center">
-                                    <p className="text-teal-400 font-bold text-lg mb-1 font-mono">✓ {fileName}</p>
-                                    <p className="text-slate-300 text-sm">{rowCount.toLocaleString()} VALID TRANSACTIONS</p>
-                                    <p className="text-slate-500 text-xs mt-2 uppercase tracking-widest hover:text-teal-400">Click to replace</p>
+                            {isProcessing ? (
+                                <div className="flex flex-col items-center gap-4">
+                                    <MatrixLoader />
+                                    <p className="text-emerald-400 font-semibold text-lg animate-pulse mt-4 font-mono tracking-wide">
+                                        :: DECRYPTING_MATRIX ::
+                                    </p>
+                                    <p className="text-slate-400 text-xs uppercase tracking-widest">Running graph algorithms...</p>
                                 </div>
                             ) : (
                                 <>
-                                    <ImagesBadge
-                                        text="DROP CSV FILE"
-                                        images={[
-                                            "https://assets.aceternity.com/pro/agenforce-1.webp",
-                                            "https://assets.aceternity.com/pro/agenforce-2.webp",
-                                            "https://assets.aceternity.com/pro/agenforce-3.webp",
-                                        ]}
-                                    />
-                                    <p className="text-slate-400 text-sm font-mono tracking-widest mt-2 mb-6">
-                                        [ .csv files only ]
-                                    </p>
-                                    <button
-                                        className="px-8 py-3 bg-gradient-to-r from-teal-500 to-indigo-600 rounded-full text-white font-bold text-sm shadow-[0_0_20px_rgba(20,184,166,0.2)] hover:shadow-[0_0_30px_rgba(20,184,166,0.4)] transition-all hover:scale-105 active:scale-95"
-                                        onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                                    >
-                                        BROWSE SYSTEM
-                                    </button>
+                                    {fileName && rowCount !== null ? (
+                                        <div className="text-center animate-fadeIn">
+                                            <p className="text-teal-400 font-bold text-lg mb-1 font-mono">✓ {fileName}</p>
+                                            <p className="text-slate-300 text-sm">{rowCount.toLocaleString()} VALID TRANSACTIONS</p>
+                                            <p className="text-slate-500 text-xs mt-4 uppercase tracking-widest hover:text-teal-400 transition-colors">Click to replace file</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <ImagesBadge
+                                                text="DROP CSV FILE"
+                                                images={[
+                                                    "https://assets.aceternity.com/pro/agenforce-1.webp",
+                                                    "https://assets.aceternity.com/pro/agenforce-2.webp",
+                                                    "https://assets.aceternity.com/pro/agenforce-3.webp",
+                                                ]}
+                                            />
+                                            <p className="text-slate-400 text-sm font-mono tracking-widest mt-2 mb-8">
+                                                [ .csv files only ]
+                                            </p>
+                                            <button
+                                                className="px-10 py-4 bg-gradient-to-r from-teal-500 to-indigo-600 rounded-full text-white font-bold text-sm shadow-[0_0_20px_rgba(20,184,166,0.2)] hover:shadow-[0_0_35px_rgba(20,184,166,0.4)] transition-all hover:scale-105 active:scale-95 border border-white/10"
+                                                onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                                            >
+                                                BROWSE SYSTEM
+                                            </button>
+                                        </>
+                                    )}
                                 </>
                             )}
-                        </>
-                    )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Error message */}
