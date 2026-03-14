@@ -189,7 +189,7 @@ export default function PricingSection6() {
               delay: 0, // First element
             }}
           >
-            Plans that works best for your
+            Plans that work best for you
           </VerticalCutReveal>
         </h2>
 

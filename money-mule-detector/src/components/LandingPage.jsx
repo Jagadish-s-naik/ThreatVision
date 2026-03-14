@@ -62,7 +62,7 @@ const Navbar = ({ onGetStarted }) => {
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#030303]/70 backdrop-blur-md border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${scrolled ? 'bg-[#030303]/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
         <div className="flex items-center gap-2 cursor-pointer w-full md:w-auto justify-between md:justify-start" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
           <div className="flex items-center gap-2">
@@ -104,9 +104,9 @@ const HeroSection = ({ onGetStarted }) => {
             <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
             Live Network Intelligence
           </div>
-          <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-white mb-6 leading-tight">
+          <h1 className="text-5xl lg:text-7xl font-bold tracking-tight text-white mb-6 leading-tight min-h-[1.2em]">
             See through the <br/><span className="bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-indigo-400">noise.</span><br/>
-            <TypingAnimation duration={50} delay={500}>Detect fraud before it happens.</TypingAnimation>
+            <TypingAnimation duration={50} delay={500} startOnView={false}>Detect fraud before it happens.</TypingAnimation>
           </h1>
           <p className="text-lg text-slate-400 mb-8 leading-relaxed max-w-xl">
             AI-powered transaction intelligence that uncovers hidden money-laundering rings, mule networks, and suspicious payment patterns in real time.

@@ -193,17 +193,17 @@ export function HoverFooter() {
   // Social media icons
   const socialLinks = [
     { 
-      icon: <Linkedin size={24} />, 
+      icon: <Linkedin size={32} />, 
       label: "LinkedIn", 
       href: "https://www.linkedin.com/in/jagadishnaik" 
     },
     { 
-      icon: <Github size={24} />, 
+      icon: <Github size={32} />, 
       label: "GitHub", 
       href: "https://github.com/Jagadish-s-naik/ThreatVision" 
     },
     { 
-      icon: <Twitter size={24} />, 
+      icon: <Twitter size={32} />, 
       label: "Twitter", 
       href: "#" 
     },

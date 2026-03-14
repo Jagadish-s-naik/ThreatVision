@@ -34,30 +34,33 @@ export const Card = React.memo(
 
       <motion.div
         layoutId={`content-${index}`}
-        className={cn(
-          "absolute inset-0 flex flex-col justify-end p-6 md:p-8 transition-opacity duration-300",
-          hovered === index ? "opacity-100" : "opacity-0"
-        )}
+        className="absolute inset-0 flex flex-col justify-end p-6 md:p-8"
       >
-        <motion.div layoutId={`title-${index}`} className="text-xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-200 mb-2 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+        <motion.div 
+          layoutId={`title-${index}`} 
+          className={cn(
+            "text-xl font-bold transition-all duration-500",
+            hovered === index 
+              ? "text-3xl md:text-4xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-200 mb-2 translate-y-0" 
+              : "text-lg md:text-xl text-white drop-shadow-md translate-y-0"
+          )}
+        >
           {card.title}
         </motion.div>
-        <span className="text-sm md:text-base text-teal-400 font-medium translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-75 flex items-center gap-2">
-          Click to explore <span className="text-lg leading-none">&rarr;</span>
-        </span>
+        
+        <AnimatePresence>
+          {hovered === index && (
+            <motion.span 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="text-sm md:text-base text-teal-400 font-medium flex items-center gap-2"
+            >
+              Click to explore <span className="text-lg leading-none">&rarr;</span>
+            </motion.span>
+          )}
+        </AnimatePresence>
       </motion.div>
-
-      {/* Default visible title when not hovered */}
-      <div
-        className={cn(
-          "absolute bottom-0 left-0 w-full p-6 transition-opacity duration-300",
-          hovered !== null ? "opacity-0" : "opacity-100"
-        )}
-      >
-         <motion.div layoutId={`title-default-${index}`} className="text-lg md:text-xl font-bold text-white drop-shadow-md">
-          {card.title}
-        </motion.div>
-      </div>
     </motion.div>
   )
 );
