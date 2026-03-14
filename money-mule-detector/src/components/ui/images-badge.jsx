@@ -18,7 +18,7 @@ export function ImagesBadge({ text, images }) {
         
         {/* Back of folder (with tab) */}
         <div 
-          className="absolute inset-0 bg-amber-500 rounded-md shadow-sm" 
+          className="absolute inset-0 bg-indigo-500 rounded-md shadow-sm" 
           style={{ clipPath: "polygon(0 0, 35% 0, 45% 20%, 100% 20%, 100% 100%, 0 100%)" }} 
         />
         
@@ -65,7 +65,7 @@ export function ImagesBadge({ text, images }) {
         })}
 
         {/* Front of folder */}
-        <div className="absolute bottom-0 w-full h-8 bg-amber-400 rounded-md shadow-inner z-20" />
+        <div className="absolute bottom-0 w-full h-8 bg-teal-500 rounded-md shadow-inner z-20" />
       </div>
 
       {/* Text perfectly aligned horizontally */}

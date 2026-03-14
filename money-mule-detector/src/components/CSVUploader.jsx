@@ -4,6 +4,7 @@ import { parseCSV } from '../utils/csvParser.js';
 import MatrixLoader from './MatrixLoader.jsx';
 import { HeroGeometric } from './ui/shape-landing-hero.jsx';
 import { ImagesBadge } from './ui/images-badge.jsx';
+import { Sparkles } from './ui/sparkles.jsx';
 
 // onFileSelected(file) — passes the raw File object to App.jsx for backend upload
 // onAnalysisComplete retained for backward compat (legacy frontend mode)
@@ -83,6 +84,21 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
                 />
             </div>
 
+            {/* Global Background Elements for consistency */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                <Sparkles
+                    id="uploader-sparkles"
+                    background="transparent"
+                    minSize={0.4}
+                    maxSize={1}
+                    density={800}
+                    className="w-full h-full opacity-40"
+                    color="#FFFFFF"
+                    speed={0.3}
+                />
+                <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#ffffff2c_1px,transparent_1px),linear-gradient(to_bottom,#ffffff2c_1px,transparent_1px)] bg-[size:70px_80px]" />
+            </div>
+
             {onBack && (
                 <button
                     onClick={onBack}
@@ -99,7 +115,7 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
                 {/* Header Section */}
                 <div className="text-center mb-8 md:mb-12">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-6">
-                        <div className="w-2 h-2 rounded-full bg-rose-500/80" />
+                        <div className="w-2 h-2 rounded-full bg-teal-500/80" />
                         <span className="text-sm text-white/60 tracking-wide">
                             Threat Vision
                         </span>
@@ -110,7 +126,7 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
                             Detect Money Mules
                         </span>
                         <br />
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-white/90 to-rose-300">
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-teal-300 via-white/90 to-indigo-300">
                             With Graph Theory
                         </span>
                     </h1>
@@ -124,8 +140,8 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
                 <div
                     className={`w-full border-2 border-dashed neocard p-12 flex flex-col items-center justify-center cursor-pointer transition-all duration-300 backdrop-blur-xl shadow-2xl relative overflow-hidden group
           ${isDragging
-                            ? 'border-amber-400 bg-amber-900/40 scale-[1.02] brutal-shadow-amber'
-                            : 'border-slate-600 bg-slate-900/60 hover:border-amber-500 hover:bg-slate-900/80 hover:brutal-shadow-sm'
+                            ? 'border-teal-400 bg-teal-900/40 scale-[1.02] brutal-shadow-teal'
+                            : 'border-slate-600 bg-slate-900/60 hover:border-teal-500 hover:bg-slate-900/80 hover:brutal-shadow-sm'
                         }`}
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
@@ -133,10 +149,10 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
                     onClick={() => !isProcessing && fileInputRef.current?.click()}
                 >
                     {/* Corner accents */}
-                    <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-amber-500/50 group-hover:border-amber-400 transition-colors"></div>
-                    <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-amber-500/50 group-hover:border-amber-400 transition-colors"></div>
-                    <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-amber-500/50 group-hover:border-amber-400 transition-colors"></div>
-                    <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-amber-500/50 group-hover:border-amber-400 transition-colors"></div>
+                    <div className="absolute top-0 left-0 w-4 h-4 border-l-2 border-t-2 border-teal-500/50 group-hover:border-teal-400 transition-colors"></div>
+                    <div className="absolute top-0 right-0 w-4 h-4 border-r-2 border-t-2 border-teal-500/50 group-hover:border-teal-400 transition-colors"></div>
+                    <div className="absolute bottom-0 left-0 w-4 h-4 border-l-2 border-b-2 border-teal-500/50 group-hover:border-teal-400 transition-colors"></div>
+                    <div className="absolute bottom-0 right-0 w-4 h-4 border-r-2 border-b-2 border-teal-500/50 group-hover:border-teal-400 transition-colors"></div>
 
                     <input
                         ref={fileInputRef}
@@ -159,9 +175,9 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
                         <>
                             {fileName && rowCount !== null ? (
                                 <div className="text-center">
-                                    <p className="text-green-400 font-bold text-lg mb-1 font-mono">✓ {fileName}</p>
+                                    <p className="text-teal-400 font-bold text-lg mb-1 font-mono">✓ {fileName}</p>
                                     <p className="text-slate-300 text-sm">{rowCount.toLocaleString()} VALID TRANSACTIONS</p>
-                                    <p className="text-slate-500 text-xs mt-2 uppercase tracking-widest hover:text-amber-400">Click to replace</p>
+                                    <p className="text-slate-500 text-xs mt-2 uppercase tracking-widest hover:text-teal-400">Click to replace</p>
                                 </div>
                             ) : (
                                 <>
@@ -177,7 +193,7 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
                                         [ .csv files only ]
                                     </p>
                                     <button
-                                        className="neobutton bg-amber-500 hover:bg-amber-400 text-slate-900 border-amber-600 brutal-shadow-sm"
+                                        className="px-8 py-3 bg-gradient-to-r from-teal-500 to-indigo-600 rounded-full text-white font-bold text-sm shadow-[0_0_20px_rgba(20,184,166,0.2)] hover:shadow-[0_0_30px_rgba(20,184,166,0.4)] transition-all hover:scale-105 active:scale-95"
                                         onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                                     >
                                         BROWSE SYSTEM
@@ -190,7 +206,7 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
 
                 {/* Error message */}
                 {error && (
-                    <div className="mt-4 w-full bg-red-950/80 border-2 border-red-600 text-red-300 px-5 py-4 text-sm backdrop-blur-sm brutal-shadow-rose font-bold">
+                    <div className="mt-4 w-full bg-red-950/80 border-2 border-red-600 text-red-300 px-5 py-4 text-sm backdrop-blur-sm brutal-shadow-teal font-bold">
                         ⚠ ERROR: {error}
                     </div>
                 )}
@@ -203,7 +219,7 @@ export default function CSVUploader({ onFileSelected, onAnalysisComplete, isProc
                         {['transaction_id', 'sender_id', 'receiver_id', 'amount', 'timestamp'].map((col) => (
                             <span
                                 key={col}
-                                className="px-3 py-1 bg-slate-800/50 border border-slate-600/50 text-amber-400 text-xs rounded-lg font-mono"
+                                className="px-3 py-1 bg-slate-800/50 border border-slate-600/50 text-teal-400 text-xs rounded-lg font-mono"
                             >
                                 {col}
                             </span>
