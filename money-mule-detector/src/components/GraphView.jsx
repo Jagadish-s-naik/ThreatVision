@@ -1,7 +1,14 @@
 import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import cytoscape from 'cytoscape';
 
-export default function GraphView({ suspiciousAccounts = [], fraudRings = [], allTransactions = [] }) {
+export default function GraphView({ 
+    suspiciousAccounts = [], 
+    fraudRings = [], 
+    allTransactions = [], 
+    flaggedAccounts = new Set(),
+    isolatedNodeId = null,
+    onResetIsolation = () => {}
+}) {
     const fraudRef = useRef(null);
     const cleanRef = useRef(null);
     const fraudCyRef = useRef(null);
@@ -36,7 +43,7 @@ export default function GraphView({ suspiciousAccounts = [], fraudRings = [], al
             const isSmurf = patterns.includes('fan_in') || patterns.includes('fan_out');
             const isShell = patterns.includes('shell_chain');
             const nodeColor = isCycle ? '#fbbf24' : isSmurf ? '#f97316' : isShell ? '#c084fc' : '#ef4444';
-            const isCrossRing = (ringMembership[acc.account_id] || 0) > 1;
+            const isFlagged = flaggedAccounts.has(acc.account_id);
             return {
                 data: {
                     id: acc.account_id,
@@ -46,6 +53,7 @@ export default function GraphView({ suspiciousAccounts = [], fraudRings = [], al
                     ring_id: acc.ring_id,
                     nodeColor,
                     nodeShape: isCrossRing ? 'diamond' : 'ellipse',
+                    isFlagged,
                 },
             };
         });
@@ -75,8 +83,11 @@ export default function GraphView({ suspiciousAccounts = [], fraudRings = [], al
                         width: 28,
                         height: 28,
                         shape: 'data(nodeShape)',
-                        'border-width': 2,
-                        'border-color': '#ffffff40',
+                        'border-width': (ele) => ele.data('isFlagged') ? 4 : 2,
+                        'border-color': (ele) => ele.data('isFlagged') ? '#ef4444' : '#ffffff40',
+                        'overlay-color': '#ef4444',
+                        'overlay-padding': 4,
+                        'overlay-opacity': (ele) => ele.data('isFlagged') ? 0.3 : 0,
                     },
                 },
                 {
@@ -116,8 +127,23 @@ export default function GraphView({ suspiciousAccounts = [], fraudRings = [], al
         });
 
         fraudCyRef.current = cy;
+
+        // Handle initial isolation if provided
+        if (isolatedNodeId) {
+            const node = cy.getElementById(isolatedNodeId);
+            if (node.length > 0) {
+                cy.animate({
+                    center: { eles: node },
+                    zoom: 2,
+                    duration: 1000,
+                    easing: 'ease-in-out-cubic'
+                });
+                node.select();
+            }
+        }
+
         return () => { if (fraudCyRef.current) { fraudCyRef.current.destroy(); fraudCyRef.current = null; } };
-    }, [suspiciousAccounts, allTransactions, suspiciousIds, ringMembership]);
+    }, [suspiciousAccounts, allTransactions, suspiciousIds, ringMembership, flaggedAccounts, isolatedNodeId]);
 
     // ─── Clean Cytoscape ──────────────────────────────────────────────────────
     useEffect(() => {

@@ -43,10 +43,12 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('graph');
+  const [isolatedNodeId, setIsolatedNodeId] = useState(null);
+  const [activeTab, setActiveTab] = useState('heatmap');
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
+  const [flaggedAccounts, setFlaggedAccounts] = useState(new Set());
 
   // â”€â”€â”€ Persistence: restore results on refresh â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
@@ -65,6 +67,11 @@ export default function App() {
         } else {
            // Fallback if graph data wasn't saved but we have txs
            setGraphData(buildLocalGraphData(parsedTx, parsedResults.suspicious_accounts || []));
+        }
+        
+        const savedFlags = localStorage.getItem('threat_vision_flags');
+        if (savedFlags) {
+          setFlaggedAccounts(new Set(JSON.parse(savedFlags)));
         }
       }
     } catch (e) {
@@ -145,6 +152,29 @@ export default function App() {
   const handleClosePanel = useCallback(() => {
     setIsPanelOpen(false);
     setSelectedAccount(null);
+  }, []);
+
+  const handleToggleFlag = useCallback((accountId) => {
+    setFlaggedAccounts(prev => {
+      const next = new Set(prev);
+      if (next.has(accountId)) next.delete(accountId);
+      else next.add(accountId);
+      
+      // Persist to localStorage
+      try {
+        localStorage.setItem('threat_vision_flags', JSON.stringify([...next]));
+      } catch (e) {
+        console.warn('Failed to save flags:', e);
+      }
+
+      return next;
+    });
+  }, []);
+
+  const handleIsolateNode = useCallback((accountId) => {
+    setActiveTab('graph');
+    setIsolatedNodeId(accountId);
+    setIsPanelOpen(false); // Close panel to see the graph clearly
   }, []);
 
   // â”€â”€â”€ JSON download â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -455,6 +485,7 @@ export default function App() {
                     <GraphVisualization
                       graphData={graphData}
                       suspiciousAccounts={suspiciousAccounts}
+                      flaggedAccounts={flaggedAccounts}
                       fraudRings={fraudRings}
                       onSelectAccount={handleSelectAccount}
                     />
@@ -559,7 +590,21 @@ export default function App() {
                 <FraudRingTable
                   fraudRings={fraudRings}
                   suspiciousAccounts={suspiciousAccounts}
+                  flaggedAccounts={flaggedAccounts}
                   onSelectAccount={handleSelectAccount}
+                  onToggleFlag={handleToggleFlag}
+                />
+              )}
+
+              {/* Network Graph */}
+              {activeTab === 'graph' && (
+                <GraphView 
+                  suspiciousAccounts={analysisResults?.suspiciousAccounts}
+                  fraudRings={analysisResults?.fraudRings}
+                  allTransactions={analysisResults?.filteredTransactions}
+                  flaggedAccounts={flaggedAccounts}
+                  isolatedNodeId={isolatedNodeId}
+                  onResetIsolation={() => setIsolatedNodeId(null)}
                 />
               )}
 
@@ -687,6 +732,9 @@ export default function App() {
             nodeStats={nodeStats}
             transactions={transactions}
             fraudRings={fraudRings}
+            isFlagged={flaggedAccounts.has(selectedAccount.account_id)}
+            onToggleFlag={() => handleToggleFlag(selectedAccount.account_id)}
+            onIsolate={() => handleIsolateNode(selectedAccount.account_id)}
             onClose={handleClosePanel}
           />
         )}

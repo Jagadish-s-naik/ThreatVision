@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ShieldAlert, Activity, DollarSign } from 'lucide-react';
+import { ShieldAlert, Activity, DollarSign, Flag } from 'lucide-react';
 
 const PAGE_SIZE = 10;
 
@@ -17,7 +17,7 @@ function getPatternBadgeColor(type) {
     return 'bg-slate-700 text-slate-300 border-slate-600';
 }
 
-export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelectAccount }) {
+export default function FraudRingTable({ fraudRings, suspiciousAccounts, flaggedAccounts, onSelectAccount, onToggleFlag }) {
     const [sortKey, setSortKey] = useState('risk_score');
     const [sortAsc, setSortAsc] = useState(false);
     const [page, setPage] = useState(0);
@@ -161,7 +161,14 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelec
                                     className={`border-b border-slate-700 hover:bg-slate-800/50 cursor-pointer transition-colors ${getRowStyle(ring.risk_score)} group`}
                                     onClick={() => handleRowClick(ring)}
                                 >
-                                    <td className="px-4 py-4 font-bold text-white border-r border-slate-700/50 group-hover:text-[#00e5ff] transition-colors">{ring.displayName || ring.ring_id}</td>
+                                    <td className="px-4 py-4 font-bold text-white border-r border-slate-700/50 group-hover:text-[#00e5ff] transition-colors relative">
+                                        <div className="flex items-center gap-2">
+                                            {ring.member_accounts.some(id => flaggedAccounts.has(id)) && (
+                                                <Flag size={12} className="text-red-500 fill-red-500 animate-pulse shrink-0" />
+                                            )}
+                                            {ring.displayName || ring.ring_id}
+                                        </div>
+                                    </td>
                                     <td className="px-4 py-4 border-r border-slate-700/50">
                                         <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider border rounded ${getPatternBadgeColor(ring.pattern_type)}`}>
                                             {ring.pattern_type}
@@ -178,7 +185,14 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, onSelec
                                     <td className="px-4 py-4 text-slate-400 text-xs font-mono">
                                         <div className="flex flex-wrap gap-1">
                                             {shown.map(m => (
-                                                <span key={m} className="bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700/50 truncate max-w-[120px]" title={m}>{m}</span>
+                                                <span key={m} className={`px-1.5 py-0.5 rounded border truncate max-w-[120px] flex items-center gap-1 ${
+                                                    flaggedAccounts.has(m) 
+                                                    ? 'bg-red-900/30 border-red-500/50 text-red-200' 
+                                                    : 'bg-slate-800/80 border-slate-700/50 text-slate-400'
+                                                }`} title={m}>
+                                                    {flaggedAccounts.has(m) && <Flag size={8} className="fill-red-500 text-red-500" />}
+                                                    {m}
+                                                </span>
                                             ))}
                                             {extra > 0 && <span className="bg-slate-800 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/30">+{extra}</span>}
                                         </div>
