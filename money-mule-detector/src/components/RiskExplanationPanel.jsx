@@ -1,4 +1,21 @@
 import React, { useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    X, 
+    ShieldAlert, 
+    TrendingUp, 
+    Users, 
+    Clock, 
+    Calendar, 
+    Activity, 
+    Download, 
+    Eye, 
+    Flag,
+    AlertCircle,
+    ArrowUpRight,
+    ArrowDownLeft
+} from 'lucide-react';
+import { HyperText } from './ui/hyper-text.jsx';
 
 const VALID_PATTERNS = new Set([
     'cycle_length_3', 'cycle_length_4', 'cycle_length_5',
@@ -18,8 +35,97 @@ function fmtDate(date) {
 }
 
 function fmtCurrency(n) {
-    return '$' + (n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (n === undefined || n === null) return '$0.00';
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+// PREMIUM COMPONENTS
+const RiskGauge = ({ score }) => {
+    const angle = (score / 100) * 180 - 180;
+    let color = '#EAB308'; // Medium
+    if (score >= 75) color = '#EF4444'; // Critical
+    else if (score >= 50) color = '#F97316'; // High
+    else if (score < 25) color = '#10B981'; // Low
+
+    return (
+        <div className="relative w-32 h-20 flex items-center justify-center overflow-hidden">
+            <svg className="w-full h-full" viewBox="0 0 100 60">
+                <path 
+                    d="M 10 50 A 40 40 0 0 1 90 50" 
+                    fill="none" 
+                    stroke="#1e293b" 
+                    strokeWidth="8" 
+                    strokeLinecap="round" 
+                />
+                <motion.path 
+                    d="M 10 50 A 40 40 0 0 1 90 50" 
+                    fill="none" 
+                    stroke={color} 
+                    strokeWidth="8" 
+                    strokeLinecap="round"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: score / 100 }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                />
+            </svg>
+            <div className="absolute top-8 flex flex-col items-center">
+                <motion.span 
+                    className="text-2xl font-black text-white leading-none"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                >
+                    {score}
+                </motion.span>
+                <span className="text-[8px] text-slate-500 uppercase font-bold tracking-tighter">PHREAT_INDEX</span>
+            </div>
+        </div>
+    );
+};
+
+const ActivitySparkline = ({ timestamps }) => {
+    if (!timestamps || timestamps.length < 2) return null;
+    
+    const sorted = [...timestamps].sort((a,b) => a-b);
+    const min = sorted[0].getTime();
+    const max = sorted[sorted.length-1].getTime();
+    const range = max - min || 1;
+    
+    // Simple binning by hour
+    const bins = 20;
+    const data = new Array(bins).fill(0);
+    sorted.forEach(ts => {
+        const idx = Math.min(bins - 1, Math.floor(((ts.getTime() - min) / range) * bins));
+        data[idx]++;
+    });
+    
+    const maxBin = Math.max(...data) || 1;
+    const points = data.map((val, i) => `${(i / (bins - 1)) * 100},${40 - (val / maxBin) * 35}`).join(' ');
+
+    return (
+        <div className="bg-slate-950/40 border border-slate-700/50 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                    <Activity size={14} className="text-[#00e5ff]" />
+                    <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Velocity_Pulse</span>
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono italic">REAL_TIME_BEHAVIOR</div>
+            </div>
+            <svg className="w-full h-10 overflow-visible" viewBox="0 0 100 40" preserveAspectRatio="none">
+                <motion.polyline
+                    fill="none"
+                    stroke="#00e5ff"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    points={points}
+                    initial={{ pathLength: 0, opacity: 0 }}
+                    animate={{ pathLength: 1, opacity: 1 }}
+                    transition={{ duration: 1.2, ease: "easeInOut" }}
+                />
+            </svg>
+        </div>
+    );
+};
 
 function generateNarrative(account, nodeStats, transactions, fraudRings) {
     if (!account) return [];
@@ -104,28 +210,68 @@ function generateNarrative(account, nodeStats, transactions, fraudRings) {
     return paragraphs;
 }
 
-function ScoreBadge({ score }) {
-    let color = '#EAB308';
-    let label = 'LOW';
-    if (score >= 75) { color = '#EF4444'; label = 'CRITICAL'; }
-    else if (score >= 50) { color = '#F97316'; label = 'HIGH'; }
-    else if (score >= 25) { color = '#EAB308'; label = 'MEDIUM'; }
+const CounterpartyList = ({ accountId, transactions }) => {
+    const counterparties = useMemo(() => {
+        if (!transactions) return [];
+        const map = new Map();
+        transactions.forEach(tx => {
+            if (tx.sender_id === accountId || tx.receiver_id === accountId) {
+                const other = tx.sender_id === accountId ? tx.receiver_id : tx.sender_id;
+                if (!map.has(other)) map.set(other, { id: other, count: 0, volume: 0 });
+                const entry = map.get(other);
+                entry.count++;
+                entry.volume += parseFloat(tx.amount) || 0;
+            }
+        });
+        return Array.from(map.values())
+            .sort((a, b) => b.volume - a.volume)
+            .slice(0, 3);
+    }, [accountId, transactions]);
+
+    if (counterparties.length === 0) return null;
+
     return (
-        <div className="flex items-center gap-4">
-            <div
-                className="w-20 h-20 rounded-full flex flex-col items-center justify-center border-4 shrink-0"
-                style={{ borderColor: color, backgroundColor: color + '22' }}
-            >
-                <span className="text-2xl font-bold" style={{ color, fontFamily: 'IBM Plex Mono, monospace' }}>{score}</span>
-                <span className="text-xs text-slate-400">/100</span>
+        <div className="bg-slate-950/40 border border-slate-700/50 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+                <Users size={14} className="text-[#00e5ff]" />
+                <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Top_Counterparties</span>
             </div>
-            <div>
-                <div className="text-sm text-slate-400 mb-1">Risk Level</div>
-                <div className="text-xl font-black" style={{ color, fontFamily: 'Syne, sans-serif' }}>{label}</div>
+            <div className="space-y-2">
+                {counterparties.map((cp, idx) => (
+                    <div key={cp.id} className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/5 group hover:border-[#00e5ff]/30 transition-all">
+                        <div className="flex items-center gap-3">
+                            <div className="w-6 h-6 rounded bg-[#00e5ff]/10 flex items-center justify-center text-[10px] font-bold text-[#00e5ff]">
+                                {idx + 1}
+                            </div>
+                            <span className="text-xs font-mono text-slate-300 group-hover:text-white transition-colors">{cp.id}</span>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-[10px] font-bold text-white">{fmtCurrency(cp.volume)}</div>
+                            <div className="text-[9px] text-slate-500">{cp.count} txns</div>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
-}
+};
+
+const ActionToolbar = () => (
+    <div className="grid grid-cols-3 gap-2 py-4 border-y border-slate-800">
+        <button className="flex flex-col items-center gap-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 transition-all group">
+            <Flag size={16} className="text-red-400 group-hover:scale-110 transition-transform" />
+            <span className="text-[9px] font-bold text-red-300 uppercase tracking-tighter">Flag_Suspect</span>
+        </button>
+        <button className="flex flex-col items-center gap-2 p-2 rounded-lg bg-[#00e5ff]/10 border border-[#00e5ff]/20 hover:bg-[#00e5ff]/20 hover:border-[#00e5ff]/40 transition-all group">
+            <Download size={16} className="text-[#00e5ff] group-hover:translate-y-0.5 transition-transform" />
+            <span className="text-[9px] font-bold text-[#00e5ff] uppercase tracking-tighter">Export_Dossier</span>
+        </button>
+        <button className="flex flex-col items-center gap-2 p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all group">
+            <Eye size={16} className="text-indigo-400 group-hover:scale-110 transition-transform" />
+            <span className="text-[9px] font-bold text-indigo-300 uppercase tracking-tighter">Isolate_Node</span>
+        </button>
+    </div>
+);
 
 export default function RiskExplanationPanel({ account, nodeStats, transactions, fraudRings, onClose }) {
     const stats = useMemo(() => (account ? nodeStats[account.account_id] : null), [account, nodeStats]);
@@ -145,103 +291,141 @@ export default function RiskExplanationPanel({ account, nodeStats, transactions,
         : 0;
 
     return (
-        <>
-            {/* Dim overlay */}
-            <div
-                className="fixed inset-0 bg-black/60 z-40 transition-opacity"
-                onClick={onClose}
-            />
-            {/* Panel */}
-            <div
-                className="fixed top-0 right-0 h-full z-50 bg-slate-900 border-l border-slate-700 overflow-y-auto shadow-2xl"
-                style={{ width: 'min(420px, 100vw)', animation: 'slideInRight 0.3s ease-out' }}
-            >
-                {/* Header */}
-                <div className="sticky top-0 bg-slate-900 border-b border-slate-700 px-5 py-4 flex items-center justify-between z-10">
-                    <div>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Primary Suspect Analysis</div>
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2" style={{ fontFamily: 'Syne, sans-serif' }}>
-                            {account.account_id}
-                        </h2>
-                    </div>
-                    <button
+        <AnimatePresence>
+            {account && (
+                <>
+                    {/* Dim overlay */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
                         onClick={onClose}
-                        className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 text-lg transition-colors"
+                    />
+
+                    {/* Panel */}
+                    <motion.div
+                        initial={{ x: '100%', opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: '100%', opacity: 0 }}
+                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        className="fixed top-0 right-0 h-full z-50 bg-[#0a0e1a]/95 backdrop-blur-xl border-l border-white/10 overflow-y-auto shadow-[0_0_50px_rgba(0,0,0,0.8)]"
+                        style={{ width: 'min(420px, 100vw)' }}
                     >
-                        ×
-                    </button>
-                </div>
-
-                <div className="px-5 py-6 space-y-6">
-                    {/* Score badge & Ring Context */}
-                    <div className="flex flex-col gap-4">
-                        <ScoreBadge score={account.suspicion_score} />
-                        
-                        {(() => {
-                            const ring = fraudRings?.find((r) => r.ring_id === account.ring_id);
-                            if (!ring) return null;
-                            const prefix = ring.pattern_type.substring(0, 3).toUpperCase();
-                            const topAccount = account.account_id;
-                            const shortAcc = topAccount.length > 8 ? topAccount.substring(0,8) + '...' : topAccount;
-                            
-                            return (
-                                <div className="bg-slate-800/80 border border-slate-700 rounded-lg p-3 flex flex-col gap-1 mt-2">
-                                    <div className="text-[10px] uppercase tracking-widest text-[#00e5ff] font-bold">Ring Context</div>
-                                    <div className="text-sm text-slate-300">
-                                        Primary suspect driving <span className="text-white font-bold">{prefix} : {shortAcc}</span>.
-                                    </div>
-                                    <div className="text-xs text-slate-400 mt-1">
-                                        This is a <span className="text-amber-400">{ring.pattern_type}</span> network containing {ring.member_accounts?.length || 0} linked nodes with a collective risk score of {ring.risk_score.toFixed(1)}.
-                                    </div>
+                        {/* Header */}
+                        <div className="sticky top-0 bg-[#0a0e1a]/80 backdrop-blur-md border-b border-white/5 px-6 py-5 flex items-center justify-between z-10">
+                            <div>
+                                <div className="text-[10px] text-[#00e5ff] font-black uppercase tracking-[0.2em] mb-1 opacity-70">
+                                    Forensic_Dossier_ID
                                 </div>
-                            );
-                        })()}
-                    </div>
-
-                    {/* Detected patterns */}
-                    <div className="flex flex-wrap gap-2">
-                        {(account.detected_patterns || []).map((p) => (
-                            <span key={p} className="px-2 py-0.5 bg-amber-900/40 border border-amber-700 text-amber-300 text-xs rounded font-mono">
-                                {p}
-                            </span>
-                        ))}
-                    </div>
-
-                    {/* Narrative */}
-                    <div className="space-y-3">
-                        {paragraphs.map((para, i) => (
-                            <p
-                                key={i}
-                                className={`text-sm leading-relaxed ${para.startsWith('⚠') ? 'text-fuchsia-300 bg-fuchsia-950/30 border border-fuchsia-800 rounded-lg px-3 py-2' : para.startsWith('Suspicion') ? 'text-slate-400 text-xs font-mono bg-slate-800 rounded-lg px-3 py-2' : 'text-slate-300'}`}
+                                <HyperText className="text-xl font-black text-white p-0 h-auto leading-none" duration={1000}>
+                                    {account.account_id}
+                                </HyperText>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all border border-white/5 hover:scale-105 active:scale-95"
                             >
-                                {para}
-                            </p>
-                        ))}
-                    </div>
-
-                    {/* Stats grid */}
-                    <div className="border-t border-slate-700 pt-4">
-                        <h3 className="text-xs text-slate-500 uppercase tracking-widest mb-3">Account Statistics</h3>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                            {[
-                                { label: 'Total Transactions', value: stats?.txCount ?? '—' },
-                                { label: 'Total Sent', value: fmtCurrency(stats?.totalSent) },
-                                { label: 'Total Received', value: fmtCurrency(stats?.totalReceived) },
-                                { label: 'Unique Counterparties', value: ((typeof stats?.uniqueSenders === 'number' ? stats.uniqueSenders : stats?.uniqueSenders?.size || 0) + (typeof stats?.uniqueReceivers === 'number' ? stats.uniqueReceivers : stats?.uniqueReceivers?.size || 0)) },
-                                { label: 'First Seen', value: firstSeen },
-                                { label: 'Last Seen', value: lastSeen },
-                                { label: 'Active Period', value: `${activeDays} days` },
-                                { label: 'Assigned Ring', value: account.ring_id || '—' },
-                            ].map(({ label, value }) => (
-                                <div key={label} className="bg-slate-950/50 border border-slate-800 rounded-lg px-3 py-2">
-                                    <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-0.5">{label}</div>
-                                    <div className="text-[#00e5ff] font-mono text-sm truncate">{value}</div>
-                                </div>
-                            ))}
+                                <X size={20} />
+                            </button>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </>
+
+                        <div className="px-6 py-8 space-y-8 pb-12">
+                            {/* Performance Tier: Risk Gauge */}
+                            <div className="flex items-center justify-between p-4 bg-gradient-to-br from-white/5 to-transparent rounded-2xl border border-white/5">
+                                <RiskGauge score={account.suspicion_score} />
+                                <div className="text-right">
+                                    <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Risk_Level</div>
+                                    <div className={`text-2xl font-black italic tracking-tighter ${
+                                        account.suspicion_score >= 75 ? 'text-red-500' : 
+                                        account.suspicion_score >= 50 ? 'text-orange-500' : 'text-amber-400'
+                                    }`}>
+                                        {account.suspicion_score >= 75 ? 'CRITICAL' : 
+                                         account.suspicion_score >= 50 ? 'ELEVATED' : 'MODERATE'}
+                                    </div>
+                                    <div className="text-[9px] text-slate-400 mt-1 font-mono uppercase">HEURISTIC_SCORE_MATCH</div>
+                                </div>
+                            </div>
+
+                            {/* Behavioral Pulse Tier */}
+                            <ActivitySparkline timestamps={sortedTs} />
+
+                            {/* Relationship Intelligence Tier */}
+                            <CounterpartyList accountId={account.account_id} transactions={transactions} />
+
+                            {/* Patterns Tier */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <ShieldAlert size={14} className="text-amber-400" />
+                                    <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Detected_Anomalies</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(account.detected_patterns || []).map((p) => (
+                                        <motion.span 
+                                            key={p} 
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] rounded-full font-black uppercase tracking-tighter"
+                                        >
+                                            {p.replace(/_/g, ' ')}
+                                        </motion.span>
+                                    ))}
+                                </div>
+                                <div className="space-y-3">
+                                    {paragraphs.map((para, i) => (
+                                        <motion.div
+                                            key={i}
+                                            initial={{ x: 20, opacity: 0 }}
+                                            animate={{ x: 0, opacity: 1 }}
+                                            transition={{ delay: 0.1 * i }}
+                                            className={`text-xs leading-relaxed p-4 rounded-xl border ${
+                                                para.startsWith('⚠') 
+                                                    ? 'bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-300' 
+                                                    : para.startsWith('Suspicion') 
+                                                        ? 'bg-slate-950/20 border-white/5 text-slate-400 font-mono italic' 
+                                                        : 'bg-white/5 border-white/5 text-slate-300'
+                                            }`}
+                                        >
+                                            {para}
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Forensic Dashboard Tier */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <Activity size={14} className="text-[#00e5ff]" />
+                                    <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Account_Vital_Stats</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    {[
+                                        { label: 'Transactions', value: stats?.txCount ?? '0', icon: Activity },
+                                        { label: 'Outflow', value: fmtCurrency(stats?.totalSent), icon: ArrowUpRight },
+                                        { label: 'Inflow', value: fmtCurrency(stats?.totalReceived), icon: ArrowDownLeft },
+                                        { label: 'First Contact', value: firstSeen, icon: Clock },
+                                        { label: 'Active Period', value: `${activeDays} Days`, icon: Calendar },
+                                        { label: 'Network Ring', value: account.ring_id || 'Isolated', icon: ShieldAlert },
+                                    ].map(({ label, value, icon: Icon }) => (
+                                        <div key={label} className="bg-slate-950/40 border border-slate-800 p-3 rounded-xl hover:border-white/10 transition-colors">
+                                            <div className="flex items-center gap-2 mb-1.5 opacity-50">
+                                                <Icon size={12} className="text-[#00e5ff]" />
+                                                <div className="text-[9px] uppercase font-black tracking-widest text-[#00e5ff]">{label}</div>
+                                            </div>
+                                            <div className="text-white font-mono text-xs font-bold truncate">{value}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Action Control */}
+                            <ActionToolbar />
+                        </div>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
     );
 }
+
+// REMOVE ScoreBadge as it's replaced by RiskGauge in the main layout
