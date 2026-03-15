@@ -36,12 +36,21 @@ function formatHourLabel(h) {
     return '';
 }
 
+function formatCurrency(val) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(val);
+}
+
 export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) {
     const [showNormal, setShowNormal] = useState(false);
     const [tooltip, setTooltip] = useState(null);
 
-    const { suspGrid, normGrid, dates, peakCell, maxCount } = useMemo(() => {
-        if (!transactions || transactions.length === 0) return { suspGrid: {}, normGrid: {}, dates: [], peakCell: null, peakDay: null, maxCount: 0 };
+    const { suspGrid, normGrid, dates, suspPeak, normPeak, maxCount } = useMemo(() => {
+        if (!transactions || transactions.length === 0) return { suspGrid: {}, normGrid: {}, dates: [], peakCell: null, maxCount: 0 };
 
         const suspGrid = {};
         const normGrid = {};
@@ -67,33 +76,51 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
 
             const grid = isSusp ? suspGrid : normGrid;
             if (!grid[dateKey]) grid[dateKey] = {};
-            grid[dateKey][hour] = (grid[dateKey][hour] || 0) + 1;
+            if (!grid[dateKey][hour]) {
+                grid[dateKey][hour] = { count: 0, totalVolume: 0, topTransactions: [] };
+            }
+            
+            const cell = grid[dateKey][hour];
+            cell.count += 1;
+            const amt = parseFloat(tx.amount) || 0;
+            cell.totalVolume += amt;
+            cell.topTransactions.push({ id: tx.transaction_id, amount: amt });
+            cell.topTransactions.sort((a, b) => b.amount - a.amount);
+            if (cell.topTransactions.length > 5) cell.topTransactions.length = 5;
 
-            if (isSusp && grid[dateKey][hour] > maxVal) maxVal = grid[dateKey][hour];
+            if (isSusp && cell.count > maxVal) maxVal = cell.count;
+            if (!isSusp && cell.count > maxVal) maxVal = cell.count; // Use overall max for scale
         }
 
         const dates = [...dateSet].sort();
 
-        // Peak cell: highest count in suspGrid
-        let peakCell = null, peakCellCount = 0;
-
-        for (const [date, hours] of Object.entries(suspGrid)) {
-            let dayTotal = 0;
-            for (const [hour, count] of Object.entries(hours)) {
-                dayTotal += count;
-                if (count > peakCellCount) {
-                    peakCellCount = count;
-                    peakCell = { date, hour: parseInt(hour), count };
+        // Calculate peaks for both grids
+        const findPeak = (grid) => {
+            let peak = null, max = 0;
+            for (const [date, hours] of Object.entries(grid)) {
+                for (const [hour, data] of Object.entries(hours)) {
+                    if (data.count > max) {
+                        max = data.count;
+                        peak = { date: formatDateLabel(date), hour: parseInt(hour), count: data.count };
+                    }
                 }
             }
-        }
+            return peak;
+        };
 
-        return { suspGrid, normGrid, dates, peakCell, maxCount: maxVal };
+        return { 
+            suspGrid, 
+            normGrid, 
+            dates, 
+            suspPeak: findPeak(suspGrid),
+            normPeak: findPeak(normGrid),
+            maxCount: maxVal 
+        };
     }, [transactions, suspiciousAccountIds]);
 
     const hours = Array.from({ length: 24 }, (_, i) => i);
 
-    // Neo-Brutal Styling & Gradient Logic -> Now Glow Styling
+    // Brand Sync: Teal/Indigo/Cyan Glow Logic
     const getIntensityStyle = (count, isNormal) => {
         if (count === 0) {
             return {
@@ -107,26 +134,27 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
 
         if (isNormal) {
             return {
-                background: `rgba(37, 99, 235, ${intensity})`,
+                background: `rgba(37, 99, 235, ${intensity})`, // Keep blue for normal
                 borderRadius: '3px'
             };
         } else {
+            // Highly branded Teal/Cyan glow
             if (intensity > 0.8 || count >= maxCount * 0.8) {
                 return {
-                    background: '#ff3d00',
-                    boxShadow: '0 0 6px rgba(255, 61, 0, 1), 0 0 14px rgba(255, 61, 0, 0.7), 0 0 28px rgba(255, 61, 0, 0.35)',
+                    background: '#00e5ff',
+                    boxShadow: '0 0 8px rgba(0, 229, 255, 1), 0 0 16px rgba(0, 229, 255, 0.7), 0 0 32px rgba(0, 229, 255, 0.35)',
                     borderRadius: '3px'
                 };
             } else if (intensity > 0.4 || count > 1) {
                 return {
-                    background: '#ff6b1a',
-                    boxShadow: '0 0 6px rgba(255, 107, 26, 0.9), 0 0 12px rgba(255, 107, 26, 0.5)',
+                    background: '#14b8a6',
+                    boxShadow: '0 0 6px rgba(20, 184, 166, 0.9), 0 0 12px rgba(20, 184, 166, 0.5)',
                     borderRadius: '3px'
                 };
             } else {
                 return {
-                    background: 'rgba(255, 107, 26, 0.5)',
-                    boxShadow: '0 0 4px rgba(255, 107, 26, 0.4)',
+                    background: 'rgba(20, 184, 166, 0.5)',
+                    boxShadow: '0 0 4px rgba(20, 184, 166, 0.4)',
                     borderRadius: '3px'
                 };
             }
@@ -244,9 +272,9 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                                         {/* Cells */}
                                         <div className="flex gap-[1px]">
                                             {hours.map((h) => {
-                                                const suspCount = (suspGrid[date] && suspGrid[date][h]) || 0;
-                                                const normCount = (normGrid[date] && normGrid[date][h]) || 0;
-                                                const displayCount = showNormal ? normCount : suspCount;
+                                                const suspData = (suspGrid[date] && suspGrid[date][h]) || { count: 0, totalVolume: 0, topTransactions: [] };
+                                                const normData = (normGrid[date] && normGrid[date][h]) || { count: 0, totalVolume: 0, topTransactions: [] };
+                                                const displayCount = showNormal ? normData.count : suspData.count;
                                                 const cellStyle = getIntensityStyle(displayCount, showNormal);
 
                                                 return (
@@ -258,16 +286,16 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                                                             handleCellMouseMove(e, {
                                                                 date: formatDateLabel(date),
                                                                 hour: h,
-                                                                count: suspCount,
-                                                                normCount,
+                                                                suspData,
+                                                                normData,
                                                             });
                                                         }}
                                                         onMouseMove={(e) => {
                                                             handleCellMouseMove(e, {
                                                                 date: formatDateLabel(date),
                                                                 hour: h,
-                                                                count: suspCount,
-                                                                normCount,
+                                                                suspData,
+                                                                normData,
                                                             });
                                                         }}
                                                         onMouseLeave={() => setTooltip(null)}
@@ -281,10 +309,10 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                         </div>
                     </div>
 
-                    {/* Peak summary */}
+                    {/* Peak summary - Brand Synced */}
                     <div style={{
-                        background: 'rgba(255, 107, 26, 0.08)',
-                        border: '1px solid rgba(255, 107, 26, 0.25)',
+                        background: 'rgba(20, 184, 166, 0.08)',
+                        border: '1px solid rgba(20, 184, 166, 0.25)',
                         borderRadius: '10px',
                         padding: '12px 20px',
                         display: 'flex',
@@ -293,12 +321,21 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                         width: '100%',
                         marginTop: '24px'
                     }}>
-                        {peakCell && (
+                        {(showNormal ? normPeak : suspPeak) && (
                             <>
-                                <div style={{ color: '#ff6b1a', fontSize: '16px', filter: 'drop-shadow(0 0 6px rgba(255,107,26,0.8))' }}>🔥</div>
-                                <div style={{ color: 'rgba(255, 107, 26, 0.7)', fontSize: '11px', fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.1em' }}>PEAK_ACTIVITY:</div>
-                                <div style={{ color: '#ffffff', fontSize: '13px', fontWeight: 600, fontFamily: 'monospace' }}>{peakCell.count} txns at {formatDateLabel(peakCell.date)} @ {peakCell.hour}:00</div>
+                                <div style={{ color: '#00e5ff', fontSize: '16px', filter: 'drop-shadow(0 0 6px rgba(0,229,255,0.8))' }}>⚡</div>
+                                <div style={{ color: 'rgba(0, 229, 255, 0.7)', fontSize: '11px', fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.1em' }}>
+                                    {showNormal ? 'PEAK_TRAFFIC:' : 'PEAK_SUSPICION:'}
+                                </div>
+                                <div style={{ color: '#ffffff', fontSize: '13px', fontWeight: 600, fontFamily: 'monospace' }}>
+                                    {(showNormal ? normPeak : suspPeak).count} {showNormal ? 'total' : 'flagged'} events @ {(showNormal ? normPeak : suspPeak).date} {(showNormal ? normPeak : suspPeak).hour}:00
+                                </div>
                             </>
+                        )}
+                        {!(showNormal ? normPeak : suspPeak) && (
+                            <div style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '11px', fontFamily: 'monospace' }}>
+                                NO_ACTIVITY_TRENDS_DETECTED
+                            </div>
                         )}
                     </div>
                 </>
@@ -310,15 +347,14 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                     style={{ 
                         left: tooltip.x, 
                         top: tooltip.y, 
-                        background: 'rgba(10, 14, 26, 0.75)',
+                        background: 'rgba(10, 14, 26, 0.85)',
                         backdropFilter: 'blur(20px)',
                         WebkitBackdropFilter: 'blur(20px)',
                         border: '1px solid rgba(255, 255, 255, 0.12)',
-                        borderRadius: '10px',
-                        padding: '10px 14px',
-                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
-                        minWidth: '160px',
-                        maxWidth: '200px',
+                        borderRadius: '12px',
+                        padding: '12px 16px',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+                        minWidth: '220px',
                         width: 'max-content',
                         boxSizing: 'border-box',
                         zIndex: 999999,
@@ -326,18 +362,53 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                         position: 'fixed'
                     }}
                 >
-                    <div style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '11px', fontFamily: 'monospace', letterSpacing: '0.05em', marginBottom: '6px', borderBottom: '1px solid rgba(255, 255, 255, 0.07)', paddingBottom: '6px' }}>
-                        {tooltip.date} <span style={{ opacity: 0.7 }}>@ {tooltip.hour}:00</span>
+                    <div style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '11px', fontFamily: 'monospace', letterSpacing: '0.05em', marginBottom: '10px', borderBottom: '1px solid rgba(255, 255, 255, 0.07)', paddingBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>{tooltip.date}</span>
+                        <span style={{ opacity: 0.7 }}>{tooltip.hour}:00 HR</span>
                     </div>
-                    {showNormal && (
-                        <div style={{ marginBottom: '6px' }}>
-                            <div style={{ color: '#00e5ff', fontSize: '13px', fontWeight: 700, letterSpacing: '0.03em', textShadow: '0 0 8px rgba(0, 229, 255, 0.6)' }}>Normal</div>
-                            <div style={{ color: '#ffffff', fontSize: '20px', fontWeight: 800, lineHeight: 1, marginTop: '4px' }}>{tooltip.normCount}</div>
+
+                    <div className="flex flex-col gap-4">
+                        {/* Summary Tier */}
+                        <div className="flex gap-4 border-b border-white/5 pb-3">
+                            {showNormal ? (
+                                <div>
+                                    <div style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase' }}>Volume (Total)</div>
+                                    <div style={{ color: '#ffffff', fontSize: '18px', fontWeight: 800 }}>{tooltip.normData.count}</div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div style={{ color: '#00e5ff', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase' }}>Suspicious</div>
+                                    <div style={{ color: '#ffffff', fontSize: '18px', fontWeight: 800 }}>{tooltip.suspData.count}</div>
+                                </div>
+                            )}
                         </div>
-                    )}
-                    <div>
-                        <div style={{ color: '#ff6b1a', fontSize: '13px', fontWeight: 700, letterSpacing: '0.03em', textShadow: '0 0 8px rgba(255, 107, 26, 0.6)' }}>Suspicious</div>
-                        <div style={{ color: '#ffffff', fontSize: '20px', fontWeight: 800, lineHeight: 1, marginTop: '4px' }}>{tooltip.count}</div>
+
+                        {/* Financial Volume Tier */}
+                        <div>
+                            <div style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '2px' }}>
+                                {showNormal ? 'Financial Volume (All)' : 'Financial Volume (Suspicious)'}
+                            </div>
+                            <div style={{ color: '#14b8a6', fontSize: '16px', fontWeight: 700 }}>
+                                {formatCurrency(showNormal ? tooltip.normData.totalVolume : tooltip.suspData.totalVolume)}
+                            </div>
+                        </div>
+
+                        {/* High Value Alerts Tier */}
+                        {((showNormal ? tooltip.normData.topTransactions : tooltip.suspData.topTransactions).length > 0) && (
+                            <div>
+                                <div style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>
+                                    {showNormal ? 'Largest Transactions' : 'Priority Alerts'}
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    {(showNormal ? tooltip.normData.topTransactions : tooltip.suspData.topTransactions).map((tx, idx) => (
+                                        <div key={idx} className="flex items-center justify-between gap-4 bg-white/5 px-2 py-1 rounded border border-white/5">
+                                            <span style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '10px', fontFamily: 'monospace' }}>#{String(tx.id).slice(0, 8)}</span>
+                                            <span style={{ color: '#ffffff', fontSize: '10px', fontWeight: 700 }}>{formatCurrency(tx.amount)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>,
                 document.body
