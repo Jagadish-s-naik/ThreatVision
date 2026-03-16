@@ -598,10 +598,11 @@ export default function App() {
 
               {/* Network Graph */}
               {activeTab === 'graph' && (
-                <GraphView 
-                  suspiciousAccounts={analysisResults?.suspiciousAccounts}
-                  fraudRings={analysisResults?.fraudRings}
-                  allTransactions={analysisResults?.filteredTransactions}
+                <GraphVisualization 
+                  graphData={graphData}
+                  suspiciousAccounts={suspiciousAccounts}
+                  fraudRings={fraudRings}
+                  onSelectAccount={handleSelectAccount}
                   flaggedAccounts={flaggedAccounts}
                   isolatedNodeId={isolatedNodeId}
                   onResetIsolation={() => setIsolatedNodeId(null)}

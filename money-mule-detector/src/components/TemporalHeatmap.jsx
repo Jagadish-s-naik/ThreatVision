@@ -4,24 +4,6 @@ import ReactDOM from 'react-dom';
 const CELL_W = 20;
 const CELL_H = 18;
 
-const RED_SCALE = [
-    { min: 0, max: 0, bg: '#1E293B' },
-    { min: 1, max: 2, bg: '#FEF3C7' },
-    { min: 3, max: 5, bg: '#FCD34D' },
-    { min: 6, max: 10, bg: '#F97316' },
-    { min: 11, max: 20, bg: '#EF4444' },
-    { min: 21, max: Infinity, bg: '#991B1B' },
-];
-
-const BLUE_SCALE = [
-    { min: 0, max: 0, bg: '#1E293B' },
-    { min: 1, max: 2, bg: '#DBEAFE' },
-    { min: 3, max: 5, bg: '#93C5FD' },
-    { min: 6, max: 10, bg: '#3B82F6' },
-    { min: 11, max: 20, bg: '#1D4ED8' },
-    { min: 21, max: Infinity, bg: '#1E3A8A' },
-];
-
 function formatDateLabel(dateStr) {
     const [year, month, day] = dateStr.split('-').map(Number);
     const d = new Date(year, month - 1, day);

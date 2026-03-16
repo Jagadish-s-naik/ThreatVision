@@ -44,12 +44,15 @@ export default function GraphVisualization({
     suspiciousAccounts,
     fraudRings,
     onSelectAccount,
+    flaggedAccounts = new Set(), // Added support for flagged accounts
+    isolatedNodeId = null,       // Added support for node isolation
+    onResetIsolation = () => {}, // Callback to reset isolation
 }) {
     const containerRef = useRef(null);
     const cyRef = useRef(null);
     const rafRef = useRef(null);
     const [tooltip, setTooltip] = useState(null);
-    const [isFocusMode, setIsFocusMode] = useState(false);
+    const [isFocusMode, setIsFocusMode] = useState(!!isolatedNodeId);
 
     const buildAndMount = useCallback(() => {
         const accountMap = {};
@@ -70,29 +73,35 @@ export default function GraphVisualization({
         const suspiciousIds = new Set((suspiciousAccounts || []).map((a) => a.account_id));
 
         // ─── Build Cytoscape elements ─────────────────────────────────
-        const cyNodes = nodes.map((n) => ({
-            data: {
-                id: n.id,
-                label: truncate(n.id),
-                color: getNodeColor(n, accountMap),
-                size: getNodeRadius(n),
-                borderWidth: suspiciousIds.has(n.id) ? 3 : (n.isHub ? 4 : 2),
-                // Analytics payload for tooltip
-                degree: n.degree,
-                inDegree: n.inDegree,
-                outDegree: n.outDegree,
-                centralityScore: n.centralityScore,
-                totalSent: n.totalSent,
-                totalReceived: n.totalReceived,
-                isHub: n.isHub,
-                suspicionScore: accountMap[n.id]?.suspicion_score ?? 0,
-                patterns: (accountMap[n.id]?.detected_patterns || []).join(', '),
-            },
-            classes: [
-                suspiciousIds.has(n.id) ? 'suspicious' : 'normal',
-                n.isHub ? 'hub' : '',
-            ].filter(Boolean).join(' '),
-        }));
+        const cyNodes = nodes.map((n) => {
+            const isFlagged = flaggedAccounts.has(n.id);
+            return {
+                data: {
+                    id: n.id,
+                    label: truncate(n.id),
+                    color: getNodeColor(n, accountMap),
+                    size: getNodeRadius(n),
+                    borderWidth: isFlagged ? 5 : (suspiciousIds.has(n.id) ? 3 : (n.isHub ? 4 : 2)),
+                    borderColor: isFlagged ? '#EF4444' : '#FFFFFF',
+                    // Analytics payload for tooltip
+                    degree: n.degree,
+                    inDegree: n.inDegree,
+                    outDegree: n.outDegree,
+                    centralityScore: n.centralityScore,
+                    totalSent: n.totalSent,
+                    totalReceived: n.totalReceived,
+                    isHub: n.isHub,
+                    suspicionScore: accountMap[n.id]?.suspicion_score ?? 0,
+                    patterns: (accountMap[n.id]?.detected_patterns || []).join(', '),
+                    isFlagged,
+                },
+                classes: [
+                    suspiciousIds.has(n.id) ? 'suspicious' : 'normal',
+                    n.isHub ? 'hub' : '',
+                    isFlagged ? 'flagged' : '',
+                ].filter(Boolean).join(' '),
+            };
+        });
 
         const cyEdges = (edges || []).map((e, i) => ({
             data: {
@@ -131,9 +140,9 @@ export default function GraphVisualization({
                         'text-margin-y': -6,
                         'text-outline-width': 2,
                         'text-outline-color': '#020617',
-                        'border-width': 2,
-                        'border-color': '#FFFFFF',
-                        'border-opacity': 0.2, // Acts like an inner glow/highlight
+                        'border-width': 'data(borderWidth)',
+                        'border-color': 'data(borderColor)',
+                        'border-opacity': (ele) => ele.data('isFlagged') ? 1 : 0.2, // Acts like an inner glow/highlight
                         'shadow-blur': 15,
                         'shadow-color': 'data(color)',
                         'shadow-opacity': 0.8,
@@ -144,16 +153,23 @@ export default function GraphVisualization({
                 {
                     selector: 'node.suspicious',
                     style: {
-                        'border-color': '#FFFFFF', // keep highlight ring
-                        'border-opacity': 0.5,
                         'shadow-color': '#EF4444',
                         'shadow-blur': 30,
                     },
                 },
                 {
+                    selector: 'node.flagged',
+                    style: {
+                        'shadow-color': '#EF4444',
+                        'shadow-blur': 45,
+                        'underlay-color': '#EF4444',
+                        'underlay-padding': 4,
+                        'underlay-opacity': 0.3,
+                    },
+                },
+                {
                     selector: 'node.hub',
                     style: {
-                        'border-color': '#FFFFFF', // keep highlight ring
                         'border-width': 3,
                         'border-opacity': 0.8,
                         // Use a solid underlay for hubs to create a rich halo effect
@@ -317,7 +333,22 @@ export default function GraphVisualization({
             }
         });
 
-    }, [graphData, suspiciousAccounts, fraudRings, onSelectAccount]);
+        // Handle isolation if provided
+        if (isolatedNodeId) {
+            const node = cy.getElementById(isolatedNodeId);
+            if (node.length > 0) {
+                cy.animate({
+                    center: { eles: node },
+                    zoom: 2,
+                    duration: 1000,
+                    easing: 'ease-in-out-cubic'
+                });
+                node.select();
+                setIsFocusMode(true);
+            }
+        }
+
+    }, [graphData, suspiciousAccounts, fraudRings, onSelectAccount, flaggedAccounts, isolatedNodeId]);
 
     useEffect(() => {
         buildAndMount();
@@ -327,14 +358,18 @@ export default function GraphVisualization({
         };
     }, [buildAndMount]);
 
-    const handleZoomIn = () => cyRef.current?.zoom(cyRef.current.zoom() + 0.25);
-    const handleZoomOut = () => cyRef.current?.zoom(cyRef.current.zoom() - 0.25);
+    const handleZoomIn = () => cyRef.current?.zoom(cyRef.current.zoom() * 1.25);
+    const handleZoomOut = () => cyRef.current?.zoom(cyRef.current.zoom() * 0.8);
     const handleFit = () => cyRef.current?.fit(undefined, 50);
     const handleReset = () => {
         if (cyRef.current) {
             cyRef.current.elements().removeClass('faded highlighted hidden');
-            cyRef.current.fit(undefined, 50);
+            cyRef.current.animate({
+                fit: { padding: 50 },
+                duration: 500
+            });
             setIsFocusMode(false);
+            onResetIsolation();
         }
     };
 
@@ -439,19 +474,19 @@ export default function GraphVisualization({
             {/* Hover tooltip */}
             {tooltip && (
                 <div
-                    className="absolute z-20 pointer-events-none backdrop-blur-xl bg-slate-900/80 border border-slate-700/50 rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-200 ease-out"
+                    className="absolute z-50 pointer-events-none backdrop-blur-2xl bg-slate-900/90 border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-200 ease-out"
                     style={{
                         left: tooltip.x + 20,
                         top: tooltip.y - 20,
-                        width: 280,
+                        width: 260,
                     }}
                 >
-                    <div className="bg-gradient-to-r from-slate-800/80 to-slate-900/80 px-4 py-3 border-b border-slate-700/50 flex justify-between items-center relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50"></div>
-                        <span className="font-bold text-slate-100 font-mono text-[13px] tracking-wide truncate">{truncate(tooltip.id, 18)}</span>
-                        <div className="flex gap-2">
-                            {tooltip.suspicionScore >= 50 && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-red-500/20 text-red-400 border border-red-500/30">RISK</span>}
-                            {tooltip.isHub && <span className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">HUB</span>}
+                    <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-3 border-b border-white/5 flex justify-between items-center relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60"></div>
+                        <span className="font-black text-white font-mono text-[12px] tracking-tight truncate">{truncate(tooltip.id, 16)}</span>
+                        <div className="flex gap-1.5">
+                            {tooltip.isFlagged && <span className="px-1.5 py-0.5 rounded-[4px] text-[8px] font-black tracking-widest bg-red-500 text-white">FLAGGED</span>}
+                            {tooltip.isHub && <span className="px-1.5 py-0.5 rounded-[4px] text-[8px] font-black tracking-widest bg-cyan-500 text-white">HUB</span>}
                         </div>
                     </div>
                     <div className="p-3 space-y-1.5 text-xs text-slate-300">
