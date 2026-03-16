@@ -54,6 +54,7 @@ export default function GraphVisualization({
     const rafRef = useRef(null);
     const [tooltip, setTooltip] = useState(null);
     const [isFocusMode, setIsFocusMode] = useState(!!isolatedNodeId);
+    const [selectedRingId, setSelectedRingId] = useState('all');
 
     const buildAndMount = useCallback(() => {
         const accountMap = {};
@@ -61,20 +62,35 @@ export default function GraphVisualization({
 
         if (!containerRef.current || !graphData?.nodes?.length) return;
 
+        // Filter nodes/edges based on selected ring
+        let activeNodes = graphData.nodes;
+        let activeEdges = graphData.edges || [];
+
+        if (selectedRingId !== 'all') {
+            const ring = (fraudRings || []).find(r => r.ring_id === selectedRingId);
+            if (ring) {
+                const ringMembers = new Set(ring.member_accounts);
+                activeNodes = graphData.nodes.filter(n => ringMembers.has(n.id));
+                activeEdges = (graphData.edges || []).filter(e => 
+                    ringMembers.has(e.source) && ringMembers.has(e.target)
+                );
+            }
+        }
+
         // Cancel any running animation
         if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
         if (cyRef.current) { cyRef.current.destroy(); cyRef.current = null; }
 
         const { nodes, edges } = graphData;
-        const maxAmount = Math.max(...(edges || []).map((e) => e.amount || 0), 1);
+        const maxAmount = Math.max(...activeEdges.map((e) => e.amount || 0), 1);
 
         const nodeMap = {};
-        for (const n of nodes) nodeMap[n.id] = n;
+        for (const n of activeNodes) nodeMap[n.id] = n;
 
         const suspiciousIds = new Set((suspiciousAccounts || []).map((a) => a.account_id));
 
         // ─── Build Cytoscape elements ─────────────────────────────────
-        const cyNodes = nodes.map((n) => {
+        const cyNodes = activeNodes.map((n) => {
             const isFlagged = flaggedAccounts.has(n.id);
             return {
                 data: {
@@ -104,7 +120,7 @@ export default function GraphVisualization({
             };
         });
 
-        const cyEdges = (edges || []).map((e, i) => ({
+        const cyEdges = activeEdges.map((e, i) => ({
             data: {
                 id: `e_${i}_${e.txId || i}`,
                 source: e.source,
@@ -349,7 +365,12 @@ export default function GraphVisualization({
             }
         }
 
-    }, [graphData, suspiciousAccounts, fraudRings, onSelectAccount, flaggedAccounts, isolatedNodeId]);
+        // Fit if filtering by ring
+        if (selectedRingId !== 'all') {
+            cy.fit(undefined, 80);
+        }
+
+    }, [graphData, suspiciousAccounts, fraudRings, onSelectAccount, flaggedAccounts, isolatedNodeId, selectedRingId]);
 
     useEffect(() => {
         buildAndMount();
@@ -370,6 +391,7 @@ export default function GraphVisualization({
                 duration: 500
             });
             setIsFocusMode(false);
+            setSelectedRingId('all');
             onResetIsolation();
         }
     };
@@ -409,6 +431,32 @@ export default function GraphVisualization({
                 </div>
             )}
 
+            {/* Sub-selection / Focus Menu */}
+            {!noData && (
+                <div className="absolute top-16 left-4 z-10 flex flex-col gap-2">
+                    <div className="backdrop-blur-md bg-slate-900/60 border border-slate-700/50 rounded-lg p-1 shadow-xl flex items-center gap-2 pr-3">
+                         <div className="bg-brand-orange/20 p-2 rounded-md">
+                            <Layers className="w-3.5 h-3.5 text-brand-orange" />
+                         </div>
+                         <div className="flex flex-col">
+                            <span className="text-[9px] text-slate-500 uppercase font-black tracking-widest">Subgraph Scope</span>
+                            <select 
+                                value={selectedRingId}
+                                onChange={(e) => setSelectedRingId(e.target.value)}
+                                className="bg-transparent text-white text-[11px] font-bold outline-none cursor-pointer hover:text-cyan-400 transition-colors"
+                            >
+                                <option value="all">Full Network View</option>
+                                {fraudRings?.map(ring => (
+                                    <option key={ring.ring_id} value={ring.ring_id}>
+                                        Focus: {ring.ring_id} ({ring.member_accounts?.length || 0} nodes)
+                                    </option>
+                                ))}
+                            </select>
+                         </div>
+                    </div>
+                </div>
+            )}
+
             {/* Controls */}
             <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
                 <button
@@ -439,7 +487,7 @@ export default function GraphVisualization({
                 >
                     <RefreshCw className="w-4 h-4 text-[#f97316]" />
                 </button>
-                {isFocusMode && (
+                {(isFocusMode || selectedRingId !== 'all') && (
                     <div className="bg-red-900/80 text-red-100 text-[10px] px-2 py-1 border border-red-600 font-bold uppercase tracking-widest text-center animate-pulse rounded-full mt-2">
                         Focus Mode
                     </div>
