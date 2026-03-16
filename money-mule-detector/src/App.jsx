@@ -488,6 +488,7 @@ export default function App() {
                       flaggedAccounts={flaggedAccounts}
                       fraudRings={fraudRings}
                       onSelectAccount={handleSelectAccount}
+                      showHeader={false}
                     />
                   </div>
                 </div>

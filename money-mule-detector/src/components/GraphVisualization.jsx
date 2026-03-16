@@ -47,6 +47,7 @@ export default function GraphVisualization({
     flaggedAccounts = new Set(), // Added support for flagged accounts
     isolatedNodeId = null,       // Added support for node isolation
     onResetIsolation = () => {}, // Callback to reset isolation
+    showHeader = true,           // Toggle internal Neo4j header
 }) {
     const containerRef = useRef(null);
     const cyRef = useRef(null);
@@ -393,7 +394,7 @@ export default function GraphVisualization({
             />
 
             {/* Top banner: Neo4j powered */}
-            {!noData && (
+            {showHeader && !noData && (
                 <div className="absolute top-4 left-4 flex items-center gap-3 backdrop-blur-md bg-cyan-950/20 border border-cyan-800/50 px-4 py-2.5 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.15)] z-10">
                     <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse inline-block" />
                     <span className="text-[11px] font-bold font-mono text-cyan-300 uppercase tracking-[0.2em]">Neo4j Analytics</span>
