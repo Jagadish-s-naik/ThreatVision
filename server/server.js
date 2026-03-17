@@ -9,19 +9,43 @@ import { detectSmurfing } from './algorithms/smurfingDetector.js';
 import { detectShells } from './algorithms/shellDetector.js';
 import { buildResult } from './algorithms/resultBuilder.js';
 import { computeNodeAnalytics, fetchGraphEdges, detectHubs, detectBridges } from './algorithms/graphAnalytics.js';
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Rate Limiting: 100 requests per 15 minutes
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests from this IP, please try again later.' }
+});
+
+app.use(limiter);
+
+// Secure CORS: Restrict to allowed origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(',') 
+    : ['http://localhost:3000', 'http://localhost:5173'];
+
 app.use(cors({
-    origin: '*',
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type'],
     optionsSuccessStatus: 204,
 }));
-app.use(express.json({ limit: '10mb' }));
+
+app.use(express.json({ limit: '5mb' }));
 
 
 // ─── Railway healthcheck (must always return 200) ──────────
@@ -72,10 +96,19 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
             });
         }
 
-        // Load into Neo4j
+        // ─── Sanitization & Validation ─────────────────────────
+        const sanitizedRows = rows.map(row => ({
+            transaction_id: String(row.transaction_id || '').replace(/[^\w-]/g, ''),
+            sender_id: String(row.sender_id || '').replace(/[^\w-]/g, ''),
+            receiver_id: String(row.receiver_id || '').replace(/[^\w-]/g, ''),
+            amount: parseFloat(row.amount) || 0,
+            timestamp: new Date(row.timestamp).toISOString()
+        }));
+
+        // Load into Neo4j (using sanitized rows)
         session = await getSession();
         await clearGraph(session);
-        await loadTransactions(session, rows);
+        await loadTransactions(session, sanitizedRows);
 
         // Count total unique account nodes
         const nodeCountResult = await session.run(
@@ -101,7 +134,14 @@ app.post('/api/analyze', upload.single('file'), async (req, res) => {
     } catch (error) {
         if (session) await session.close().catch(() => { });
         console.error('Analysis error:', error);
-        res.status(500).json({ error: error.message });
+        
+        // Security: Mask internal error details in production
+        const status = error.message.includes('Missing required') ? 400 : 500;
+        const message = process.env.NODE_ENV === 'production' && status === 500
+            ? 'An internal server error occurred during analysis.'
+            : error.message;
+            
+        res.status(status).json({ error: message });
     }
 });
 
