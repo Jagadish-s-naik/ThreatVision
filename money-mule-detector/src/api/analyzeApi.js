@@ -13,7 +13,7 @@ let BACKEND_URL = _raw.replace(/\/$/, '');
 if (import.meta.env.PROD && BACKEND_URL.startsWith('http://')) {
     BACKEND_URL = BACKEND_URL.replace('http://', 'https://');
 }
-console.info('[ThreatVision] Backend URL:', BACKEND_URL);
+// console.info('[ThreatVision] Backend URL:', BACKEND_URL);
 
 /**
  * Sends a CSV file to the backend for analysis.

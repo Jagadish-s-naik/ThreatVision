@@ -1,4 +1,5 @@
 import express from 'express';
+import helmet from 'helmet';
 import multer from 'multer';
 import cors from 'cors';
 import { parse } from 'csv-parse/sync';
@@ -14,6 +15,7 @@ import rateLimit from 'express-rate-limit';
 dotenv.config();
 
 const app = express();
+app.use(helmet()); // Basic security headers
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Rate Limiting: 100 requests per 15 minutes
@@ -45,7 +47,8 @@ app.use(cors({
     optionsSuccessStatus: 204,
 }));
 
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 
 // ─── Railway healthcheck (must always return 200) ──────────
