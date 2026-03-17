@@ -53,9 +53,9 @@ export default function App() {
   // â”€â”€â”€ Persistence: restore results on refresh â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('threat_vision_results');
-      const savedTx = localStorage.getItem('threat_vision_transactions');
-      const savedGraph = localStorage.getItem('threat_vision_graph');
+      const saved = sessionStorage.getItem('threat_vision_results');
+      const savedTx = sessionStorage.getItem('threat_vision_transactions');
+      const savedGraph = sessionStorage.getItem('threat_vision_graph');
       if (saved && savedTx) {
         setShowLanding(false);
         const parsedResults = JSON.parse(saved);
@@ -69,16 +69,16 @@ export default function App() {
            setGraphData(buildLocalGraphData(parsedTx, parsedResults.suspicious_accounts || []));
         }
         
-        const savedFlags = localStorage.getItem('threat_vision_flags');
+        const savedFlags = sessionStorage.getItem('threat_vision_flags');
         if (savedFlags) {
           setFlaggedAccounts(new Set(JSON.parse(savedFlags)));
         }
       }
     } catch (e) {
       console.warn('Failed to restore session:', e);
-      localStorage.removeItem('threat_vision_results');
-      localStorage.removeItem('threat_vision_transactions');
-      localStorage.removeItem('threat_vision_graph');
+      sessionStorage.removeItem('threat_vision_results');
+      sessionStorage.removeItem('threat_vision_transactions');
+      sessionStorage.removeItem('threat_vision_graph');
     }
   }, []);
 
@@ -124,12 +124,12 @@ export default function App() {
 
       // Persist results
       try {
-        localStorage.setItem('threat_vision_results', JSON.stringify(result));
-        localStorage.setItem('threat_vision_transactions', JSON.stringify(txRows));
+        sessionStorage.setItem('threat_vision_results', JSON.stringify(result));
+        sessionStorage.setItem('threat_vision_transactions', JSON.stringify(txRows));
         if (neo4jGraph) {
-          localStorage.setItem('threat_vision_graph', JSON.stringify(neo4jGraph));
+          sessionStorage.setItem('threat_vision_graph', JSON.stringify(neo4jGraph));
         } else {
-          localStorage.setItem('threat_vision_graph', JSON.stringify(buildLocalGraphData(txRows, result.suspicious_accounts || [])));
+          sessionStorage.setItem('threat_vision_graph', JSON.stringify(buildLocalGraphData(txRows, result.suspicious_accounts || [])));
         }
       } catch (e) {
         console.warn('Storage quota exceeded, skipping persistence:', e);
@@ -160,9 +160,9 @@ export default function App() {
       if (next.has(accountId)) next.delete(accountId);
       else next.add(accountId);
       
-      // Persist to localStorage
+      // Persist to sessionStorage
       try {
-        localStorage.setItem('threat_vision_flags', JSON.stringify([...next]));
+        sessionStorage.setItem('threat_vision_flags', JSON.stringify([...next]));
       } catch (e) {
         console.warn('Failed to save flags:', e);
       }
@@ -193,10 +193,10 @@ export default function App() {
 
   // â”€â”€â”€ Reset â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleReset = () => {
-    localStorage.removeItem('threat_vision_results');
-    localStorage.removeItem('threat_vision_transactions');
-    localStorage.removeItem('threat_vision_graph');
-    localStorage.removeItem('threat_vision_data');
+    sessionStorage.removeItem('threat_vision_results');
+    sessionStorage.removeItem('threat_vision_transactions');
+    sessionStorage.removeItem('threat_vision_graph');
+    sessionStorage.removeItem('threat_vision_data');
     window.location.reload();
   };
 
