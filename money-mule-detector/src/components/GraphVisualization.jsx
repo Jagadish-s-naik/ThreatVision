@@ -1,6 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import cytoscape from 'cytoscape';
-import { Maximize, ZoomIn, ZoomOut, RefreshCw, Layers } from 'lucide-react';
+import { Maximize, ZoomIn, ZoomOut, RefreshCw, Layers, ShieldAlert, User, Network } from 'lucide-react';
+
+const SVG_ICONS = {
+    shield: 'data:image/svg+xml;utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'),
+    hub: 'data:image/svg+xml;utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>'),
+    user: 'data:image/svg+xml;utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>')
+};
 
 function truncate(str, n = 10) {
     return str && str.length > n ? str.slice(0, n) + '…' : str;
@@ -92,13 +98,29 @@ export default function GraphVisualization({
         // ─── Build Cytoscape elements ─────────────────────────────────
         const cyNodes = activeNodes.map((n) => {
             const isFlagged = flaggedAccounts.has(n.id);
+            const isSuspicious = suspiciousIds.has(n.id);
+            
+            // Determine shape and icon based on role
+            let shape = 'rhombus';
+            let icon = SVG_ICONS.user;
+            
+            if (isFlagged || isSuspicious) {
+                shape = 'diamond';
+                icon = SVG_ICONS.shield;
+            } else if (n.isHub) {
+                shape = 'rhombus';
+                icon = SVG_ICONS.hub;
+            }
+
             return {
                 data: {
                     id: n.id,
                     label: truncate(n.id),
                     color: getNodeColor(n, accountMap),
                     size: getNodeRadius(n),
-                    borderWidth: isFlagged ? 5 : (suspiciousIds.has(n.id) ? 3 : (n.isHub ? 4 : 2)),
+                    shape: shape,
+                    backgroundImage: icon,
+                    borderWidth: isFlagged ? 5 : (isSuspicious ? 3 : (n.isHub ? 4 : 2)),
                     borderColor: isFlagged ? '#EF4444' : '#FFFFFF',
                     // Analytics payload for tooltip
                     degree: n.degree,
@@ -113,7 +135,7 @@ export default function GraphVisualization({
                     isFlagged,
                 },
                 classes: [
-                    suspiciousIds.has(n.id) ? 'suspicious' : 'normal',
+                    isSuspicious ? 'suspicious' : 'normal',
                     n.isHub ? 'hub' : '',
                     isFlagged ? 'flagged' : '',
                 ].filter(Boolean).join(' '),
@@ -144,25 +166,32 @@ export default function GraphVisualization({
                 {
                     selector: 'node',
                     style: {
+                        'shape': 'data(shape)',
                         'background-color': 'data(color)',
+                        'background-image': 'data(backgroundImage)',
+                        'background-fit': 'contain',
+                        'background-width': '60%',
+                        'background-height': '60%',
+                        'background-opacity': 1,
                         'width': 'data(size)',
                         'height': 'data(size)',
                         'label': 'data(label)',
                         'color': '#F8FAFC',
                         'font-size': '10px',
                         'font-weight': '700',
-                        'font-family': 'Syne, sans-serif',
+                        'font-family': 'JetBrains Mono, monospace',
                         'text-valign': 'top',
                         'text-halign': 'center',
-                        'text-margin-y': -6,
+                        'text-margin-y': -8,
                         'text-outline-width': 2,
                         'text-outline-color': '#020617',
                         'border-width': 'data(borderWidth)',
                         'border-color': 'data(borderColor)',
-                        'border-opacity': (ele) => ele.data('isFlagged') ? 1 : 0.2, // Acts like an inner glow/highlight
-                        'shadow-blur': 15,
+                        'border-opacity': (ele) => ele.data('isFlagged') ? 1 : 0.4,
+                        'background-opacity': 0.9,
+                        'shadow-blur': 25,
                         'shadow-color': 'data(color)',
-                        'shadow-opacity': 0.8,
+                        'shadow-opacity': 0.6,
                         'transition-property': 'background-color, width, height, border-color, shadow-blur, underlay-opacity',
                         'transition-duration': 300,
                     },
@@ -171,31 +200,31 @@ export default function GraphVisualization({
                     selector: 'node.suspicious',
                     style: {
                         'shadow-color': '#EF4444',
-                        'shadow-blur': 30,
+                        'shadow-blur': 40,
                     },
                 },
                 {
                     selector: 'node.flagged',
                     style: {
                         'shadow-color': '#EF4444',
-                        'shadow-blur': 45,
+                        'shadow-blur': 60,
                         'underlay-color': '#EF4444',
-                        'underlay-padding': 4,
-                        'underlay-opacity': 0.3,
+                        'underlay-padding': 6,
+                        'underlay-opacity': 0.4,
+                        'underlay-shape': 'diamond',
                     },
                 },
                 {
                     selector: 'node.hub',
                     style: {
-                        'border-width': 3,
-                        'border-opacity': 0.8,
-                        // Use a solid underlay for hubs to create a rich halo effect
+                        'border-width': 4,
+                        'border-opacity': 0.9,
                         'underlay-color': '#06B6D4',
-                        'underlay-padding': 6,
-                        'underlay-opacity': 0.6,
-                        'underlay-shape': 'ellipse', // ensures the halo is circular
+                        'underlay-padding': 10,
+                        'underlay-opacity': 0.5,
+                        'underlay-shape': 'rhombus',
                         'shadow-color': '#22D3EE',
-                        'shadow-blur': 40,
+                        'shadow-blur': 50,
                     },
                 },
                 {
@@ -203,14 +232,14 @@ export default function GraphVisualization({
                     style: {
                         'opacity': 1,
                         'underlay-color': '#F8FAFC',
-                        'underlay-padding': 8,
-                        'underlay-opacity': 0.8,
+                        'underlay-padding': 12,
+                        'underlay-opacity': 0.7,
                         'border-color': '#FFFFFF',
                     },
                 },
                 {
                     selector: 'node.faded',
-                    style: { 'opacity': 0.08 },
+                    style: { 'opacity': 0.1 },
                 },
                 {
                     selector: 'node.hidden',
@@ -222,12 +251,12 @@ export default function GraphVisualization({
                         'line-color': 'data(edgeColor)',
                         'width': 'data(edgeWidth)',
                         'target-arrow-color': 'data(edgeColor)',
-                        'target-arrow-shape': 'triangle',
-                        'curve-style': 'unbundled-bezier',
-                        'control-point-distances': 30,
-                        'control-point-weights': 0.5,
-                        'arrow-scale': 0.9,
-                        'opacity': 0.6,
+                        'target-arrow-shape': 'chevron',
+                        'curve-style': 'taxi',
+                        'taxi-direction': 'auto',
+                        'taxi-turn': 20,
+                        'arrow-scale': 1.2,
+                        'opacity': 0.5,
                         'transition-property': 'opacity, line-color',
                         'transition-duration': 300,
                     },
@@ -235,15 +264,17 @@ export default function GraphVisualization({
                 {
                     selector: 'edge.suspicious-edge',
                     style: {
-                        'line-style': 'dashed',
-                        'line-dash-pattern': [6, 3],
-                        'line-dash-offset': 0,
+                        'line-style': 'solid',
+                        'line-color': '#EF4444',
+                        'width': (ele) => Math.max(ele.data('edgeWidth'), 2),
                         'opacity': 1,
+                        'line-dash-pattern': [10, 5],
+                        'line-dash-offset': 0,
                     },
                 },
                 {
                     selector: 'edge.faded',
-                    style: { 'opacity': 0.03 },
+                    style: { 'opacity': 0.05 },
                 },
                 {
                     selector: 'edge.hidden',
@@ -494,33 +525,66 @@ export default function GraphVisualization({
                 )}
             </div>
 
-            {/* Neo4j Style Legend */}
-            <div className="absolute bottom-4 left-4 z-10 bg-[#1a2035] border border-brand-border rounded-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-md pointer-events-none min-w-[160px]">
-                <div className="text-xs font-bold text-white mb-3 tracking-wider flex items-center gap-2 border-b border-brand-border/50 pb-2">
-                   <Layers className="w-3 h-3 text-brand-muted" />
-                   NETWORK LEGEND
-                </div>
-                <div className="space-y-2 mt-2">
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full border-2 border-white bg-[#06B6D4] shadow-[0_0_8px_#22D3EE]" />
-                        <span className="text-[10px] text-white font-medium uppercase">Hub Node</span>
+            {/* Network Legend */}
+            <div className="absolute bottom-6 left-6 z-10 pointer-events-none">
+                <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl flex flex-col gap-4">
+                    <div className="flex items-center justify-between gap-8 pb-3 border-b border-white/5">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Network Status</span>
+                            <span className="text-xl font-black text-white font-mono tracking-tighter tabular-nums text-cyan-400">SOC MONITOR</span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full border border-white/50 bg-[#EF4444] shadow-[0_0_8px_#EF4444]" />
-                        <span className="text-[10px] text-white font-medium uppercase">Critical Suspect</span>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2 group">
+                                <div className="w-4 h-4 rounded-sm rotate-45 bg-[#06B6D4] shadow-[0_0_12px_rgba(6,182,212,0.3)] border border-cyan-400/50 flex items-center justify-center">
+                                    <Network className="-rotate-45 w-2 h-2 text-white opacity-80" />
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-300 group-hover:text-white transition-colors">CENTRAL HUB</span>
+                            </div>
+                            <div className="flex items-center gap-2 group">
+                                <div className="w-4 h-4 rounded-sm rotate-45 bg-[#EF4444] shadow-[0_0_12px_rgba(239,68,68,0.3)] border border-red-400/50 flex items-center justify-center">
+                                    <ShieldAlert className="-rotate-45 w-2 h-2 text-white opacity-80" />
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-300 group-hover:text-white transition-colors">FLAGGED ENTITY</span>
+                            </div>
+                            <div className="flex items-center gap-2 group">
+                                <div className="w-4 h-4 rounded-sm rotate-45 bg-[#64748B] border border-white/10 flex items-center justify-center">
+                                    <User className="-rotate-45 w-2 h-2 text-white opacity-60" />
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-300 group-hover:text-white transition-colors">STANDARD NODE</span>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2 pl-4 border-l border-white/5">
+                            <div className="flex items-center justify-between group">
+                                <span className="text-[9px] text-slate-500 font-mono">ENTITIES</span>
+                                <span className="text-xs font-bold text-cyan-400 font-mono">{graphData?.analytics?.totalNodes || activeNodes.length}</span>
+                            </div>
+                            <div className="flex items-center justify-between group">
+                                <span className="text-[9px] text-slate-500 font-mono">PATHS</span>
+                                <span className="text-xs font-bold text-cyan-400 font-mono">{graphData?.analytics?.totalEdges || activeEdges.length}</span>
+                            </div>
+                            <div className="flex items-center justify-between group">
+                                <span className="text-[9px] text-slate-500 font-mono">THREATS</span>
+                                <span className="text-xs font-bold text-red-500 font-mono">{fraudRings?.length || 0}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full border border-white/50 bg-[#F59E0B]" />
-                        <span className="text-[10px] text-slate-300 font-medium uppercase">High Risk</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full border border-white/20 bg-[#64748B]" />
-                        <span className="text-[10px] text-slate-400 font-medium uppercase">Normal Node</span>
+
+                    <div className="pt-2 border-t border-white/5">
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                                <div className="h-full bg-cyan-500 w-[65%] animate-pulse" />
+                            </div>
+                            <span className="text-[8px] font-mono text-cyan-500/80 animate-pulse">SOC SYNC ACTIVE</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Hover tooltip */}
+            {/* Hover Tooltip */}
             {tooltip && (
                 <div
                     className="absolute z-50 pointer-events-none backdrop-blur-2xl bg-slate-900/90 border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-200 ease-out"
@@ -530,15 +594,15 @@ export default function GraphVisualization({
                         width: 260,
                     }}
                 >
-                    <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-3 border-b border-white/5 flex justify-between items-center relative overflow-hidden">
+                    <div className="bg-gradient-to-r from-slate-800 to-slate-900 px-4 py-3 border-b border-white/5 flex justify-between items-center relative overflow-hidden font-mono">
                         <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60"></div>
-                        <span className="font-black text-white font-mono text-[12px] tracking-tight truncate">{truncate(tooltip.id, 16)}</span>
+                        <span className="font-black text-white text-[12px] tracking-tight truncate">{truncate(tooltip.id, 16)}</span>
                         <div className="flex gap-1.5">
                             {tooltip.isFlagged && <span className="px-1.5 py-0.5 rounded-[4px] text-[8px] font-black tracking-widest bg-red-500 text-white">FLAGGED</span>}
                             {tooltip.isHub && <span className="px-1.5 py-0.5 rounded-[4px] text-[8px] font-black tracking-widest bg-cyan-500 text-white">HUB</span>}
                         </div>
                     </div>
-                    <div className="p-3 space-y-1.5 text-xs text-slate-300">
+                    <div className="p-3 space-y-1.5 text-xs text-slate-300 font-mono">
                         {[
                             { label: 'Centrality Score', value: `${tooltip.centralityScore}/100`, color: tooltip.centralityScore >= 70 ? 'text-cyan-400' : 'text-slate-200' },
                             { label: 'Degree (in/out)',  value: `${tooltip.degree} (${tooltip.inDegree}↓ ${tooltip.outDegree}↑)` },
@@ -548,37 +612,13 @@ export default function GraphVisualization({
                             ...(tooltip.patterns ? [{ label: 'Patterns', value: tooltip.patterns, color: 'text-brand-orange' }] : []),
                         ].map(({ label, value, color }) => (
                             <div key={label} className="flex justify-between border-b border-slate-800 pb-1">
-                                <span className="text-slate-500 uppercase text-[10px] tracking-wider">{label}</span>
+                                <span className="text-slate-500 uppercase text-[9px] tracking-wider">{label}</span>
                                 <span className={`font-bold ${color || 'text-slate-200'} text-right max-w-[140px] truncate`}>{value}</span>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
-
-            {/* Legend */}
-            <div className="absolute bottom-4 left-4 backdrop-blur-md bg-slate-950/60 border border-slate-800/80 rounded-xl p-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-10 w-48">
-                <div className="text-slate-400 text-[9px] uppercase font-bold mb-3 tracking-[0.2em] relative">
-                    Network Legend
-                    <div className="absolute -bottom-1 left-0 w-8 h-px bg-slate-600"></div>
-                </div>
-                <div className="flex flex-col gap-2.5 text-[11px] text-slate-300 font-mono">
-                    {[
-                        { color: '#06B6D4', label: 'Hub (high centrality)', shape: '⬡' },
-                        { color: '#8B5CF6', label: 'High centrality ≥70', shape: '●' },
-                        { color: '#3B82F6', label: 'Med centrality ≥40',  shape: '●' },
-                        { color: '#EF4444', label: 'Critical suspect ≥75', shape: '■' },
-                        { color: '#F97316', label: 'High suspect ≥50',     shape: '■' },
-                        { color: '#EAB308', label: 'Med suspect ≥25',      shape: '■' },
-                        { color: '#475569', label: 'Normal account',        shape: '●' },
-                    ].map((item) => (
-                        <div key={item.label} className="flex items-center gap-2">
-                            <span style={{ color: item.color, fontSize: '13px' }}>{item.shape}</span>
-                            <span>{item.label}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
         </div>
     );
 }
