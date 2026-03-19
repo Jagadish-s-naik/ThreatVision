@@ -272,7 +272,7 @@ const FeaturesSection = () => {
   ];
 
   return (
-    <section id="features" className="py-24 bg-[#0a0c10] border-t border-white/5 relative z-10 w-full overflow-hidden">
+    <section id="features" className="py-24 bg-transparent relative z-10 w-full overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl lg:text-5xl font-bold tracking-tight text-white mb-6">
