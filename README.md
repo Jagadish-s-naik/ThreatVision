@@ -1,6 +1,6 @@
 <div align="center">
   <img src="https://img.shields.io/badge/Financial_Forensics-Money_Muling_Detection-2563eb?style=for-the-badge&logo=react" alt="ThreatVision Header" />
-  <h1>💰 ThreatVision</h1>
+  <h1>ThreatVision</h1>
   <p><strong>Graph-based money muling and financial fraud detection engine</strong></p>
   <p>Track Financial Crime • Detect Fraud Rings • Visualize Threat Architectures</p>
 
