@@ -115,14 +115,23 @@ export async function analyzeLocally(file) {
 
     // ── 7. Score every suspicious account ────────────────────────────────────
     const memberScores = {};
+    const verifiedEntities = [];
+
     for (const acc of suspiciousSet) {
         // Run exemption checks post-detection to zero out legitimate accounts
         // that somehow slipped through (e.g. from cycle detection picking them up)
-        if (
-            isPayrollPattern(acc, rows) ||
-            isMerchantDisbursement(acc, rows) ||
-            isPassthroughAgent(acc, rows)
-        ) {
+        if (isPayrollPattern(acc, rows)) {
+            verifiedEntities.push({ account_id: acc, classification: 'Legitimate Payroll Hub' });
+            memberScores[acc] = 0;
+            continue;
+        }
+        if (isMerchantDisbursement(acc, rows)) {
+            verifiedEntities.push({ account_id: acc, classification: 'Verified Retail Merchant' });
+            memberScores[acc] = 0;
+            continue;
+        }
+        if (isPassthroughAgent(acc, rows)) {
+            verifiedEntities.push({ account_id: acc, classification: 'Legitimate Passthrough Agent' });
             memberScores[acc] = 0;
             continue;
         }
@@ -192,10 +201,12 @@ export async function analyzeLocally(file) {
     return {
         suspicious_accounts: filteredAccounts,
         fraud_rings,
+        verified_entities: verifiedEntities,
         summary: {
             total_accounts_analyzed:    totalNodes,
             suspicious_accounts_flagged: filteredAccounts.length,
             fraud_rings_detected:        fraud_rings.length,
+            verified_entities_count:     verifiedEntities.length,
             processing_time_seconds:     parseFloat(Math.max(0.1, processingMs / 1000).toFixed(1)),
             analysis_mode:               'local',
         },

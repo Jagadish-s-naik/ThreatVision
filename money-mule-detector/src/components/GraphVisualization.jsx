@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import cytoscape from 'cytoscape';
-import { Maximize, ZoomIn, ZoomOut, RefreshCw, Layers, ShieldAlert, User, Network } from 'lucide-react';
+import { Maximize, ZoomIn, ZoomOut, RefreshCw, Layers, ShieldAlert, User, Network, ShieldCheck } from 'lucide-react';
 
 const SVG_ICONS = {
     shield: 'data:image/svg+xml;utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'),
     hub: 'data:image/svg+xml;utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>'),
-    user: 'data:image/svg+xml;utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>')
+    user: 'data:image/svg+xml;utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'),
+    verified: 'data:image/svg+xml;utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>'),
 };
 
 function truncate(str, n = 10) {
@@ -13,13 +14,16 @@ function truncate(str, n = 10) {
 }
 
 /** Node colour driven by Neo4j analytics */
-function getNodeColor(node, accountMap) {
+function getNodeColor(node, accountMap, verifiedMap) {
     if (!node) return '#6B7280';
+    // Verified legitimate: Emerald
+    if (verifiedMap?.[node.id]) return '#10B981';
     // Hub node: bright cyan
     if (node.isHub) return '#06B6D4';
     // Suspicious overlap
     const acc = accountMap?.[node.id];
     if (acc) {
+        if (acc.isVerified) return '#10B981'; // Emerald/Green for verified
         if (acc.suspicion_score >= 75) return '#EF4444';
         if (acc.suspicion_score >= 50) return '#F97316';
         if (acc.suspicion_score >= 25) return '#EAB308';
@@ -48,6 +52,7 @@ function getEdgeWidth(amount, maxAmount) {
 export default function GraphVisualization({
     graphData,           // { nodes, edges, hubs, analytics } from Neo4j
     suspiciousAccounts,
+    verifiedEntities = [], // Added support for Fee Monitoring / Micro-Spend signals
     fraudRings,
     onSelectAccount,
     flaggedAccounts = new Set(), // Added support for flagged accounts
@@ -65,6 +70,12 @@ export default function GraphVisualization({
     const buildAndMount = useCallback(() => {
         const accountMap = {};
         for (const acc of suspiciousAccounts || []) accountMap[acc.account_id] = acc;
+        for (const acc of verifiedEntities || []) {
+            accountMap[acc.account_id] = { ...acc, isVerified: true, suspicion_score: 0 };
+        }
+
+        const verifiedMap = {};
+        for (const ent of verifiedEntities || []) verifiedMap[ent.account_id] = ent;
 
         if (!containerRef.current || !graphData?.nodes?.length) return;
 
@@ -99,6 +110,8 @@ export default function GraphVisualization({
         const cyNodes = activeNodes.map((n) => {
             const isFlagged = flaggedAccounts.has(n.id);
             const isSuspicious = suspiciousIds.has(n.id);
+            const verifiedEnt = verifiedMap[n.id];
+            const isVerified = !!verifiedEnt;
             
             // Determine shape and icon based on role
             let shape = 'rhombus';
@@ -107,6 +120,9 @@ export default function GraphVisualization({
             if (isFlagged || isSuspicious) {
                 shape = 'diamond';
                 icon = SVG_ICONS.shield;
+            } else if (isVerified) {
+                shape = 'round-rectangle';
+                icon = SVG_ICONS.verified;
             } else if (n.isHub) {
                 shape = 'rhombus';
                 icon = SVG_ICONS.hub;
@@ -116,12 +132,12 @@ export default function GraphVisualization({
                 data: {
                     id: n.id,
                     label: truncate(n.id),
-                    color: getNodeColor(n, accountMap),
+                    color: getNodeColor(n, accountMap, verifiedMap),
                     size: getNodeRadius(n),
                     shape: shape,
                     backgroundImage: icon,
-                    borderWidth: isFlagged ? 5 : (isSuspicious ? 3 : (n.isHub ? 4 : 2)),
-                    borderColor: isFlagged ? '#EF4444' : '#FFFFFF',
+                    borderWidth: isFlagged ? 5 : (isSuspicious ? 3 : (isVerified ? 4 : (n.isHub ? 4 : 2))),
+                    borderColor: isFlagged ? '#EF4444' : (isVerified ? '#10B981' : '#FFFFFF'),
                     // Analytics payload for tooltip
                     degree: n.degree,
                     inDegree: n.inDegree,
@@ -130,14 +146,19 @@ export default function GraphVisualization({
                     totalSent: n.totalSent,
                     totalReceived: n.totalReceived,
                     isHub: n.isHub,
+                    isVerified,
+                    verifiedClassification: verifiedEnt?.classification,
                     suspicionScore: accountMap[n.id]?.suspicion_score ?? 0,
                     patterns: (accountMap[n.id]?.detected_patterns || []).join(', '),
                     isFlagged,
+                    isVerified,
+                    verifiedClassification: verifiedEnt?.classification,
                 },
                 classes: [
                     isSuspicious ? 'suspicious' : 'normal',
                     n.isHub ? 'hub' : '',
                     isFlagged ? 'flagged' : '',
+                    isVerified ? 'verified' : '',
                 ].filter(Boolean).join(' '),
             };
         });
@@ -172,7 +193,6 @@ export default function GraphVisualization({
                         'background-fit': 'contain',
                         'background-width': '60%',
                         'background-height': '60%',
-                        'background-opacity': 1,
                         'width': 'data(size)',
                         'height': 'data(size)',
                         'label': 'data(label)',
@@ -215,6 +235,17 @@ export default function GraphVisualization({
                     },
                 },
                 {
+                    selector: 'node.verified',
+                    style: {
+                        'shadow-color': '#10B981',
+                        'shadow-blur': 40,
+                        'underlay-color': '#10B981',
+                        'underlay-padding': 6,
+                        'underlay-opacity': 0.3,
+                        'underlay-shape': 'round-rectangle',
+                    },
+                },
+                {
                     selector: 'node.hub',
                     style: {
                         'border-width': 4,
@@ -225,6 +256,20 @@ export default function GraphVisualization({
                         'underlay-shape': 'rhombus',
                         'shadow-color': '#22D3EE',
                         'shadow-blur': 50,
+                    },
+                },
+                {
+                    selector: 'node.verified',
+                    style: {
+                        'border-width': 5,
+                        'border-color': '#10B981',
+                        'border-opacity': 1,
+                        'underlay-color': '#10B981',
+                        'underlay-padding': 8,
+                        'underlay-opacity': 0.4,
+                        'underlay-shape': 'round-rectangle',
+                        'shadow-color': '#34D399',
+                        'shadow-blur': 45,
                     },
                 },
                 {
@@ -401,7 +446,7 @@ export default function GraphVisualization({
             cy.fit(undefined, 80);
         }
 
-    }, [graphData, suspiciousAccounts, fraudRings, onSelectAccount, flaggedAccounts, isolatedNodeId, selectedRingId]);
+    }, [graphData, suspiciousAccounts, verifiedEntities, fraudRings, onSelectAccount, flaggedAccounts, isolatedNodeId, selectedRingId]);
 
     useEffect(() => {
         buildAndMount();
@@ -550,6 +595,12 @@ export default function GraphVisualization({
                                 <span className="text-[10px] font-bold text-slate-300 group-hover:text-white transition-colors">FLAGGED ENTITY</span>
                             </div>
                             <div className="flex items-center gap-2 group">
+                                <div className="w-4 h-4 rounded-md bg-[#10B981] shadow-[0_0_12px_rgba(16,185,129,0.3)] border border-emerald-400/50 flex items-center justify-center">
+                                    <ShieldCheck className="w-2.5 h-2.5 text-white" />
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-300 group-hover:text-white transition-colors uppercase tracking-wider">Verified Legitimate</span>
+                            </div>
+                            <div className="flex items-center gap-2 group">
                                 <div className="w-4 h-4 rounded-sm rotate-45 bg-[#64748B] border border-white/10 flex items-center justify-center">
                                     <User className="-rotate-45 w-2 h-2 text-white opacity-60" />
                                 </div>
@@ -599,6 +650,7 @@ export default function GraphVisualization({
                         <span className="font-black text-white text-[12px] tracking-tight truncate">{truncate(tooltip.id, 16)}</span>
                         <div className="flex gap-1.5">
                             {tooltip.isFlagged && <span className="px-1.5 py-0.5 rounded-[4px] text-[8px] font-black tracking-widest bg-red-500 text-white">FLAGGED</span>}
+                            {tooltip.isVerified && <span className="px-1.5 py-0.5 rounded-[4px] text-[8px] font-black tracking-widest bg-emerald-500 text-white uppercase">Verified</span>}
                             {tooltip.isHub && <span className="px-1.5 py-0.5 rounded-[4px] text-[8px] font-black tracking-widest bg-cyan-500 text-white">HUB</span>}
                         </div>
                     </div>
@@ -609,6 +661,7 @@ export default function GraphVisualization({
                             { label: 'Total Sent',      value: `$${(tooltip.totalSent || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}` },
                             { label: 'Total Received',  value: `$${(tooltip.totalReceived || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}` },
                             ...(tooltip.suspicionScore > 0 ? [{ label: 'Suspicion Score', value: `${tooltip.suspicionScore}/100`, color: 'text-red-400' }] : []),
+                            ...(tooltip.isVerified ? [{ label: 'Clearance', value: tooltip.verifiedClassification || 'Verified Legitimate', color: 'text-emerald-400' }] : []),
                             ...(tooltip.patterns ? [{ label: 'Patterns', value: tooltip.patterns, color: 'text-brand-orange' }] : []),
                         ].map(({ label, value, color }) => (
                             <div key={label} className="flex justify-between border-b border-slate-800 pb-1">

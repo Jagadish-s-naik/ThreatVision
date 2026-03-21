@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, AlertTriangle, Layers, Clock } from 'lucide-react';
+import { Users, AlertTriangle, Layers, Clock, ShieldCheck } from 'lucide-react';
 
 // eslint-disable-next-line no-unused-vars
 function StatCard({ label, value, icon: Icon, accentClass, trend }) {
@@ -44,12 +44,18 @@ export default function SummaryPanel({ analysisResults }) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <StatCard
                     icon={Users} 
                     label="Total Accounts"
                     value={(summary.total_accounts_analyzed || 0).toLocaleString()}
                     accentClass="text-brand-accent"
+                />
+                <StatCard
+                    icon={ShieldCheck} 
+                    label="Verified Legitimate"
+                    value={(summary.verified_entities_count || 0).toLocaleString()}
+                    accentClass="text-emerald-400"
                 />
                 <StatCard
                     icon={AlertTriangle} 
@@ -67,7 +73,7 @@ export default function SummaryPanel({ analysisResults }) {
                     icon={Clock} 
                     label="Analysis Time"
                     value={`${summary.processing_time_seconds ?? '—'}s`}
-                    accentClass="text-emerald-400"
+                    accentClass="text-brand-muted"
                 />
             </div>
         </div>

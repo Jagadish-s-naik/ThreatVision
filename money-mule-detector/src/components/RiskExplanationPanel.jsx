@@ -13,7 +13,8 @@ import {
     Flag,
     AlertCircle,
     ArrowUpRight,
-    ArrowDownLeft
+    ArrowDownLeft,
+    ShieldCheck
 } from 'lucide-react';
 import { HyperText } from './ui/hyper-text.jsx';
 
@@ -85,7 +86,9 @@ const RiskGauge = ({ score }) => {
 const ActivitySparkline = ({ timestamps }) => {
     if (!timestamps || timestamps.length < 2) return null;
     
-    const sorted = [...timestamps].sort((a,b) => a-b);
+    const sorted = [...timestamps].filter(t => t instanceof Date && !isNaN(t.getTime())).sort((a,b) => a.getTime() - b.getTime());
+    if (sorted.length < 2) return null;
+    
     const min = sorted[0].getTime();
     const max = sorted[sorted.length-1].getTime();
     const range = max - min || 1;
@@ -94,12 +97,17 @@ const ActivitySparkline = ({ timestamps }) => {
     const bins = 20;
     const data = new Array(bins).fill(0);
     sorted.forEach(ts => {
-        const idx = Math.min(bins - 1, Math.floor(((ts.getTime() - min) / range) * bins));
-        data[idx]++;
+        const val = ts.getTime();
+        const idx = Math.min(bins - 1, Math.floor(((val - min) / range) * bins));
+        if (!isNaN(idx) && idx >= 0) data[idx]++;
     });
     
     const maxBin = Math.max(...data) || 1;
-    const points = data.map((val, i) => `${(i / (bins - 1)) * 100},${40 - (val / maxBin) * 35}`).join(' ');
+    const points = data.map((val, i) => {
+        const x = (i / (bins - 1)) * 100;
+        const y = 40 - (val / maxBin) * 35;
+        return `${isNaN(x) ? 0 : x},${isNaN(y) ? 40 : y}`;
+    }).join(' ');
 
     return (
         <div className="bg-slate-950/40 border border-slate-700/50 rounded-xl p-4">
@@ -129,20 +137,33 @@ const ActivitySparkline = ({ timestamps }) => {
 
 function generateNarrative(account, nodeStats, transactions, fraudRings) {
     if (!account) return [];
-    const patterns = (account.detected_patterns || []).filter((p) => VALID_PATTERNS.has(p));
     const stats = nodeStats[account.account_id] || {};
+    
+    if (stats.isVerified) {
+        return [
+            `EXEMPTION LOGIC ACTIVATED: This entity has been classified as "${stats.classification}" by the intelligent monitoring engine.`,
+            `Visual inspection confirms this account exhibits high-volume, low-variance transaction patterns typical of legitimate commercial entities. Our real-time filters have cleared this node from the active fraud investigation.`,
+            `System Status: "Verified Legitimate". This entity is monitored as part of the background fee and micro-spend baseline.`
+        ];
+    }
+
+    const patterns = (account.detected_patterns || []).filter((p) => VALID_PATTERNS.has(p));
     const paragraphs = [];
 
     for (const pattern of patterns) {
         if (pattern === 'cycle_length_3') {
             const ring = fraudRings?.find((r) => r.ring_id === account.ring_id);
             const members = ring?.member_accounts || [];
-            const idx = members.indexOf(account.account_id);
-            const next1 = members[(idx + 1) % members.length] || '?';
-            const next2 = members[(idx + 2) % members.length] || '?';
-            paragraphs.push(
-                `This account is part of a 3-hop circular fund routing ring. Money flows from ${account.account_id} → ${next1} → ${next2} → back to ${account.account_id}, a classic layering technique used to obscure the origin of illicit funds. This is the highest-risk cycle pattern — money returns to its origin in just 3 hops.`
-            );
+            if (members.length > 0) {
+                const idx = members.indexOf(account.account_id);
+                const next1 = members[(idx + 1) % members.length] || '?';
+                const next2 = members[(idx + 2) % members.length] || '?';
+                paragraphs.push(
+                    `This account is part of a 3-hop circular fund routing ring. Money flows from ${account.account_id} → ${next1} → ${next2} → back to ${account.account_id}, a classic layering technique used to obscure the origin of illicit funds. This is the highest-risk cycle pattern — money returns to its origin in just 3 hops.`
+                );
+            } else {
+                paragraphs.push(`This account is implicated in a 3-hop circular fund routing ring, facilitating rapid fund rotation.`);
+            }
         }
         if (pattern === 'cycle_length_4') {
             paragraphs.push(
@@ -215,8 +236,10 @@ const CounterpartyList = ({ accountId, transactions }) => {
         if (!transactions) return [];
         const map = new Map();
         transactions.forEach(tx => {
+            if (!tx || !tx.amount) return;
             if (tx.sender_id === accountId || tx.receiver_id === accountId) {
                 const other = tx.sender_id === accountId ? tx.receiver_id : tx.sender_id;
+                if (!other) return;
                 if (!map.has(other)) map.set(other, { id: other, count: 0, volume: 0 });
                 const entry = map.get(other);
                 entry.count++;
@@ -256,7 +279,7 @@ const CounterpartyList = ({ accountId, transactions }) => {
     );
 };
 
-const ActionToolbar = ({ isFlagged, onToggleFlag, onExport, onIsolate }) => (
+const ActionToolbar = ({ isFlagged, onToggleFlag, onExport, onIsolate, account, stats }) => (
     <div className="grid grid-cols-3 gap-2 py-4 border-y border-slate-800">
         <button 
             onClick={onToggleFlag}
@@ -267,7 +290,7 @@ const ActionToolbar = ({ isFlagged, onToggleFlag, onExport, onIsolate }) => (
             }`}>
             <Flag size={16} className={`${isFlagged ? 'text-red-500 fill-red-500' : 'text-red-400'} group-hover:scale-110 transition-transform`} />
             <span className={`text-[9px] font-bold uppercase tracking-tighter ${isFlagged ? 'text-red-400' : 'text-slate-400'}`}>
-                {isFlagged ? 'UNFLAG_SUSPECT' : 'FLAG_SUSPECT'}
+                {isFlagged ? 'UNFLAG_SUSPECT' : (stats?.isVerified ? 'RECLASSIFY_THREAT' : 'FLAG_SUSPECT')}
             </span>
         </button>
         <button 
@@ -295,213 +318,270 @@ export default function RiskExplanationPanel({
     onIsolate,
     onClose 
 }) {
-    const stats = useMemo(() => (account ? nodeStats[account.account_id] : null), [account, nodeStats]);
-    const paragraphs = useMemo(
-        () => generateNarrative(account, nodeStats, transactions, fraudRings),
-        [account, nodeStats, transactions, fraudRings]
-    );
 
     if (!account) return null;
 
-    const timestamps = stats?.timestamps || [];
-    const sortedTs = [...timestamps].sort((a, b) => a - b);
-    const firstSeen = sortedTs[0] ? fmtDate(sortedTs[0]) : '—';
-    const lastSeen = sortedTs[sortedTs.length - 1] ? fmtDate(sortedTs[sortedTs.length - 1]) : '—';
-    const activeDays = sortedTs.length >= 2
-        ? Math.ceil((sortedTs[sortedTs.length - 1] - sortedTs[0]) / (1000 * 60 * 60 * 24))
-        : 0;
+    // Defend against missing stats
+    const stats = useMemo(() => {
+        if (!account || !nodeStats) return null;
+        return nodeStats[account.account_id] || {
+            isVerified: false,
+            suspicion_score: account.suspicion_score || 0,
+            detected_patterns: account.detected_patterns || [],
+            txCount: 0,
+            timestamps: [],
+            amounts: []
+        };
+    }, [account, nodeStats]);
 
-    const handleExport = () => {
-        const data = {
-            metadata: {
-                report_type: 'FORENSIC_DOSSIER',
-                generated_at: new Date().toISOString(),
-                investigator_mode: 'THREAT_VISION_INTERNAL',
-            },
-            suspect: {
-                account_id: account.account_id,
-                suspicion_score: account.suspicion_score,
-                risk_level: account.suspicion_score >= 75 ? 'CRITICAL' : (account.suspicion_score >= 50 ? 'ELEVATED' : 'MODERATE'),
-                detected_patterns: account.detected_patterns,
-            },
-            activity_metrics: {
-                transaction_count: stats?.txCount,
-                total_sent: stats?.totalSent,
-                total_received: stats?.totalReceived,
-                first_seen: firstSeen,
-                last_seen: lastSeen,
-                active_days: activeDays,
-            },
-            narrative: paragraphs,
-            context: {
-                fraud_rings: stats?.ringMemberships || [],
-                top_counterparties: transactions
-                    ? Array.from(transactions.reduce((acc, tx) => {
-                        if (tx.sender_id === account.account_id || tx.receiver_id === account.account_id) {
-                            const other = tx.sender_id === account.account_id ? tx.receiver_id : tx.sender_id;
-                            const current = acc.get(other) || { count: 0, volume: 0 };
-                            acc.set(other, { count: current.count + 1, volume: current.volume + (parseFloat(tx.amount) || 0) });
-                        }
-                        return acc;
-                      }, new Map())).map(([id, stats]) => ({ id, ...stats })).sort((a,b) => b.volume - a.volume).slice(0, 5)
-                    : []
+    const paragraphs = useMemo(() => {
+        try {
+            return generateNarrative(account, nodeStats, transactions, fraudRings);
+        } catch (e) {
+            console.error('Narrative generation failed:', e);
+            return ['Error generating forensic narrative.'];
+        }
+    }, [account, nodeStats, transactions, fraudRings]);
+
+    try {
+        const timestamps = stats?.timestamps || [];
+        const sortedTs = [...timestamps].filter(t => t instanceof Date && !isNaN(t.getTime())).sort((a, b) => a.getTime() - b.getTime());
+        const firstSeen = sortedTs[0] ? fmtDate(sortedTs[0]) : '—';
+        const lastSeen = sortedTs[sortedTs.length - 1] ? fmtDate(sortedTs[sortedTs.length - 1]) : '—';
+        const activeDays = sortedTs.length >= 2
+            ? Math.ceil((sortedTs[sortedTs.length - 1] - sortedTs[0]) / (1000 * 60 * 60 * 24))
+            : 0;
+
+        const handleExport = () => {
+            try {
+                const data = {
+                    metadata: {
+                        report_type: 'FORENSIC_DOSSIER',
+                        generated_at: new Date().toISOString(),
+                        investigator_mode: 'THREAT_VISION_INTERNAL',
+                    },
+                    suspect: {
+                        account_id: account.account_id,
+                        suspicion_score: account.suspicion_score,
+                        risk_level: account.suspicion_score >= 75 ? 'CRITICAL' : (account.suspicion_score >= 50 ? 'ELEVATED' : 'MODERATE'),
+                        detected_patterns: account.detected_patterns,
+                    },
+                    activity_metrics: {
+                        transaction_count: stats?.txCount,
+                        total_sent: stats?.totalSent,
+                        total_received: stats?.totalReceived,
+                        first_seen: firstSeen,
+                        last_seen: lastSeen,
+                        active_days: activeDays,
+                    },
+                    narrative: paragraphs,
+                    context: {
+                        fraud_rings: stats?.ringMemberships || [],
+                        top_counterparties: transactions
+                            ? Array.from(transactions.reduce((acc, tx) => {
+                                if (tx.sender_id === account.account_id || tx.receiver_id === account.account_id) {
+                                    const other = tx.sender_id === account.account_id ? tx.receiver_id : tx.sender_id;
+                                    const current = acc.get(other) || { count: 0, volume: 0 };
+                                    acc.set(other, { count: current.count + 1, volume: current.volume + (parseFloat(tx.amount) || 0) });
+                                }
+                                return acc;
+                            }, new Map())).map(([id, stats]) => ({ id, ...stats })).sort((a,b) => b.volume - a.volume).slice(0, 5)
+                            : []
+                    }
+                };
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `DOSSIER_${account.account_id}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error('Export failed:', e);
             }
         };
 
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `DOSSIER_${account.account_id}.json`;
-        link.click();
-        URL.revokeObjectURL(url);
-    };
-
-    return (
-        <AnimatePresence>
-            {account && (
-                <>
-                    {/* Dim overlay */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
-                        onClick={onClose}
-                    />
-
-                    {/* Panel Wrapper - Centered */}
-                    <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none">
+        return (
+            <AnimatePresence>
+                {account && (
+                    <>
+                        {/* Dim overlay */}
                         <motion.div
-                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                            className="pointer-events-auto w-full max-w-2xl bg-[#0a0e1a]/95 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.9)] max-h-[90vh] flex flex-col"
-                        >
-                            {/* Header */}
-                            <div className="shrink-0 bg-[#0a0e1a]/80 backdrop-blur-md border-b border-white/5 px-8 py-6 flex items-center justify-between z-10">
-                                <div>
-                                    <div className="text-[10px] text-[#00e5ff] font-black uppercase tracking-[0.2em] mb-1 opacity-70">
-                                        Forensic_Dossier_ID
-                                    </div>
-                                    <HyperText className="text-2xl font-black text-white p-0 h-auto leading-none" duration={1000}>
-                                        {account.account_id}
-                                    </HyperText>
-                                </div>
-                                <button
-                                    onClick={onClose}
-                                    className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-white/10 text-white transition-all border border-white/5 hover:scale-110 active:scale-95 group"
-                                >
-                                    <X size={24} className="group-hover:rotate-90 transition-transform duration-300" />
-                                </button>
-                            </div>
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
+                            onClick={onClose}
+                        />
 
-                            {/* Scrollable Content */}
-                            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-10 custom-scrollbar pb-12">
-                                {/* Performance Tier: Risk Gauge */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center p-6 bg-gradient-to-br from-white/5 to-transparent rounded-3xl border border-white/5">
-                                    <div className="flex justify-center md:justify-start scale-110">
-                                        <RiskGauge score={account.suspicion_score} />
-                                    </div>
-                                    <div className="text-center md:text-right">
-                                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Risk_Level</div>
-                                        <div className={`text-4xl font-black italic tracking-tighter ${
-                                            account.suspicion_score >= 75 ? 'text-red-500' : 
-                                            account.suspicion_score >= 50 ? 'text-orange-500' : 'text-amber-400'
-                                        }`}>
-                                            {account.suspicion_score >= 75 ? 'CRITICAL' : 
-                                             account.suspicion_score >= 50 ? 'ELEVATED' : 'MODERATE'}
+                        {/* Panel Wrapper - Centered */}
+                        <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none">
+                            <motion.div
+                                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                                className="pointer-events-auto w-full max-w-2xl bg-[#0a0e1a]/95 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.9)] max-h-[90vh] flex flex-col"
+                            >
+                                {/* Header */}
+                                <div className="shrink-0 bg-[#0a0e1a]/80 backdrop-blur-md border-b border-white/5 px-8 py-6 flex items-center justify-between z-10">
+                                    <div>
+                                        <div className={`text-[10px] ${stats?.isVerified ? 'text-emerald-400' : 'text-[#00e5ff]'} font-black uppercase tracking-[0.2em] mb-1 opacity-70`}>
+                                            {stats?.isVerified ? 'Forensic_Clearance_ID' : 'Forensic_Dossier_ID'}
                                         </div>
-                                        <div className="text-[9px] text-slate-400 mt-1 font-mono uppercase">HEURISTIC_SCORE_MATCH</div>
+                                        <HyperText className="text-2xl font-black text-white p-0 h-auto leading-none" duration={1000}>
+                                            {account.account_id || 'UNKNOWN'}
+                                        </HyperText>
                                     </div>
+                                    <button
+                                        onClick={onClose}
+                                        className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-white/10 text-white transition-all border border-white/5 hover:scale-110 active:scale-95 group"
+                                    >
+                                        <X size={24} className="group-hover:rotate-90 transition-transform duration-300" />
+                                    </button>
                                 </div>
 
-                                {/* Behavioral Pulse & Relationship Intelligence */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <ActivitySparkline timestamps={sortedTs} />
-                                    <CounterpartyList accountId={account.account_id} transactions={transactions} />
-                                </div>
-
-                                {/* Patterns Tier */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <ShieldAlert size={14} className="text-amber-400" />
-                                        <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Detected_Anomalies</span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(account.detected_patterns || []).map((p) => (
-                                            <motion.span 
-                                                key={p} 
-                                                initial={{ scale: 0.8, opacity: 0 }}
-                                                animate={{ scale: 1, opacity: 1 }}
-                                                className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] rounded-full font-black uppercase tracking-tighter"
-                                            >
-                                                {p.replace(/_/g, ' ')}
-                                            </motion.span>
-                                        ))}
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-3">
-                                        {paragraphs.map((para, i) => (
-                                            <motion.div
-                                                key={i}
-                                                initial={{ x: 20, opacity: 0 }}
-                                                animate={{ x: 0, opacity: 1 }}
-                                                transition={{ delay: 0.1 * i }}
-                                                className={`text-xs leading-relaxed p-5 rounded-2xl border ${
-                                                    para.startsWith('⚠') 
-                                                        ? 'bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-300' 
-                                                        : para.startsWith('Suspicion') 
-                                                            ? 'bg-slate-950/20 border-white/5 text-slate-400 font-mono italic text-[10px]' 
-                                                            : 'bg-white/5 border-white/5 text-slate-300'
-                                                }`}
-                                            >
-                                                {para}
-                                            </motion.div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Forensic Dashboard Tier */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <Activity size={14} className="text-[#00e5ff]" />
-                                        <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Account_Vital_Stats</span>
-                                    </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        {[
-                                            { label: 'Transactions', value: stats?.txCount ?? '0', icon: Activity },
-                                            { label: 'Outflow', value: fmtCurrency(stats?.totalSent), icon: ArrowUpRight },
-                                            { label: 'Inflow', value: fmtCurrency(stats?.totalReceived), icon: ArrowDownLeft },
-                                            { label: 'First Contact', value: firstSeen, icon: Clock },
-                                            { label: 'Active Period', value: `${activeDays} Days`, icon: Calendar },
-                                            { label: 'Network Ring', value: account.ring_id || 'Isolated', icon: ShieldAlert },
-                                        ].map(({ label, value, icon: Icon }) => (
-                                            <div key={label} className="bg-slate-950/40 border border-slate-800 p-4 rounded-2xl hover:border-white/10 transition-colors">
-                                                <div className="flex items-center gap-2 mb-1.5 opacity-50">
-                                                    <Icon size={12} className="text-[#00e5ff]" />
-                                                    <div className="text-[9px] uppercase font-black tracking-widest text-[#00e5ff]">{label}</div>
-                                                </div>
-                                                <div className="text-white font-mono text-xs font-bold truncate">{value}</div>
+                                {/* Scrollable Content */}
+                                <div className="flex-1 overflow-y-auto px-8 py-8 space-y-10 custom-scrollbar pb-12">
+                                    {/* Performance Tier: Risk Gauge */}
+                                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 items-center p-6 bg-gradient-to-br ${stats?.isVerified ? 'from-emerald-500/10' : 'from-white/5'} to-transparent rounded-3xl border ${stats?.isVerified ? 'border-emerald-500/20' : 'border-white/5'}`}>
+                                        <div className="flex justify-center md:justify-start scale-110">
+                                            <RiskGauge score={account.suspicion_score || 0} />
+                                        </div>
+                                        <div className="text-center md:text-right">
+                                            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">{stats?.isVerified ? 'Verification_Status' : 'Risk_Level'}</div>
+                                            <div className={`text-4xl font-black italic tracking-tighter ${
+                                                stats?.isVerified ? 'text-emerald-400' :
+                                                ((account.suspicion_score || 0) >= 75 ? 'text-red-500' : 
+                                                (account.suspicion_score || 0) >= 50 ? 'text-orange-500' : 'text-amber-400')
+                                            }`}>
+                                                {stats?.isVerified ? 'SAFE/CLEARED' :
+                                                 ((account.suspicion_score || 0) >= 75 ? 'CRITICAL' : 
+                                                  (account.suspicion_score || 0) >= 50 ? 'ELEVATED' : 'MODERATE')}
                                             </div>
-                                        ))}
+                                            <div className="text-[9px] text-slate-400 mt-1 font-mono uppercase">
+                                                {stats?.isVerified ? 'MATCH: LEGITIMATE PATTERN' : 'HEURISTIC_SCORE_MATCH'}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
 
-                                {/* Action Control */}
-                                <ActionToolbar 
-                                    isFlagged={isFlagged}
-                                    onToggleFlag={onToggleFlag}
-                                    onExport={handleExport}
-                                    onIsolate={onIsolate}
-                                />
-                            </div>
-                        </motion.div>
+                                    {/* Behavioral Pulse & Relationship Intelligence */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <ActivitySparkline timestamps={sortedTs} />
+                                        <CounterpartyList accountId={account.account_id} transactions={transactions} />
+                                    </div>
+
+                                    {/* Patterns Tier */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            {stats?.isVerified ? <ShieldCheck size={14} className="text-emerald-400" /> : <ShieldAlert size={14} className="text-amber-400" />}
+                                            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
+                                                {stats?.isVerified ? 'Verified_Classification' : 'Detected_Anomalies'}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {stats?.isVerified ? (
+                                                <motion.span 
+                                                    initial={{ scale: 0.8, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] rounded-full font-black uppercase tracking-tighter"
+                                                >
+                                                    {stats.classification}
+                                                </motion.span>
+                                            ) : (account.detected_patterns || []).map((p) => (
+                                                <motion.span 
+                                                    key={p} 
+                                                    initial={{ scale: 0.8, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] rounded-full font-black uppercase tracking-tighter"
+                                                >
+                                                    {p.replace(/_/g, ' ')}
+                                                </motion.span>
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            {(paragraphs || []).map((para, i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    initial={{ x: 20, opacity: 0 }}
+                                                    animate={{ x: 0, opacity: 1 }}
+                                                    transition={{ delay: 0.1 * i }}
+                                                    className={`text-xs leading-relaxed p-5 rounded-2xl border ${
+                                                        stats?.isVerified
+                                                            ? 'bg-emerald-500/5 border-emerald-500/10 text-emerald-100/80 shadow-[inset_0_0_20px_rgba(16,185,129,0.05)]'
+                                                            : para.startsWith('⚠') 
+                                                                ? 'bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-300' 
+                                                                : para.startsWith('Suspicion') 
+                                                                    ? 'bg-slate-950/20 border-white/5 text-slate-400 font-mono italic text-[10px]' 
+                                                                    : 'bg-white/5 border-white/5 text-slate-300'
+                                                    }`}
+                                                >
+                                                    {para}
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Forensic Dashboard Tier */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <Activity size={14} className="text-[#00e5ff]" />
+                                            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Account_Vital_Stats</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                            {[
+                                                { label: 'Transactions', value: stats?.txCount ?? '0', icon: Activity },
+                                                { label: 'Outflow', value: fmtCurrency(stats?.totalSent), icon: ArrowUpRight },
+                                                { label: 'Inflow', value: fmtCurrency(stats?.totalReceived), icon: ArrowDownLeft },
+                                                { label: 'First Contact', value: firstSeen, icon: Clock },
+                                                { label: 'Active Period', value: `${activeDays} Days`, icon: Calendar },
+                                                { label: stats?.isVerified ? 'Monitoring Zone' : 'Network Ring', value: account.ring_id || (stats?.isVerified ? 'Monitored Segment' : 'Isolated Node'), icon: stats?.isVerified ? ShieldCheck : ShieldAlert },
+                                            ].map(({ label, value, icon: Icon }) => (
+                                                <div key={label} className="bg-slate-950/40 border border-slate-800 p-4 rounded-2xl hover:border-white/10 transition-colors">
+                                                    <div className="flex items-center gap-2 mb-1.5 opacity-50">
+                                                        <Icon size={12} className="text-[#00e5ff]" />
+                                                        <div className="text-[9px] uppercase font-black tracking-widest text-[#00e5ff]">{label}</div>
+                                                    </div>
+                                                    <div className="text-white font-mono text-xs font-bold truncate">{value}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Action Control */}
+                                    <ActionToolbar 
+                                        isFlagged={isFlagged}
+                                        onToggleFlag={onToggleFlag}
+                                        onExport={handleExport}
+                                        onIsolate={onIsolate}
+                                        account={account}
+                                        stats={stats}
+                                    />
+                                </div>
+                            </motion.div>
+                        </div>
+                    </>
+                )}
+            </AnimatePresence>
+        );
+    } catch (err) {
+        console.error('RiskExplanationPanel render crash:', err);
+        return (
+            <div className="fixed inset-0 flex items-center justify-center z-[100] bg-slate-900/90 backdrop-blur-md">
+                <div className="bg-red-950/50 border border-red-500/50 p-8 rounded-3xl max-w-lg text-center shadow-2xl">
+                    <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-2xl font-black text-white mb-2 uppercase italic tracking-tighter">Forensic Panel Crash</h2>
+                    <p className="text-slate-300 mb-6 text-sm">The research module encountered a critical data anomaly and was unable to render this dossier.</p>
+                    <button onClick={onClose} className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all">Dismiss Dossier</button>
+                    <div className="mt-4 p-3 bg-black/40 rounded-lg text-left overflow-auto max-h-32">
+                        <code className="text-[10px] text-red-400 leading-tight block">{err.message}</code>
+                        <code className="text-[8px] text-red-700 block mt-2">{err.stack?.split('\n').slice(0, 3).join('\n')}</code>
                     </div>
-                </>
-            )}
-        </AnimatePresence>
-    );
+                </div>
+            </div>
+        );
+    }
 }
 
 // REMOVE ScoreBadge as it's replaced by RiskGauge in the main layout

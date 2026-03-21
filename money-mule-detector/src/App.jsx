@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { 
   Network, 
   ShieldAlert, 
@@ -206,24 +206,56 @@ export default function App() {
   const summary = analysisResults?.summary || {};
 
   // suspiciousAccountIds Set for heatmap
-  const suspiciousAccountIds = new Set(suspiciousAccounts.map((a) => a.account_id));
+  const suspiciousAccountIds = useMemo(() => 
+    new Set(suspiciousAccounts.map((a) => String(a.account_id).trim())),
+  [suspiciousAccounts]);
 
   // Build a nodeStats-compatible object for RiskExplanationPanel
-  // (maps account_id â†’ basic stats derived from results)
-  const nodeStats = {};
-  for (const acc of suspiciousAccounts) {
-    nodeStats[acc.account_id] = {
-      suspicion_score: acc.suspicion_score,
-      detected_patterns: acc.detected_patterns,
-      ring_id: acc.ring_id,
-      ringMemberships: fraudRings
-        .filter((r) => r.member_accounts.includes(acc.account_id))
-        .map((r) => r.ring_id),
-      txCount: 0,
-      uniqueSenders: 0,
-      uniqueReceivers: 0,
-    };
-  }
+  const nodeStats = useMemo(() => {
+    const stats = {};
+    for (const acc of suspiciousAccounts) {
+      const accountTx = transactions.filter(tx => tx.sender_id === acc.account_id || tx.receiver_id === acc.account_id);
+      const uniqueSenders = new Set(accountTx.map(t => t.sender_id).filter(id => id !== acc.account_id));
+      const uniqueReceivers = new Set(accountTx.map(t => t.receiver_id).filter(id => id !== acc.account_id));
+
+      stats[acc.account_id] = {
+        suspicion_score: acc.suspicion_score,
+        detected_patterns: acc.detected_patterns,
+        ring_id: acc.ring_id,
+        ringMemberships: fraudRings
+          .filter((r) => r.member_accounts && Array.isArray(r.member_accounts) && r.member_accounts.includes(acc.account_id))
+          .map((r) => r.ring_id),
+        txCount: accountTx.length,
+        totalSent: accountTx.filter(t => t.sender_id === acc.account_id).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0),
+        totalReceived: accountTx.filter(t => t.receiver_id === acc.account_id).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0),
+        uniqueSenders: uniqueSenders,
+        uniqueReceivers: uniqueReceivers,
+        timestamps: accountTx.map(t => new Date(t.timestamp)),
+        amounts: accountTx.map(t => parseFloat(t.amount) || 0)
+      };
+    }
+
+    // Add verified entities to nodeStats so the research panel can display forensic clearance
+    for (const ent of analysisResults?.verified_entities || []) {
+      const accountTx = (transactions || []).filter(tx => tx.sender_id === ent.account_id || tx.receiver_id === ent.account_id);
+      stats[ent.account_id] = {
+        isVerified: true,
+        classification: ent.classification,
+        suspicion_score: 0,
+        detected_patterns: [],
+        ring_id: 'Monitored Segment',
+        ringMemberships: [],
+        txCount: accountTx.length,
+        totalSent: accountTx.filter(t => t.sender_id === ent.account_id).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0),
+        totalReceived: accountTx.filter(t => t.receiver_id === ent.account_id).reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0),
+        uniqueSenders: new Set(accountTx.map(t => t.sender_id).filter(id => id !== ent.account_id)),
+        uniqueReceivers: new Set(accountTx.map(t => t.receiver_id).filter(id => id !== ent.account_id)),
+        timestamps: accountTx.map(t => new Date(t.timestamp)),
+        amounts: accountTx.map(t => parseFloat(t.amount) || 0)
+      };
+    }
+    return stats;
+  }, [suspiciousAccounts, transactions, fraudRings, analysisResults]);
 
   // Build analysisResults-compatible shape for SummaryPanel (can be used later)
 
@@ -485,6 +517,7 @@ export default function App() {
                     <GraphVisualization
                       graphData={graphData}
                       suspiciousAccounts={suspiciousAccounts}
+                      verifiedEntities={analysisResults?.verified_entities || []}
                       flaggedAccounts={flaggedAccounts}
                       fraudRings={fraudRings}
                       onSelectAccount={handleSelectAccount}
@@ -602,6 +635,7 @@ export default function App() {
                 <GraphVisualization 
                   graphData={graphData}
                   suspiciousAccounts={suspiciousAccounts}
+                  verifiedEntities={analysisResults?.verified_entities || []}
                   fraudRings={fraudRings}
                   onSelectAccount={handleSelectAccount}
                   flaggedAccounts={flaggedAccounts}
