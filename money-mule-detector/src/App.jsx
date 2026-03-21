@@ -44,7 +44,7 @@ export default function App() {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState('');
   const [isolatedNodeId, setIsolatedNodeId] = useState(null);
-  const [activeTab, setActiveTab] = useState('heatmap');
+  const [activeTab, setActiveTab] = useState('graph');
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
