@@ -686,76 +686,32 @@ export default function App() {
               )}
 
               {/* Timeline Heatmap */}
-                            {activeTab === 'heatmap' && (
-                <div className="flex flex-col min-h-[900px] w-full overflow-hidden bg-[#030303] relative border-2 border-slate-800 rounded-b-xl z-0">
-                  <LampContainer className="w-full h-full min-h-[900px]">
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'flex-start',
-                      width: '100%',
-                      padding: '0 40px 40px 40px',
-                      zIndex: 50,
-                      position: 'relative',
-                      marginTop: '-24px'
-                    }}>
-                      <motion.h1
-                        initial={{ opacity: 0.5, y: 100 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3, duration: 0.8, ease: "easeInOut" }}
-                        style={{
-                          fontSize: '32px',
-                          fontWeight: 800,
-                          color: '#ffffff',
-                          letterSpacing: '-0.02em',
-                          textAlign: 'center',
-                          marginBottom: '8px',
-                          marginTop: '24px'
-                        }}
-                      >
-                        Temporal Heatmap
-                      </motion.h1>
-                      <motion.p
-                        initial={{ opacity: 0.5, y: 100 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4, duration: 0.8, ease: "easeInOut" }}
-                        style={{
-                          fontSize: '13px',
-                          color: 'rgba(0, 229, 255, 0.7)',
-                          textAlign: 'center',
-                          letterSpacing: '0.08em',
-                          textTransform: 'uppercase',
-                          marginBottom: '32px'
-                        }}
-                      >
-                        Suspicious Transaction Flow Over Time
-                      </motion.p>
-                      
-                      <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '100%',
-                        paddingLeft: '40px',
-                        paddingRight: '40px'
-                      }}>
-                        <TemporalHeatmap transactions={transactions} suspiciousAccountIds={suspiciousAccountIds} />
-                      </div>
-                    </div>
-                  </LampContainer>
+              {activeTab === 'heatmap' && (
+                <div className="flex flex-col h-full w-full overflow-hidden bg-transparent">
+                  <div className="p-6 border-b border-white/5 flex flex-col justify-center items-center shrink-0">
+                    <h1 className="text-2xl font-black tracking-tight text-white font-headline mb-2">Temporal Heatmap</h1>
+                    <p className="text-sm text-cyan-400 font-headline uppercase tracking-widest font-bold">Suspicious Transaction Flow Over Time</p>
+                  </div>
+                  <div className="flex-1 overflow-auto custom-scrollbar flex flex-col items-center justify-center p-8">
+                    <TemporalHeatmap transactions={transactions} suspiciousAccountIds={suspiciousAccountIds} />
+                  </div>
                 </div>
               )}
 
               {/* Ring Overlap */}
-{activeTab === 'overlap' && (
-                <div className="h-[800px] flex justify-center items-center bg-slate-950 border-2 border-slate-800">
-                  <RingOverlapVisualization
-                    fraudRings={fraudRings}
-                    suspiciousAccounts={suspiciousAccounts}
-                    nodeStats={nodeStats}
-                  />
+              {activeTab === 'overlap' && (
+                <div className="flex flex-col h-full w-full overflow-hidden bg-transparent">
+                  <div className="p-6 border-b border-white/5 flex flex-col justify-center items-center shrink-0">
+                    <h1 className="text-2xl font-black tracking-tight text-white font-headline mb-2">Ring Overlap Intelligence</h1>
+                    <p className="text-sm text-cyan-400 font-headline uppercase tracking-widest font-bold">Cross-Network Entity Relationships</p>
+                  </div>
+                  <div className="flex-1 overflow-hidden flex justify-center items-center relative">
+                    <RingOverlapVisualization
+                      fraudRings={fraudRings}
+                      suspiciousAccounts={suspiciousAccounts}
+                      nodeStats={nodeStats}
+                    />
+                  </div>
                 </div>
               )}
 

@@ -168,33 +168,7 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
     }
 
     return (
-        <div style={{
-            background: 'rgba(255, 255, 255, 0.025)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(0, 229, 255, 0.25)',
-            borderTop: '1px solid rgba(0, 229, 255, 0.5)',
-            borderRadius: '16px',
-            padding: '24px 28px',
-            width: 'fit-content',
-            minWidth: '600px',
-            maxWidth: '900px',
-            marginLeft: 'auto',
-            marginRight: 'auto',
-            boxShadow: '0 0 20px rgba(0, 229, 255, 0.12), 0 0 60px rgba(0, 229, 255, 0.06), 0 0 120px rgba(0, 229, 255, 0.03), inset 0 0 30px rgba(0, 229, 255, 0.02), 0 8px 40px rgba(0, 0, 0, 0.5)',
-            position: 'relative'
-        }} className="z-50">
-            {/* Inner glow to reinforce the lamp-to-card light flow */}
-            <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '60px',
-                background: 'linear-gradient(to bottom, rgba(0, 229, 255, 0.06) 0%, transparent 60px)',
-                borderRadius: '16px 16px 0 0',
-                pointerEvents: 'none'
-            }}></div>
+        <div className="z-10 mx-auto w-full max-w-[1000px] relative bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-xl shadow-2xl">
 
             <style>
                 {`
@@ -205,19 +179,12 @@ export default function TemporalHeatmap({ transactions, suspiciousAccountIds }) 
                 `}
             </style>
 
-            <div className="flex items-start justify-end mb-6 relative z-10">
+            <div className="flex items-start justify-end mb-6 relative z-10 w-full">
                 <button
                     onClick={() => setShowNormal(!showNormal)}
-                    className="flex items-center gap-[6px] rounded-[20px] border border-[rgba(0,229,255,0.3)] bg-[rgba(0,229,255,0.1)] px-[14px] py-[6px] text-[11px] font-semibold text-[#00e5ff] transition-all hover:bg-[rgba(0,229,255,0.18)] hover:shadow-[0_0_12px_rgba(0,229,255,0.2)]"
+                    className="flex items-center gap-[6px] rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-xs font-headline font-bold uppercase tracking-wider text-cyan-400 transition-all hover:bg-cyan-400/20 hover:shadow-[0_0_15px_rgba(6,182,212,0.2)]"
                 >
-                    <div style={{ 
-                        width: '8px', 
-                        height: '8px', 
-                        background: '#00e5ff', 
-                        borderRadius: '50%', 
-                        boxShadow: '0 0 8px rgba(0,229,255,1), 0 0 16px rgba(0,229,255,0.5)',
-                        animation: 'pulseBlueDot 2s ease-in-out infinite' 
-                    }}></div>
+                    <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,1),0_0_16px_rgba(6,182,212,0.5)] animate-[pulseBlueDot_2s_ease-in-out_infinite]"></div>
                     {showNormal ? 'SHOW SUSPICIOUS ONLY' : 'SHOW ALL TRAFFIC'}
                 </button>
             </div>

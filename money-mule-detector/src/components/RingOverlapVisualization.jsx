@@ -111,23 +111,14 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
     }
 
     return (
-        <div style={{
-            background: 'linear-gradient(180deg, rgba(15, 21, 32, 0.8) 0%, rgba(10, 14, 26, 0.9) 100%)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderTop: '1px solid rgba(0, 229, 255, 0.3)',
-            borderRadius: '16px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 20px rgba(0, 229, 255, 0.05)'
-        }} className="p-6 flex flex-col md:flex-row gap-6 w-full relative z-10">
-            <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-lg font-bold text-white tracking-wide">Ring Overlap</h3>
-                    <div className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider bg-[#00e5ff]/10 text-[#00e5ff] border border-[#00e5ff]/20">
+        <div className="flex flex-col md:flex-row gap-8 w-full max-w-7xl mx-auto h-full items-start relative z-10 pt-4">
+            <div className="flex-1 flex flex-col h-full w-full max-w-4xl mx-auto">
+                <div className="flex items-center gap-4 mb-6">
+                    <div className="px-3 py-1 rounded-full text-[10px] font-headline font-bold tracking-widest bg-cyan-400/10 text-cyan-400 border border-cyan-400/20 shadow-[0_0_10px_rgba(6,182,212,0.1)]">
                         NETWORK ANALYSIS
                     </div>
+                    <p className="text-slate-400 text-sm font-body">Visualizing shared nodes and connections between fraud rings.</p>
                 </div>
-                <p className="text-slate-400 text-xs mb-6">Visualizing shared nodes and connections between fraud rings.</p>
 
                 <svg
                     width="100%"
@@ -334,14 +325,7 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
 
             {/* Info Panel for Selected Ring */}
             {selectedRing && (
-                <div style={{
-                    background: 'rgba(10, 14, 26, 0.6)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '12px',
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
-                }} className="w-full md:w-72 p-5 animate-fadeIn self-start">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl shadow-2xl w-full md:w-80 animate-fadeIn self-start mt-[72px]">
                     <div className="flex justify-between items-center mb-4 border-b border-[rgba(255,255,255,0.05)] pb-3">
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-[#00e5ff] shadow-[0_0_8px_#00e5ff]"></div>
@@ -349,24 +333,24 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                         </div>
                         <button onClick={() => setSelectedRing(null)} className="text-slate-400 hover:text-white transition-colors">✕</button>
                     </div>
-                    <div className="space-y-4 text-xs font-mono">
+                    <div className="space-y-4 text-xs font-body">
                         <div>
-                            <span className="text-slate-500 block text-[10px] mb-1">RISK SCORE</span>
-                            <span className="text-2xl font-bold bg-gradient-to-r from-rose-400 to-red-500 bg-clip-text text-transparent">
+                            <span className="text-slate-500 block text-[10px] mb-1 font-headline tracking-widest border-b border-white/5 pb-1">RISK SCORE</span>
+                            <span className="text-3xl font-black font-headline text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]">
                                 {selectedRing.risk_score}
                             </span>
                         </div>
                         <div>
-                            <span className="text-slate-500 block text-[10px] mb-1">PATTERN TYPE</span>
-                            <span className="text-slate-200 uppercase bg-[rgba(255,255,255,0.05)] px-2 py-1 rounded border border-[rgba(255,255,255,0.05)]">
+                            <span className="text-slate-500 block text-[10px] mb-1 font-headline tracking-widest border-b border-white/5 pb-1">PATTERN TYPE</span>
+                            <span className="text-white uppercase font-headline tracking-wider bg-white/10 px-2 py-1 rounded border border-white/10 inline-block mt-1">
                                 {selectedRing.pattern_type}
                             </span>
                         </div>
                         <div>
-                            <span className="text-slate-500 block mb-2 text-[10px]">MEMBERS ({selectedRing.member_accounts.length})</span>
-                            <div className="flex flex-wrap gap-1.5">
+                            <span className="text-slate-500 block mb-2 text-[10px] font-headline tracking-widest border-b border-white/5 pb-1">MEMBERS ({selectedRing.member_accounts.length})</span>
+                            <div className="flex flex-wrap gap-1.5 mt-2">
                                 {selectedRing.member_accounts.map(acc => (
-                                    <span key={acc} className="bg-[rgba(255,255,255,0.03)] px-1.5 py-0.5 rounded border border-[rgba(255,255,255,0.08)] text-slate-300">
+                                    <span key={acc} className="bg-white/5 px-2 py-1 rounded border border-white/10 text-slate-300 font-mono text-[10px]">
                                         {acc}
                                     </span>
                                 ))}
