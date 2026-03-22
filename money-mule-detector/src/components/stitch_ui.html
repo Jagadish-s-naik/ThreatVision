@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ThreatVision | Intelligence Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary": "#ff716a",
+                        "inverse-primary": "#00687b",
+                        "on-secondary-container": "#d9c8ff",
+                        "outline-variant": "#40485d",
+                        "surface": "#060e20",
+                        "on-tertiary-fixed-variant": "#79000e",
+                        "primary-fixed-dim": "#40ceed",
+                        "secondary": "#ac8aff",
+                        "surface-variant": "#192540",
+                        "error": "#ff716c",
+                        "primary-container": "#21bedc",
+                        "background": "#060e20",
+                        "tertiary-container": "#fd4e4d",
+                        "on-primary-fixed-variant": "#005564",
+                        "primary": "#53ddfc",
+                        "error-container": "#9f0519",
+                        "on-secondary-fixed-variant": "#5f28c8",
+                        "on-error-container": "#ffa8a3",
+                        "secondary-dim": "#8455ef",
+                        "surface-container-lowest": "#000000",
+                        "secondary-container": "#5516be",
+                        "tertiary-fixed": "#ff928b",
+                        "on-primary-container": "#00343e",
+                        "error-dim": "#d7383b",
+                        "surface-dim": "#060e20",
+                        "on-secondary-fixed": "#40009b",
+                        "surface-bright": "#1f2b49",
+                        "on-surface-variant": "#a3aac4",
+                        "secondary-fixed-dim": "#ceb9ff",
+                        "on-surface": "#dee5ff",
+                        "primary-dim": "#40ceed",
+                        "outline": "#6d758c",
+                        "on-tertiary": "#490005",
+                        "tertiary-dim": "#ff716a",
+                        "on-error": "#490006",
+                        "on-tertiary-fixed": "#3a0003",
+                        "inverse-surface": "#faf8ff",
+                        "secondary-fixed": "#dac9ff",
+                        "surface-container-high": "#141f38",
+                        "on-secondary": "#280067",
+                        "on-background": "#dee5ff",
+                        "surface-tint": "#53ddfc",
+                        "primary-fixed": "#53ddfc",
+                        "inverse-on-surface": "#4d556b",
+                        "on-primary-container": "#00343e",
+                        "tertiary-fixed-dim": "#ff7b74",
+                        "surface-container-low": "#091328",
+                        "surface-container-highest": "#192540",
+                        "on-primary-fixed": "#003640",
+                        "surface-container": "#0f1930",
+                        "on-primary": "#004b58"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(25, 37, 64, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(64, 72, 93, 0.1);
+        }
+        body {
+            background-color: #060e20;
+            color: #dee5ff;
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+<!-- Shared SideNavBar -->
+<aside class="fixed left-0 top-0 h-full z-50 flex flex-col h-screen w-72 border-r border-slate-800/50 bg-slate-950/60 backdrop-blur-xl shadow-2xl shadow-black/50">
+<!-- Brand Header -->
+<div class="p-8 pb-4">
+<div class="text-2xl font-black tracking-tighter text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)] font-['Space_Grotesk']">
+                ThreatVision
+            </div>
+<div class="font-['Space_Grotesk'] tracking-wider uppercase text-[11px] font-bold text-slate-400 mt-1">
+                Intelligence Terminal
+            </div>
+</div>
+<!-- CTA Zone: Upload Dataset -->
+<div class="px-6 py-4">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary-container py-3 px-4 rounded-xl font-headline font-bold text-sm tracking-wide active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">upload_file</span>
+                Upload Dataset
+            </button>
+</div>
+<!-- Navigation Tabs -->
+<nav class="flex-1 mt-4 overflow-y-auto">
+<!-- Active Tab: Overview -->
+<a class="relative flex items-center gap-3 px-6 py-4 text-cyan-400 before:absolute before:left-0 before:h-8 before:w-1 before:bg-cyan-400 before:shadow-[0_0_12px_rgba(6,182,212,1)] bg-cyan-400/5 font-['Space_Grotesk'] tracking-wider uppercase text-[11px] font-bold transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Overview
+            </a>
+<a class="flex items-center gap-3 px-6 py-4 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/40 font-['Space_Grotesk'] tracking-wider uppercase text-[11px] font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="monitoring">monitoring</span>
+                Analytics
+            </a>
+<a class="flex items-center gap-3 px-6 py-4 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/40 font-['Space_Grotesk'] tracking-wider uppercase text-[11px] font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="manage_search">manage_search</span>
+                Investigations
+            </a>
+<a class="flex items-center gap-3 px-6 py-4 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/40 font-['Space_Grotesk'] tracking-wider uppercase text-[11px] font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="radar">radar</span>
+                Threat Hunt
+            </a>
+<a class="flex items-center gap-3 px-6 py-4 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/40 font-['Space_Grotesk'] tracking-wider uppercase text-[11px] font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                Settings
+            </a>
+</nav>
+<!-- Footer Navigation -->
+<div class="mt-auto border-t border-slate-800/50 py-4">
+<a class="flex items-center gap-3 px-6 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/40 font-['Space_Grotesk'] tracking-wider uppercase text-[11px] font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="cloud_done">cloud_done</span>
+                System Status
+            </a>
+<a class="flex items-center gap-3 px-6 py-3 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/40 font-['Space_Grotesk'] tracking-wider uppercase text-[11px] font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="help_center">help_center</span>
+                Documentation
+            </a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-72 bg-surface min-h-screen relative overflow-hidden">
+<!-- Decorative Background Gradient Bleed -->
+<div class="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full pointer-events-none"></div>
+<div class="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-secondary/5 blur-[100px] rounded-full pointer-events-none"></div>
+<!-- Shared TopNavBar -->
+<header class="sticky top-0 right-0 w-full flex justify-between items-center px-8 z-40 bg-slate-950/40 backdrop-blur-md h-16 border-b border-slate-800/30">
+<div class="flex items-center gap-8">
+<div class="font-headline text-sm font-medium flex gap-6">
+<a class="text-cyan-400 font-bold relative after:absolute after:-bottom-[21px] after:left-1/2 after:-translate-x-1/2 after:h-1.5 after:w-1.5 after:rounded-full after:bg-purple-500 after:shadow-[0_0_8px_rgba(172,138,255,0.8)] cursor-pointer transition-all" href="#">Graph View</a>
+<a class="text-slate-400 hover:text-slate-100 cursor-pointer transition-all" href="#">Fraud Rings</a>
+<a class="text-slate-400 hover:text-slate-100 cursor-pointer transition-all" href="#">Timeline Heatmap</a>
+<a class="text-slate-400 hover:text-slate-100 cursor-pointer transition-all" href="#">Ring Overlap</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<!-- Search Bar -->
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg group-focus-within:text-primary transition-colors">search</span>
+<input class="bg-surface-container-highest/50 border border-outline-variant/20 rounded-xl pl-10 pr-4 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all w-64 placeholder:text-slate-600" placeholder="Scan identifiers..." type="text"/>
+</div>
+<div class="flex items-center gap-4 text-slate-400">
+<span class="material-symbols-outlined cursor-pointer hover:text-cyan-300 transition-colors" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-cyan-300 transition-colors" data-icon="shield">shield</span>
+<div class="h-8 w-8 rounded-full border border-primary/20 bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User profile avatar close up" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYa6rySzmKth0NRjZIA_FHGo0jz7lox4Puadxa6y9mQFNALZMSGI-QNcgE9A2dO-8D9AjxXHYxT4-at00QQuOPi5zFr7Nmp9kOvjGnxOlsW6AVBsXYYPr5-eDpLhjJ_Hv7lAoG4pYYJ6HUdEHGvQ7GRLN_Dt4gh6SF9FUY2eR4EctuiiuzZFy6knTjXg2CAyIzOQh7ExlEoaRGXw5YRAEgBjnNhMRS0YfnwGBdTv8yllmtKMVcMxbPWhNCL8n9o5vWx2k4E0KnUNrJ"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Page Header Area -->
+<section class="px-12 pt-12 pb-6">
+<div class="flex flex-col gap-1">
+<h1 class="font-headline text-5xl font-black tracking-tight text-on-surface">Dashboard Overview</h1>
+<p class="text-on-surface-variant font-body text-sm max-w-2xl mt-2 leading-relaxed">
+                    Real-time monitoring of global actor identities. Systems are currently operational with <span class="text-primary">99.98% accuracy</span> in heuristic detection patterns.
+                </p>
+</div>
+</section>
+<!-- Grid of Glassmorphism Statistic Cards -->
+<section class="px-12 py-8">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Card 1: Total Accounts -->
+<div class="glass-card rounded-2xl p-6 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-primary" data-icon="group">group</span>
+</div>
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="group">group</span>
+<span class="font-headline font-bold text-[11px] tracking-widest uppercase text-slate-400">Total Accounts</span>
+</div>
+<div>
+<span class="font-headline text-3xl font-black text-on-surface drop-shadow-[0_0_12px_rgba(83,221,252,0.4)]">124,502</span>
+</div>
+<div class="flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 w-fit px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[12px]">trending_up</span>
+                            +12.4%
+                        </div>
+</div>
+</div>
+<!-- Card 2: Verified Legitimate -->
+<div class="glass-card rounded-2xl p-6 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-emerald-400" data-icon="verified">verified</span>
+</div>
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-400 text-xl" data-icon="verified">verified</span>
+<span class="font-headline font-bold text-[11px] tracking-widest uppercase text-slate-400">Verified Legitimate</span>
+</div>
+<div>
+<span class="font-headline text-3xl font-black text-on-surface drop-shadow-[0_0_12px_rgba(52,211,153,0.4)]">98,211</span>
+</div>
+<div class="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-400/10 w-fit px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[12px]">check_circle</span>
+                            TRUSTED
+                        </div>
+</div>
+</div>
+<!-- Card 3: Suspicious Entities -->
+<div class="glass-card rounded-2xl p-6 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-secondary" data-icon="warning">warning</span>
+</div>
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-xl" data-icon="warning">warning</span>
+<span class="font-headline font-bold text-[11px] tracking-widest uppercase text-slate-400">Suspicious Entities</span>
+</div>
+<div>
+<span class="font-headline text-3xl font-black text-on-surface drop-shadow-[0_0_12px_rgba(172,138,255,0.4)]">2,410</span>
+</div>
+<div class="flex items-center gap-1.5 text-[10px] font-bold text-secondary bg-secondary/10 w-fit px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[12px]">monitoring</span>
+                            HIGH WATCH
+                        </div>
+</div>
+</div>
+<!-- Card 4: Fraud Rings -->
+<div class="glass-card rounded-2xl p-6 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-tertiary" data-icon="hub">hub</span>
+</div>
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-xl" data-icon="hub">hub</span>
+<span class="font-headline font-bold text-[11px] tracking-widest uppercase text-slate-400">Fraud Rings</span>
+</div>
+<div>
+<span class="font-headline text-3xl font-black text-on-surface drop-shadow-[0_0_12px_rgba(255,113,106,0.4)]">32</span>
+</div>
+<div class="flex items-center gap-1.5 text-[10px] font-bold text-tertiary bg-tertiary/10 w-fit px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[12px]">priority_high</span>
+                            ACTION REQ.
+                        </div>
+</div>
+</div>
+</div>
+</section>
+<!-- Secondary Content: Bento Style Graph/Data Layout -->
+<section class="px-12 py-4 mb-12">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Main Visualizer (Large Cell) -->
+<div class="lg:col-span-8 glass-card rounded-2xl p-1 min-h-[400px] flex flex-col overflow-hidden">
+<div class="p-6 pb-2 flex justify-between items-center">
+<div class="flex flex-col">
+<h3 class="font-headline text-lg font-bold">Threat Cluster Graph</h3>
+<p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Visualizing inter-entity relationship nodes</p>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1 bg-surface-container-highest rounded text-[10px] font-bold text-slate-400 hover:text-primary transition-colors">ZOOM OUT</button>
+<button class="px-3 py-1 bg-surface-container-highest rounded text-[10px] font-bold text-slate-400 hover:text-primary transition-colors">EXPORT SVG</button>
+</div>
+</div>
+<div class="flex-1 relative bg-slate-950/20 m-4 rounded-xl border border-outline-variant/5">
+<div class="absolute inset-0 opacity-40 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px]"></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="relative w-full h-full p-12">
+<!-- Mock UI for a graph view -->
+<img class="w-full h-full object-cover opacity-50 rounded-lg grayscale" data-alt="Abstract blue data visualization graph with nodes and connections" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIzThmzYC1W--0joGiVLzhvWXnMynIIq9SDV1Qay2sc5ttzNGtfai1k8tm3CfLtmuX285vg-rh9a81f4nDZwaz_UNT65P42OPLt0HlB-8yEgyaqBLS1sN5XrOFKy8oCoO0TpXmvsQej5oluOZl1FpTfTYkk_9t1G7aCUmChwshfjSNCMGbmTc3hsHmz3wrufYVnyBm08LQwCtNZ09r7rAxHd31Yu-S2WwFpsXvrbX1UUOWevzdRtYcUnTd5Z2hBouMV1gdaBC1Iv6Y"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container/80 via-transparent to-transparent"></div>
+<!-- Floating Data Nodes -->
+<div class="absolute top-1/4 left-1/3 p-3 glass-card rounded-lg border-primary/30 shadow-[0_0_15px_rgba(83,221,252,0.2)]">
+<div class="flex items-center gap-2">
+<div class="h-2 w-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(83,221,252,1)]"></div>
+<span class="text-[10px] font-mono text-primary font-bold">NODE_0941_X</span>
+</div>
+</div>
+<div class="absolute bottom-1/4 right-1/4 p-3 glass-card rounded-lg border-tertiary/30 shadow-[0_0_15px_rgba(255,113,106,0.2)]">
+<div class="flex items-center gap-2">
+<div class="h-2 w-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(255,113,106,1)]"></div>
+<span class="text-[10px] font-mono text-tertiary font-bold">FRAUD_RING_#12</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Side Data List (Small Cell) -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<div class="glass-card rounded-2xl p-6 flex-1">
+<h3 class="font-headline text-lg font-bold mb-4">Recent Anomalies</h3>
+<div class="space-y-4">
+<!-- List Item -->
+<div class="group cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-mono text-slate-500">14:22:01 UTC</span>
+<span class="text-[10px] font-bold text-tertiary bg-tertiary/5 px-2 rounded">HIGH RISK</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded bg-slate-800/50 flex items-center justify-center text-tertiary group-hover:bg-tertiary group-hover:text-white transition-all">
+<span class="material-symbols-outlined">dns</span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-on-surface">IP Cascade Detection</span>
+<span class="text-[10px] text-slate-500">42 proxy hops detected in 3s</span>
+</div>
+</div>
+</div>
+<!-- Separator via Spacing (Design Rule 5) -->
+<div class="h-2"></div>
+<!-- List Item -->
+<div class="group cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-mono text-slate-500">14:18:55 UTC</span>
+<span class="text-[10px] font-bold text-secondary bg-secondary/5 px-2 rounded">MEDIUM</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded bg-slate-800/50 flex items-center justify-center text-secondary group-hover:bg-secondary group-hover:text-white transition-all">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-on-surface">Wallet Dusting Attack</span>
+<span class="text-[10px] text-slate-500">Targeting verified segment B</span>
+</div>
+</div>
+</div>
+<div class="h-2"></div>
+<!-- List Item -->
+<div class="group cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-[10px] font-mono text-slate-500">13:55:12 UTC</span>
+<span class="text-[10px] font-bold text-primary bg-primary/5 px-2 rounded">LOW</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded bg-slate-800/50 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
+<span class="material-symbols-outlined">shield_person</span>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-on-surface">Bulk KyC Refresh</span>
+<span class="text-[10px] text-slate-500">Routine re-validation successful</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-gradient-to-br from-surface-container to-surface-container-high rounded-2xl p-6 border-l-2 border-primary shadow-xl">
+<h4 class="text-xs font-headline font-black text-primary tracking-widest uppercase mb-2">Operational Note</h4>
+<p class="text-[11px] leading-relaxed text-slate-400 italic">
+                            "ML Model v4.2 now prioritizing latent ring overlaps. Recommend manual review of Investigations tab for flagged Ring #092."
+                        </p>
+</div>
+</div>
+</div>
+</section>
+</main>
+</body></html>

@@ -10,16 +10,12 @@
   }
 
   body {
-    /* Deep space layered background */
-    background:
-      radial-gradient(ellipse at 20% 20%, rgba(0,229,255,0.04) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 80%, rgba(168,85,247,0.04) 0%, transparent 50%),
-      #0a0e1a;
-    color: #F1F5F9;
+    background-color: #060e20;
+    color: #dee5ff;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow-x: hidden;
   }
 }
 
@@ -68,23 +64,22 @@
    GLASS CARD — global reusable
    ────────────────────────────────────────── */
 .glass-card {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(25, 37, 64, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(64, 72, 93, 0.1);
   border-radius: 16px;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: border 0.25s ease, box-shadow 0.25s ease;
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  transition: border 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 .glass-card:hover {
-  border: 1px solid rgba(0, 229, 255, 0.2);
+  border: 1px solid rgba(83, 221, 252, 0.2);
   box-shadow:
     0 8px 40px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(0, 229, 255, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    0 0 20px rgba(83, 221, 252, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 /* glass-card hero variant — cyan top border glow */

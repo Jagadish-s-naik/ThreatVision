@@ -320,150 +320,191 @@ export default function App() {
     );
   }
 
-  // â”€â”€â”€ Main Dashboard Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Main Dashboard Layout ──────────────────────────────────────────
   return (
-    <div
-      className="h-screen w-full text-brand-text flex overflow-hidden"
-      style={{
-        background: 'radial-gradient(ellipse at 20% 20%, rgba(0,229,255,0.04) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(168,85,247,0.04) 0%, transparent 50%), #0a0e1a'
-      }}
-    >
-      {/* dot-grid texture overlay */}
-      <div className="dot-grid absolute inset-0 pointer-events-none z-0 opacity-[0.03]" />
+    <div className="flex min-h-screen bg-surface font-body text-on-surface overflow-hidden">
       
-      {/* â”€â”€â”€ Sidebar â”€â”€â”€ */}
-      <aside className="w-[210px] glass-sidebar flex flex-col z-20 transition-all flex-shrink-0 relative">
-        <div className="p-6 flex items-center gap-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00e5ff] to-[#a855f7] flex items-center justify-center shadow-[0_0_16px_rgba(0,229,255,0.4)]">
-            <ActivitySquare className="w-5 h-5 text-white" />
-          </div>
-          <h1 className="text-[17px] font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+      {/* ─── Sidebar ─── */}
+      <aside className="fixed left-0 top-0 h-full z-50 flex flex-col w-72 border-r border-slate-800/50 bg-slate-950/60 backdrop-blur-xl shadow-2xl shadow-black/50 overflow-hidden">
+        {/* Brand Header */}
+        <div className="p-8 pb-4">
+          <div className="text-2xl font-black tracking-tighter text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)] font-headline">
             ThreatVision
-          </h1>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto px-3 py-6 space-y-1">
-          <div style={{ fontSize: '10px', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '16px', paddingLeft: '12px' }}>
-            Menu
           </div>
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                style={isActive ? {
-                  background: 'rgba(0,229,255,0.08)',
-                  border: '1px solid rgba(0,229,255,0.25)',
-                  borderLeft: '3px solid #00e5ff',
-                  boxShadow: '0 0 16px rgba(0,229,255,0.1), inset 0 0 12px rgba(0,229,255,0.05)',
-                  color: '#00e5ff',
-                  borderRadius: '10px',
-                } : {
-                  background: 'transparent',
-                  border: '1px solid transparent',
-                  borderLeft: '3px solid transparent',
-                  color: '#8892a4',
-                  borderRadius: '10px',
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 font-medium text-sm transition-all duration-200
-                  ${!isActive ? 'hover:text-white' : ''}`}
-                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.1)'; e.currentTarget.style.borderLeft = '3px solid transparent'; e.currentTarget.style.color = '#ffffff'; }}}
-                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.border = '1px solid transparent'; e.currentTarget.style.borderLeft = '3px solid transparent'; e.currentTarget.style.color = '#8892a4'; }}}
-              >
-                <Icon style={{ width: 18, height: 18, color: isActive ? '#00e5ff' : 'currentColor', opacity: isActive ? 1 : 0.7 }} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="p-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="font-headline tracking-wider uppercase text-[11px] font-bold text-slate-400 mt-1">
+            Intelligence Terminal
+          </div>
+        </div>
+        
+        {/* CTA Zone */}
+        <div className="px-6 py-4 border-b border-slate-800/50 mb-4 pb-6">
           <button
             onClick={handleReset}
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '10px',
-              backdropFilter: 'blur(10px)',
-              color: 'white',
-              transition: 'all 0.2s ease',
-            }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium"
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,229,255,0.4)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(0,229,255,0.15)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.boxShadow = 'none'; }}
+            className="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary-container py-3 px-4 rounded-xl font-headline font-bold text-sm tracking-wide active:scale-[0.98] transition-transform flex items-center justify-center gap-2 hover:shadow-[0_0_15px_rgba(83,221,252,0.4)]"
           >
             <Upload className="w-4 h-4" />
             Upload New Data
           </button>
         </div>
+
+        {/* Navigation Mock (For aesthetic consistency with Stitch UI mockup) */}
+        <nav className="flex-1 overflow-y-auto space-y-1">
+          <a href="#" className="relative flex items-center gap-3 px-8 py-4 text-cyan-400 before:absolute before:left-0 before:h-8 before:w-1 before:bg-cyan-400 before:shadow-[0_0_12px_rgba(6,182,212,1)] bg-cyan-400/5 font-headline tracking-wider uppercase text-[11px] font-bold transition-all duration-300">
+            <ActivitySquare className="w-4 h-4" /> Overview
+          </a>
+          <a href="#" className="flex items-center gap-3 px-8 py-4 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/40 font-headline tracking-wider uppercase text-[11px] font-bold">
+            <Activity className="w-4 h-4" /> Analytics
+          </a>
+          <a href="#" className="flex items-center gap-3 px-8 py-4 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/40 font-headline tracking-wider uppercase text-[11px] font-bold">
+            <Search className="w-4 h-4" /> Investigations
+          </a>
+          <a href="#" className="flex items-center gap-3 px-8 py-4 text-slate-400 hover:text-slate-200 transition-colors hover:bg-slate-800/40 font-headline tracking-wider uppercase text-[11px] font-bold">
+            <ShieldAlert className="w-4 h-4" /> Threat Hunt
+          </a>
+        </nav>
       </aside>
 
-      {/* â”€â”€â”€ Main Content Area â”€â”€â”€ */}
-      <main className="flex-1 flex flex-col h-screen overflow-y-auto relative z-10">
-        <div className="p-6 md:p-8 max-w-[1600px] mx-auto w-full flex-1 flex flex-col gap-6 animate-fadeIn">
-          
-          {/* Top Header Row */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
-            <div className="flex flex-col md:flex-row md:items-center gap-6 lg:gap-10">
-              <div>
-                <h2 style={{ fontSize: '26px', fontWeight: 800, color: 'white', letterSpacing: '-0.02em', lineHeight: 1 }}>Threat Overview</h2>
-                <p style={{ color: '#8892a4', fontSize: '13px', marginTop: 4 }}>Live Graph Analysis</p>
-              </div>
-              
-              <div className="hidden md:flex items-center gap-4">
-                {/* KPI: Total Accounts */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '10px',
-                  padding: '8px 16px',
-                  backdropFilter: 'blur(10px)',
-                }}>
-                  <Users style={{ width: 18, height: 18, color: '#00e5ff' }} />
-                  <div>
-                    <p style={{ color: 'white', fontWeight: 700, fontSize: '18px', lineHeight: 1 }}>{(summary.total_accounts_analyzed || 0).toLocaleString()}</p>
-                    <p style={{ color: '#8892a4', fontSize: '11px', marginTop: 2 }}>Total Accounts</p>
-                  </div>
-                </div>
-                {/* KPI: Flagged Entities */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '10px',
-                  padding: '8px 16px',
-                  backdropFilter: 'blur(10px)',
-                }}>
-                  <AlertTriangle style={{ width: 18, height: 18, color: '#ff4d6d' }} />
-                  <div>
-                    <p style={{ color: 'white', fontWeight: 700, fontSize: '18px', lineHeight: 1 }}>{(summary.suspicious_accounts_flagged || 0).toLocaleString()}</p>
-                    <p style={{ color: '#8892a4', fontSize: '11px', marginTop: 2 }}>Flagged Entities</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Search bar */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '999px',
-              padding: '8px 16px',
-              backdropFilter: 'blur(10px)',
-            }} className="hidden lg:flex">
-               <Search style={{ width: 15, height: 15, color: '#8892a4' }} />
-               <input
-                style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '13px', color: 'white', width: '180px' }}
-                placeholder="Search..."
-                onFocus={e => e.currentTarget.parentElement.style.cssText += 'border-color: rgba(0,229,255,0.4); box-shadow: 0 0 0 3px rgba(0,229,255,0.08);'}
-                onBlur={e => e.currentTarget.parentElement.style.cssText += 'border-color: rgba(255,255,255,0.1); box-shadow: none;'}
-               />
+      {/* ─── Main Content Canvas ─── */}
+      <main className="flex-1 ml-72 bg-surface min-h-screen relative overflow-x-hidden overflow-y-auto flex flex-col">
+        {/* Decorative Background Gradient Bleed */}
+        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full pointer-events-none z-0"></div>
+        <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] bg-secondary/5 blur-[100px] rounded-full pointer-events-none z-0"></div>
+        
+        {/* TopNavBar with Tabs */}
+        <header className="sticky top-0 right-0 w-full flex justify-between items-center px-8 z-40 bg-slate-950/40 backdrop-blur-md h-16 border-b border-slate-800/30 flex-shrink-0">
+          <div className="flex items-center gap-8 h-full">
+            <div className="font-headline text-sm font-medium flex gap-8 h-full">
+              {TABS.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`relative h-full flex items-center gap-2 cursor-pointer transition-all ${isActive ? 'text-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-100'}`}
+                  >
+                    <tab.icon className="w-4 h-4 hidden md:block" />
+                    {tab.label}
+                    {isActive && (
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-t-lg bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]"></span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
+          <div className="flex items-center gap-6">
+            <div className="relative group hidden lg:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4 group-focus-within:text-primary transition-colors" />
+              <input
+                type="text"
+                placeholder="Scan identifiers..."
+                className="bg-surface-container-highest/50 border border-outline-variant/20 rounded-xl pl-10 pr-4 py-1.5 text-xs focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all w-64 placeholder:text-slate-600 text-on-surface"
+              />
+            </div>
+          </div>
+        </header>
+
+        {/* Dashboard Content Area */}
+        <div className="p-8 lg:p-12 z-10 flex-col flex gap-8 flex-1">
+          {/* Page Header */}
+          <section className="flex flex-col gap-1">
+            <h1 className="font-headline text-4xl lg:text-5xl font-black tracking-tight text-on-surface">Dashboard Overview</h1>
+            <p className="text-on-surface-variant font-body text-sm max-w-2xl mt-2 leading-relaxed">
+              Real-time monitoring of global actor identities. Systems are currently operational with <span className="text-primary font-bold">99.98% accuracy</span> in heuristic detection patterns.
+            </p>
+          </section>
+          {/* Grid of Glassmorphism Statistic Cards */}
+          <section className="py-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              
+              {/* Card 1: Total Accounts */}
+              <div className="glass-card p-6 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <Users className="w-16 h-16 text-primary" />
+                </div>
+                <div className="flex flex-col gap-4 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-primary" />
+                    <span className="font-headline font-bold text-[11px] tracking-widest uppercase text-slate-400">Total Accounts</span>
+                  </div>
+                  <div>
+                    <span className="font-headline text-3xl font-black text-on-surface drop-shadow-[0_0_12px_rgba(83,221,252,0.4)]">{(summary.total_accounts_analyzed || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary bg-primary/10 w-fit px-2 py-0.5 rounded-full">
+                    <Activity className="w-3 h-3" />
+                    LIVE SYNC
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Verified Legitimate */}
+              <div className="glass-card p-6 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <ShieldAlert className="w-16 h-16 text-emerald-400" />
+                </div>
+                <div className="flex flex-col gap-4 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="w-5 h-5 text-emerald-400" />
+                    <span className="font-headline font-bold text-[11px] tracking-widest uppercase text-slate-400">Verified Legitimate</span>
+                  </div>
+                  <div>
+                    <span className="font-headline text-3xl font-black text-on-surface drop-shadow-[0_0_12px_rgba(52,211,153,0.4)]">
+                      {((analysisResults?.verified_entities || []).length).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-400/10 w-fit px-2 py-0.5 rounded-full">
+                    <ActivitySquare className="w-3 h-3" />
+                    TRUSTED
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Suspicious Entities */}
+              <div className="glass-card p-6 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <AlertTriangle className="w-16 h-16 text-secondary" />
+                </div>
+                <div className="flex flex-col gap-4 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-secondary" />
+                    <span className="font-headline font-bold text-[11px] tracking-widest uppercase text-slate-400">Suspicious Entities</span>
+                  </div>
+                  <div>
+                    <span className="font-headline text-3xl font-black text-on-surface drop-shadow-[0_0_12px_rgba(172,138,255,0.4)]">
+                      {(summary.suspicious_accounts_flagged || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-secondary bg-secondary/10 w-fit px-2 py-0.5 rounded-full">
+                    <Search className="w-3 h-3" />
+                    HIGH WATCH
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 4: Fraud Rings */}
+              <div className="glass-card p-6 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <Network className="w-16 h-16 text-tertiary" />
+                </div>
+                <div className="flex flex-col gap-4 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <Network className="w-5 h-5 text-tertiary" />
+                    <span className="font-headline font-bold text-[11px] tracking-widest uppercase text-slate-400">Fraud Rings</span>
+                  </div>
+                  <div>
+                    <span className="font-headline text-3xl font-black text-on-surface drop-shadow-[0_0_12px_rgba(255,113,106,0.4)]">
+                      {(summary.fraud_rings_detected || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-tertiary bg-tertiary/10 w-fit px-2 py-0.5 rounded-full">
+                    <Layers className="w-3 h-3" />
+                    ACTION REQ.
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </section>
 
           {/* Error banner */}
           {error && (
