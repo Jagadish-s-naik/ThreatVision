@@ -682,7 +682,7 @@ export default function App() {
                   suspiciousAccounts={analysisResults.suspicious_accounts}
                   flaggedAccounts={flaggedAccounts}
                   onSelectAccount={handleSelectAccount}
-                  onToggleFlag={toggleFlagAccount}
+                  onToggleFlag={handleToggleFlag}
                   onExportRing={handleExportRing}
                 />
               )}
