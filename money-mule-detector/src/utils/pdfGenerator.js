@@ -1,5 +1,5 @@
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export const generateForensicReport = (analysisResults, selectedRing = null) => {
   const doc = new jsPDF();
@@ -24,7 +24,7 @@ export const generateForensicReport = (analysisResults, selectedRing = null) => 
   doc.setTextColor(10, 20, 40);
   doc.text('Executive Summary', 14, 45);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: 50,
     head: [['Metric', 'Value']],
     body: [
@@ -80,7 +80,7 @@ export const generateForensicReport = (analysisResults, selectedRing = null) => 
         ];
       });
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: currentY,
         head: [['Account ID', 'Suspicion Score', 'Detected Patterns']],
         body: tableData,
