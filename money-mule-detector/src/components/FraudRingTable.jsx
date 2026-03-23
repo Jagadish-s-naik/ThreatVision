@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ShieldAlert, Activity, DollarSign, Flag } from 'lucide-react';
+import { ShieldAlert, Activity, DollarSign, Flag, DownloadCloud } from 'lucide-react';
 
 const PAGE_SIZE = 10;
 
@@ -17,7 +17,7 @@ function getPatternBadgeColor(type) {
     return 'bg-slate-800 text-slate-300 border-slate-700/50';
 }
 
-export default function FraudRingTable({ fraudRings, suspiciousAccounts, flaggedAccounts, onSelectAccount, onToggleFlag }) {
+export default function FraudRingTable({ fraudRings, suspiciousAccounts, flaggedAccounts, onSelectAccount, onToggleFlag, onExportRing }) {
     const [sortKey, setSortKey] = useState('risk_score');
     const [sortAsc, setSortAsc] = useState(false);
     const [page, setPage] = useState(0);
@@ -148,6 +148,7 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, flagged
                             <th className="px-6 py-4 text-right font-headline">{renderSortBtn("total_volume", "Volume Est.")}</th>
                             <th className="px-6 py-4 text-right font-headline">{renderSortBtn("risk_score", "Risk Score")}</th>
                             <th className="px-6 py-4 text-left font-headline">Primary Members</th>
+                            <th className="px-6 py-4 text-right font-headline">Report</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -182,8 +183,8 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, flagged
                                             {ring.risk_score.toFixed(1)}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-slate-400 text-xs">
-                                        <div className="flex flex-wrap gap-1.5">
+                                    <td className="px-6 py-4 text-slate-400 text-xs text-left">
+                                        <div className="flex flex-wrap gap-1.5 justify-start">
                                             {shown.map(m => (
                                                 <span key={m} className={`px-2 py-0.5 rounded border truncate max-w-[120px] flex items-center gap-1 ${
                                                     flaggedAccounts.has(m) 
@@ -195,6 +196,17 @@ export default function FraudRingTable({ fraudRings, suspiciousAccounts, flagged
                                                 </span>
                                             ))}
                                             {extra > 0 && <span className="bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20">+{extra}</span>}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex justify-end pt-1">
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); onExportRing?.(ring); }} 
+                                                className="p-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 transition-colors"
+                                                title="Download Ring Report"
+                                            >
+                                                <DownloadCloud className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>

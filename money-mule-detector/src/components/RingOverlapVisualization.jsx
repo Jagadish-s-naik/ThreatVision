@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Layers, Activity, Users, Link } from 'lucide-react';
+import { Layers, Activity, Users, Link, DownloadCloud } from 'lucide-react';
 
-export default function RingOverlapVisualization({ fraudRings = [], suspiciousAccounts = [] }) {
+export default function RingOverlapVisualization({ fraudRings = [], suspiciousAccounts = [], onExportRing }) {
     const [hoveredRing, setHoveredRing] = useState(null);
     const [selectedRing, setSelectedRing] = useState(null); // Track selected ring for details
 
@@ -355,6 +355,15 @@ export default function RingOverlapVisualization({ fraudRings = [], suspiciousAc
                                     </span>
                                 ))}
                             </div>
+                        </div>
+                        <div className="pt-2 mt-2 border-t border-[rgba(255,255,255,0.05)]">
+                            <button 
+                                onClick={() => onExportRing?.(selectedRing)}
+                                className="w-full flex items-center justify-center gap-2 py-2 bg-[rgba(0,229,255,0.1)] hover:bg-[rgba(0,229,255,0.2)] text-[#00e5ff] rounded-lg transition-all shadow-[0_0_10px_rgba(0,229,255,0.1)] border border-[rgba(0,229,255,0.2)] font-semibold uppercase tracking-wider text-[10px]"
+                            >
+                                <DownloadCloud className="w-3 h-3" />
+                                Download Ring Report
+                            </button>
                         </div>
                     </div>
                 </div>

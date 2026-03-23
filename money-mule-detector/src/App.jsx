@@ -9,8 +9,11 @@ import {
   ActivitySquare,
   Search,
   Users,
-  AlertTriangle
+  AlertTriangle,
+  FileText,
+  DownloadCloud
 } from 'lucide-react';
+import { generateForensicReport } from './utils/pdfGenerator.js';
 import CSVUploader from './components/CSVUploader.jsx';
 import GraphVisualization from './components/GraphVisualization.jsx';
 import { RiskScoreTrendChart, FlaggedEntitiesChart, RiskDistributionDonut, RingActivityBar } from './components/DashboardCharts.jsx';
@@ -31,7 +34,7 @@ const TABS = [
   { id: 'table', label: 'Fraud Rings', icon: ShieldAlert },
   { id: 'heatmap', label: 'Timeline Heatmap', icon: Activity },
   { id: 'overlap', label: 'Ring Overlap', icon: Layers },
-  { id: 'json', label: 'JSON Export', icon: FileJson },
+  { id: 'json', label: 'Export Reports', icon: FileText },
 ];
 
 export default function App() {
@@ -177,8 +180,8 @@ export default function App() {
     setIsPanelOpen(false); // Close panel to see the graph clearly
   }, []);
 
-  // â”€â”€â”€ JSON download â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const handleDownload = useCallback(() => {
+  // â”€â”€â”€ JSON & PDF download â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const handleDownloadJSON = useCallback(() => {
     if (analysisResults) {
       const jsonStr = JSON.stringify(analysisResults, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -188,6 +191,18 @@ export default function App() {
       a.download = 'threat_vision_report.json';
       a.click();
       URL.revokeObjectURL(url);
+    }
+  }, [analysisResults]);
+
+  const handleGeneratePDF = useCallback(() => {
+    if (analysisResults) {
+      generateForensicReport(analysisResults);
+    }
+  }, [analysisResults]);
+
+  const handleExportRing = useCallback((ring) => {
+    if (analysisResults) {
+      generateForensicReport(analysisResults, ring);
     }
   }, [analysisResults]);
 
@@ -663,11 +678,12 @@ export default function App() {
               {/* Fraud Rings Table */}
               {activeTab === 'table' && (
                 <FraudRingTable
-                  fraudRings={fraudRings}
-                  suspiciousAccounts={suspiciousAccounts}
+                  fraudRings={analysisResults.fraud_rings}
+                  suspiciousAccounts={analysisResults.suspicious_accounts}
                   flaggedAccounts={flaggedAccounts}
                   onSelectAccount={handleSelectAccount}
-                  onToggleFlag={handleToggleFlag}
+                  onToggleFlag={toggleFlagAccount}
+                  onExportRing={handleExportRing}
                 />
               )}
 
@@ -715,36 +731,48 @@ export default function App() {
                 </div>
               )}
 
-              {/* JSON Export */}
+              {/* Reports Export */}
               {activeTab === 'json' && (
-                <div className="h-full flex flex-col p-6 overflow-hidden">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-slate-900 border border-slate-700/50 p-6 rounded-2xl shadow-xl">
+                <div className="h-full flex flex-col p-6 overflow-hidden gap-6">
+                  {/* Reporting Header Card */}
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-slate-900 border border-slate-700/50 p-6 rounded-2xl shadow-xl">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20 shadow-inner">
-                        <FileJson className="w-6 h-6 text-purple-400" />
+                      <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 shadow-inner">
+                        <FileText className="w-6 h-6 text-cyan-400" />
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-white tracking-tight">Raw Data Export</h3>
-                        <p className="text-sm text-slate-400 mt-0.5">View and download the complete analysis results in JSON format.</p>
+                        <h3 className="text-xl font-bold text-white tracking-tight">Forensic Reporting & Export</h3>
+                        <p className="text-sm text-slate-400 mt-0.5">Generate comprehensive PDF reports or download raw JSON datasets.</p>
                       </div>
                     </div>
-                    <button
-                      onClick={handleDownload}
-                      className="group flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl transition-all shadow-lg hover:shadow-purple-500/25 border border-purple-400/20 font-semibold w-full md:w-auto"
-                    >
-                      <Upload className="w-5 h-5 group-hover:-translate-y-1 transition-transform rotate-180" />
-                      Download JSON
-                    </button>
+                    
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                      <button
+                        onClick={handleDownloadJSON}
+                        className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all border border-slate-700 font-medium text-sm"
+                      >
+                        <FileJson className="w-4 h-4" />
+                        Raw JSON
+                      </button>
+                      <button
+                        onClick={handleGeneratePDF}
+                        className="group flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl transition-all shadow-lg hover:shadow-cyan-500/25 border border-cyan-400/20 font-semibold text-sm"
+                      >
+                        <DownloadCloud className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
+                        Generate PDF Report
+                      </button>
+                    </div>
                   </div>
                   
-                  <div className="flex-1 relative bg-[#0a0f18] rounded-2xl border border-slate-800 shadow-inner overflow-hidden flex flex-col">
-                    <div className="flex items-center gap-2 px-4 py-3 bg-slate-900/80 border-b border-slate-800 backdrop-blur-md">
+                  {/* JSON Preview Panel */}
+                  <div className="flex-1 relative bg-[#0a0f18] rounded-2xl border border-slate-800 shadow-inner overflow-hidden flex flex-col mt-2">
+                    <div className="flex items-center justify-between px-4 py-3 bg-slate-900/80 border-b border-slate-800 backdrop-blur-md">
                       <div className="flex gap-2">
                         <div className="w-3 h-3 rounded-full bg-rose-500/20 border border-rose-500/50"></div>
                         <div className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/50"></div>
                         <div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/50"></div>
                       </div>
-                      <span className="text-xs text-slate-500 ml-3 font-mono">analysis_results.json</span>
+                      <span className="text-xs text-slate-500 font-mono">analysis_payload.json</span>
                     </div>
                     <pre
                       className="p-6 text-emerald-400/90 font-mono text-sm overflow-auto flex-1 custom-scrollbar leading-relaxed"
