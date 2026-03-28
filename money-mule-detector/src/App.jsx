@@ -216,8 +216,8 @@ export default function App() {
   };
 
   // â”€â”€â”€ Derived data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const suspiciousAccounts = analysisResults?.suspicious_accounts || [];
-  const fraudRings = analysisResults?.fraud_rings || [];
+  const suspiciousAccounts = useMemo(() => analysisResults?.suspicious_accounts || [], [analysisResults?.suspicious_accounts]);
+  const fraudRings = useMemo(() => analysisResults?.fraud_rings || [], [analysisResults?.fraud_rings]);
   const summary = analysisResults?.summary || {};
 
   // suspiciousAccountIds Set for heatmap

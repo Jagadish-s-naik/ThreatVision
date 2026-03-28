@@ -1,7 +1,8 @@
 "use client";
 import React, { useRef, useEffect, useState } from "react";
-import { motion } from "motion/react";
+
 import { cn } from "../../lib/utils";
+import { motion } from "motion/react";
 import {
   Mail,
   Phone,
@@ -16,7 +17,6 @@ import {
 export const TextHoverEffect = ({
   text,
   duration,
-  automatic,
   className,
 }) => {
   const svgRef = useRef(null);

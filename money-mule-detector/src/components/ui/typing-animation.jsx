@@ -63,10 +63,12 @@ export function TypingAnimation({
   );
 
   useEffect(() => {
-    setDisplayedText("");
-    setCurrentWordIndex(0);
-    setCurrentCharIndex(0);
-    setPhase("typing");
+    setTimeout(() => {
+      setDisplayedText("");
+      setCurrentWordIndex(0);
+      setCurrentCharIndex(0);
+      setPhase("typing");
+    }, 0);
   }, [animationSourceKey]);
 
   useEffect(() => {

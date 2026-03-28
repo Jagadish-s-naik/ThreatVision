@@ -42,7 +42,6 @@ function fmtCurrency(n) {
 
 // PREMIUM COMPONENTS
 const RiskGauge = ({ score }) => {
-    const angle = (score / 100) * 180 - 180;
     let color = '#EAB308'; // Medium
     if (score >= 75) color = '#EF4444'; // Critical
     else if (score >= 50) color = '#F97316'; // High
@@ -319,8 +318,6 @@ export default function RiskExplanationPanel({
     onClose 
 }) {
 
-    if (!account) return null;
-
     // Defend against missing stats
     const stats = useMemo(() => {
         if (!account || !nodeStats) return null;
@@ -342,6 +339,8 @@ export default function RiskExplanationPanel({
             return ['Error generating forensic narrative.'];
         }
     }, [account, nodeStats, transactions, fraudRings]);
+
+    if (!account) return null;
 
     try {
         const timestamps = stats?.timestamps || [];

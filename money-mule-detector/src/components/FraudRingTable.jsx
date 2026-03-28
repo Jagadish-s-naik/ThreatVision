@@ -17,7 +17,7 @@ function getPatternBadgeColor(type) {
     return 'bg-slate-800 text-slate-300 border-slate-700/50';
 }
 
-export default function FraudRingTable({ fraudRings, suspiciousAccounts, flaggedAccounts, onSelectAccount, onToggleFlag, onExportRing }) {
+export default function FraudRingTable({ fraudRings, suspiciousAccounts, flaggedAccounts, onSelectAccount, onExportRing }) {
     const [sortKey, setSortKey] = useState('risk_score');
     const [sortAsc, setSortAsc] = useState(false);
     const [page, setPage] = useState(0);

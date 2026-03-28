@@ -1,0 +1,113 @@
+
+> money-mule-detector@0.0.0 lint
+> eslint .
+
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\App.jsx
+  219:9  warning  The 'suspiciousAccounts' logical expression could make the dependencies of useMemo Hook (at line 226) change on every render. To fix this, wrap the initialization of 'suspiciousAccounts' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  219:9  warning  The 'suspiciousAccounts' logical expression could make the dependencies of useMemo Hook (at line 273) change on every render. To fix this, wrap the initialization of 'suspiciousAccounts' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  220:9  warning  The 'fraudRings' logical expression could make the dependencies of useMemo Hook (at line 273) change on every render. To fix this, wrap the initialization of 'fraudRings' in its own useMemo() Hook                  react-hooks/exhaustive-deps
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\FraudRingTable.jsx
+  20:108  error  'onToggleFlag' is defined but never used  no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\GraphView.jsx
+  10:5   error  'onResetIsolation' is assigned a value but never used  no-unused-vars
+  55:32  error  'isCrossRing' is not defined                           no-undef
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\GraphVisualization.jsx
+  101:17   error  'nodes' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  101:24   error  'edges' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  154:21   error  Duplicate key 'isVerified'                                                             no-dupe-keys
+  155:21   error  Duplicate key 'verifiedClassification'                                                 no-dupe-keys
+  614:130  error  'activeNodes' is not defined                                                           no-undef
+  618:130  error  'activeEdges' is not defined                                                           no-undef
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\LandingPage.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\RiskExplanationPanel.jsx
+    2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                               no-unused-vars
+   45:11  error  'angle' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                       no-unused-vars
+  282:72  error  'account' is defined but never used                                                                                         no-unused-vars
+  325:19  error  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+  337:24  error  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render  react-hooks/rules-of-hooks
+  540:74  error  'Icon' is defined but never used                                                                                            no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\ui\expandable-tabs.jsx
+  4:27  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\ui\focus-cards.jsx
+  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\ui\hover-footer.jsx
+   3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  19:3   error  'automatic' is defined but never used                                          no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\ui\pricing-section-4.jsx
+  9:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\ui\timeline-animation.jsx
+  8:3  error  'timelineRef' is defined but never used  no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\ui\typing-animation.jsx
+  66:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  64 |
+  65 |   useEffect(() => {
+> 66 |     setDisplayedText("");
+     |     ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  67 |     setCurrentWordIndex(0);
+  68 |     setCurrentCharIndex(0);
+  69 |     setPhase("typing");  react-hooks/set-state-in-effect
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\ui\vertical-cut-reveal.jsx
+   12:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-unused-vars
+   70:7   error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `elements`, but the source dependencies were [elements.length, staggerFrom, staggerDuration, splitBy]. Inferred less specific property than source.
+
+  68 |     // Расчет задержек для эффекта stagger
+  69 |     const getStaggerDelay = useCallback(
+> 70 |       (index) => {
+     |       ^^^^^^^^^^^^
+> 71 |         const total =
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 72 |           splitBy === "characters"
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 92 |         return Math.abs(staggerFrom - index) * staggerDuration
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 93 |       },
+     | ^^^^^^^^ Could not preserve existing manual memoization
+  94 |       [elements.length, staggerFrom, staggerDuration, splitBy]
+  95 |     )
+  96 |  react-hooks/preserve-manual-memoization
+   94:7   warning  React Hook useCallback has a missing dependency: 'elements'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/exhaustive-deps
+  109:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  107 |     useEffect(() => {
+  108 |       if (autoStart) {
+> 109 |         startAnimation()
+      |         ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  110 |       }
+  111 |     }, [autoStart, startAnimation])
+  112 |                                                                                                                                       react-hooks/set-state-in-effect
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\utils\pdfGenerator.js
+  123:34  error  'index' is defined but never used  no-unused-vars
+
+✖ 31 problems (27 errors, 4 warnings)
+

@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 export const TimelineContent = ({
   children,
   animationNum = 0,
-  timelineRef,
   customVariants,
   as = "div",
   className,

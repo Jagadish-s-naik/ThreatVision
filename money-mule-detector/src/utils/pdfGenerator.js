@@ -120,7 +120,7 @@ export const generateForensicReport = (analysisResults, selectedRing = null) => 
     doc.setTextColor(100, 100, 100);
     doc.text('No fraud rings detected in this analysis payload.', 14, currentY);
   } else {
-    ringsToReport.forEach((ring, index) => {
+    ringsToReport.forEach((ring) => {
       // Check page break
       if (currentY > 240) {
         doc.addPage();

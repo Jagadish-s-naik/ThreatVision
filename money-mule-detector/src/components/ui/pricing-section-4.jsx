@@ -8,6 +8,7 @@ import { cn } from "../../lib/utils";
 import NumberFlow from "@number-flow/react";
 import { motion } from "framer-motion";
 
+
 const plans = [
   {
     name: "Starter",

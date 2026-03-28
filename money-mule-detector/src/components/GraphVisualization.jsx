@@ -99,15 +99,15 @@ export default function GraphVisualization({
         if (cyRef.current) { cyRef.current.destroy(); cyRef.current = null; }
 
         const { nodes, edges } = graphData;
-        const maxAmount = Math.max(...activeEdges.map((e) => e.amount || 0), 1);
+        const maxAmount = Math.max(...edges.map((e) => e.amount || 0), 1);
 
         const nodeMap = {};
-        for (const n of activeNodes) nodeMap[n.id] = n;
+        for (const n of nodes) nodeMap[n.id] = n;
 
         const suspiciousIds = new Set((suspiciousAccounts || []).map((a) => a.account_id));
 
         // ─── Build Cytoscape elements ─────────────────────────────────
-        const cyNodes = activeNodes.map((n) => {
+        const cyNodes = nodes.map((n) => {
             const isFlagged = flaggedAccounts.has(n.id);
             const isSuspicious = suspiciousIds.has(n.id);
             const verifiedEnt = verifiedMap[n.id];
@@ -150,9 +150,6 @@ export default function GraphVisualization({
                     verifiedClassification: verifiedEnt?.classification,
                     suspicionScore: accountMap[n.id]?.suspicion_score ?? 0,
                     patterns: (accountMap[n.id]?.detected_patterns || []).join(', '),
-                    isFlagged,
-                    isVerified,
-                    verifiedClassification: verifiedEnt?.classification,
                 },
                 classes: [
                     isSuspicious ? 'suspicious' : 'normal',
@@ -611,11 +608,11 @@ export default function GraphVisualization({
                         <div className="flex flex-col gap-2 pl-4 border-l border-white/5">
                             <div className="flex items-center justify-between group">
                                 <span className="text-[9px] text-slate-500 font-mono">ENTITIES</span>
-                                <span className="text-xs font-bold text-cyan-400 font-mono">{graphData?.analytics?.totalNodes || activeNodes.length}</span>
+                                <span className="text-xs font-bold text-cyan-400 font-mono">{graphData?.analytics?.totalNodes || graphData?.nodes?.length || 0}</span>
                             </div>
                             <div className="flex items-center justify-between group">
                                 <span className="text-[9px] text-slate-500 font-mono">PATHS</span>
-                                <span className="text-xs font-bold text-cyan-400 font-mono">{graphData?.analytics?.totalEdges || activeEdges.length}</span>
+                                <span className="text-xs font-bold text-cyan-400 font-mono">{graphData?.analytics?.totalEdges || graphData?.edges?.length || 0}</span>
                             </div>
                             <div className="flex items-center justify-between group">
                                 <span className="text-[9px] text-slate-500 font-mono">THREATS</span>
