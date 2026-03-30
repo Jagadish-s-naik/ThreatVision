@@ -98,7 +98,8 @@ export default function GraphVisualization({
         if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
         if (cyRef.current) { cyRef.current.destroy(); cyRef.current = null; }
 
-        const { nodes, edges } = graphData;
+        const nodes = activeNodes;
+        const edges = activeEdges;
         const maxAmount = Math.max(...edges.map((e) => e.amount || 0), 1);
 
         const nodeMap = {};

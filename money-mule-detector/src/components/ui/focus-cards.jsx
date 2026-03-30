@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { cn } from "../../lib/utils";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "motion/react";
-
 export const Card = React.memo(
   ({
     card,

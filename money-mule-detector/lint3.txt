@@ -1,0 +1,31 @@
+
+> money-mule-detector@0.0.0 lint
+> eslint .
+
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\LandingPage.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\RiskExplanationPanel.jsx
+    2:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  539:74  error    'Icon' is defined but never used                                                   no-unused-vars
+  542:58  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\ui\expandable-tabs.jsx
+  4:27  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\ui\focus-cards.jsx
+  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\ui\hover-footer.jsx
+  5:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\ui\pricing-section-4.jsx
+  9:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\Jagadish S Naik\OneDrive\Desktop\rift\ThreatVision\money-mule-detector\src\components\ui\vertical-cut-reveal.jsx
+  12:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+✖ 9 problems (8 errors, 1 warning)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

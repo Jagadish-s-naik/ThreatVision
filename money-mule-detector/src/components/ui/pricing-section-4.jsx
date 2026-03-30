@@ -6,8 +6,8 @@ import { TimelineContent } from "./timeline-animation";
 import { VerticalCutReveal } from "./vertical-cut-reveal";
 import { cn } from "../../lib/utils";
 import NumberFlow from "@number-flow/react";
+// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
-
 
 const plans = [
   {

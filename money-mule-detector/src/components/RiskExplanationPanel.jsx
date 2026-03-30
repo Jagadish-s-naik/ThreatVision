@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     X, 
@@ -278,7 +279,7 @@ const CounterpartyList = ({ accountId, transactions }) => {
     );
 };
 
-const ActionToolbar = ({ isFlagged, onToggleFlag, onExport, onIsolate, account, stats }) => (
+const ActionToolbar = ({ isFlagged, onToggleFlag, onExport, onIsolate, stats }) => (
     <div className="grid grid-cols-3 gap-2 py-4 border-y border-slate-800">
         <button 
             onClick={onToggleFlag}
@@ -536,7 +537,9 @@ export default function RiskExplanationPanel({
                                                 { label: 'First Contact', value: firstSeen, icon: Clock },
                                                 { label: 'Active Period', value: `${activeDays} Days`, icon: Calendar },
                                                 { label: stats?.isVerified ? 'Monitoring Zone' : 'Network Ring', value: account.ring_id || (stats?.isVerified ? 'Monitored Segment' : 'Isolated Node'), icon: stats?.isVerified ? ShieldCheck : ShieldAlert },
-                                            ].map(({ label, value, icon: Icon }) => (
+                                            ].map(({ label, value, icon }) => {
+                                                const Icon = icon;
+                                                return (
                                                 <div key={label} className="bg-slate-950/40 border border-slate-800 p-4 rounded-2xl hover:border-white/10 transition-colors">
                                                     <div className="flex items-center gap-2 mb-1.5 opacity-50">
                                                         <Icon size={12} className="text-[#00e5ff]" />
@@ -544,7 +547,8 @@ export default function RiskExplanationPanel({
                                                     </div>
                                                     <div className="text-white font-mono text-xs font-bold truncate">{value}</div>
                                                 </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </div>
 
